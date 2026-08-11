@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    container_name: humworld-backend
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ../frontend
+    container_name: humworld-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
