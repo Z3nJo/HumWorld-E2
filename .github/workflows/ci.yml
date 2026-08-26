@@ -18,5 +18,76 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Docker Compose configuration
+        run: docker compose -f opsx/docker-compose.yml config
+
+      - name: Backend quality check
+        shell: bash
+        run: |
+          if [ ! -f backend/package.json ]; then
+            echo "backend/package.json not found; skipping backend quality check."
+            exit 0
+          fi
+
+          if ! node -e "const p = require('./backend/package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
+            echo "backend lint script not found; skipping backend quality check."
+            exit 0
+          fi
+
+          cd backend
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run lint
+
+      - name: Frontend quality check
+        shell: bash
+        run: |
+          if [ ! -f frontend/package.json ]; then
+            echo "frontend/package.json not found; skipping frontend quality check."
+            exit 0
+          fi
+
+          if ! node -e "const p = require('./frontend/package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
+            echo "frontend lint script not found; skipping frontend quality check."
+            exit 0
+          fi
+
+          cd frontend
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm run lint
+
+      - name: Backend tests
+        shell: bash
+        run: |
+          if [ ! -f backend/package.json ]; then
+            echo "backend/package.json not found; skipping backend tests."
+            exit 0
+          fi
+
+          if ! node -e "const p = require('./backend/package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            echo "backend test script not found; skipping backend tests."
+            exit 0
+          fi
+
+          cd backend
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm test
+
+      - name: Frontend tests
+        shell: bash
+        run: |
+          if [ ! -f frontend/package.json ]; then
+            echo "frontend/package.json not found; skipping frontend tests."
+            exit 0
+          fi
+
+          if ! node -e "const p = require('./frontend/package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            echo "frontend test script not found; skipping frontend tests."
+            exit 0
+          fi
+
+          cd frontend
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm test
+
       - name: Build Docker services
         run: docker compose -f opsx/docker-compose.yml build
