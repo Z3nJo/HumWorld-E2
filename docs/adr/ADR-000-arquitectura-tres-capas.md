@@ -4,8 +4,9 @@
 |---|---|
 | **ID** | ADR-000 |
 | **Título** | Arquitectura en tres capas: presentación, lógica de negocio y datos |
-| **Estado** | Propuesto — pendiente de aprobación formal del equipo |
-| **Fecha de redacción** | 26 de agosto de 2026 |
+| **Estado** | **Aceptado** — acordado por el equipo el 25 de agosto de 2026 |
+| **Fecha de redacción** | 25 de agosto de 2026 |
+| **Fecha de aprobación** | 25 de agosto de 2026 |
 | **Sprint** | Sprint 0 |
 | **Autor / responsable** | Matías Santos — Arquitectura y Documentación |
 | **Decisores** | José Romero (Backend), Sebastián Márquez (Frontend), David Cortez (DevOps y Calidad), Matías Santos (Arquitectura y Documentación) |
@@ -15,7 +16,9 @@
 | **Ubicación** | `docs/adr/ADR-000-arquitectura-tres-capas.md` (repositorio `HumWorld-E2`) |
 | **Sustituye a** | `docs/adr/ADR-000-arquitectura-en-capas.md` (versión breve inicial, archivada en `docs/adr/archivo/`) |
 
-> **Criterio de finalización aplicable (Planificación de Sprints v2, tabla detallada, fila S0/ADR-000):** *"ADR redactado, revisado por el equipo y publicado en `/docs`"*. Al obtener la revisión de los cuatro integrantes, el estado debe cambiarse a **Aceptado** indicando la fecha de aprobación.
+> **Criterio de finalización aplicable (Planificación de Sprints v2, tabla detallada, fila S0/ADR-000):** *"ADR redactado, revisado por el equipo y publicado en `/docs`"*.
+>
+> **Aprobación.** Los cuatro integrantes acordaron esta decisión de forma **verbal**, en la Daily del 25 de agosto de 2026. No se recogió confirmación individual por escrito; Matías Santos, como autor y responsable de documentación, deja constancia del acuerdo. Cualquier integrante que no se reconozca en este registro debe indicarlo en la revisión del *pull request* correspondiente o en la retrospectiva del Sprint 1. Mismo mecanismo y misma sesión en que se acordaron la Definition of Done v1.0 y el `ADR-003`.
 
 ---
 
@@ -52,7 +55,7 @@ La especificación no deja este punto totalmente abierto: fija de manera **oblig
 
 **No incluye (se difiere explícitamente):**
 
-- La elección concreta del stack tecnológico (lenguaje, framework de backend, framework de frontend y motor de base de datos) → **ADR-003 propuesto**. Ver secc. 7.
+- La elección concreta del stack tecnológico (lenguaje, framework de backend, framework de frontend y motor de base de datos) → **`ADR-003`**, acordado el 25 de agosto de 2026. Ver secc. 7.
 - El algoritmo de cálculo del humor → **ADR-001** (Planificación v2, D-02 a D-04).
 - El criterio de "noticia influyente" → **ADR-002** (Planificación v2, D-05 y D-06).
 - El modelo de datos detallado → tarea `MOD-01`, que **depende** de este ADR.
@@ -256,10 +259,10 @@ Se propone abrir **ADR-003 — Selección del stack tecnológico**, con la elecc
 ## 9. Supuestos y puntos abiertos
 
 1. **Supuesto.** Se asume una única aplicación desplegable que integra las tres capas, con el frontend servido como aplicación web independiente que consume la API. La especificación no lo dice de forma explícita, pero es coherente con el empaquetado Docker de la secc. 6.2 y con la tarea `INFRA-02`.
-2. **Punto abierto.** El stack tecnológico no está decidido (ver secc. 7) → propuesta de **ADR-003**.
+2. ~~**Punto abierto.** El stack tecnológico no está decidido (ver secc. 7) → propuesta de **ADR-003**.~~ **Resuelto el 25 de agosto de 2026:** `ADR-003` fija Python 3.12 + FastAPI, PostgreSQL 16 con SQLAlchemy y Alembic, y React + Vite + TypeScript. El requisito de admisibilidad de la secc. 7 se verifica en la secc. 6 de ese ADR.
 3. **Punto abierto.** La topología concreta de servicios de `docker-compose` (número de contenedores y su correspondencia con las capas) se define en `INFRA-02` y quedará condicionada por el ADR-003.
 4. **Dependencia hacia adelante.** `MOD-01` (modelo E/R inicial: Canal, Fuente RSS, Noticia, Término, Configuración) debe respetar la asignación de responsabilidades de la secc. 4.3 de este ADR.
-5. **Observación de proceso.** El Sprint 0 estaba planificado del 10 al 14 de agosto de 2026 (Planificación v2, secc. 3); este ADR se redacta el 26 de agosto de 2026, con posterioridad a esa ventana. La desviación debe reflejarse en el seguimiento del proyecto, y conviene revisar si el resto de tareas del Sprint 0 y las fechas de los sprints siguientes requieren replanificación.
+5. **Observación de proceso.** El Sprint 0 estaba planificado del 10 al 14 de agosto de 2026 (Planificación v2, secc. 3); este ADR se redacta el 25 de agosto de 2026, con posterioridad a esa ventana. La desviación debe reflejarse en el seguimiento del proyecto, y conviene revisar si el resto de tareas del Sprint 0 y las fechas de los sprints siguientes requieren replanificación.
 
 ---
 
@@ -278,5 +281,6 @@ Se propone abrir **ADR-003 — Selección del stack tecnológico**, con la elecc
 
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
-| 0.1 | 2026-08-26 | Matías Santos | Redacción inicial. Estado: Propuesto, pendiente de revisión por el equipo. |
-| 0.2 | 2026-08-26 | Matías Santos | Consolidación en el repositorio `HumWorld-E2`. Sustituye a la versión breve `ADR-000-arquitectura-en-capas.md`, que se archiva en `docs/adr/archivo/`. Sin cambios de fondo en la decisión: la versión breve declaraba las mismas tres capas y la misma frontera `/api/v1`, sin reglas de dependencia, alternativas evaluadas ni criterios de verificación. |
+| 0.1 | 2026-08-25 | Matías Santos | Redacción inicial. Estado: Propuesto, pendiente de revisión por el equipo. |
+| 0.2 | 2026-08-25 | Matías Santos | Consolidación en el repositorio `HumWorld-E2`. Sustituye a la versión breve `ADR-000-arquitectura-en-capas.md`, que se archiva en `docs/adr/archivo/`. Sin cambios de fondo en la decisión: la versión breve declaraba las mismas tres capas y la misma frontera `/api/v1`, sin reglas de dependencia, alternativas evaluadas ni criterios de verificación. |
+| 1.0 | 2026-08-25 | Matías Santos | **Estado: Aceptado.** Acordado por los cuatro integrantes en la Daily del 25 de agosto de 2026, con aceptación verbal registrada en la cabecera. Sin cambios en el contenido de la decisión respecto de la versión 0.2. El punto abierto n.º 2 de la secc. 9 (stack tecnológico) queda resuelto por `ADR-003`, acordado en la misma sesión. |
