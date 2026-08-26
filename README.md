@@ -30,17 +30,25 @@ Funcionalidades principales:
 
 ## 3. Stack técnico
 
-La elección definitiva de lenguaje, framework y gestor de datos se documentará en `ADR-003` y aún **no está cerrada**. Lo que sí está decidido y operativo:
+El stack está decidido en [`ADR-003`](docs/adr/ADR-003-stack-tecnologico.md), con la justificación de cada elección y las alternativas descartadas.
 
-| Elemento | Estado | Referencia |
-|---|---|---|
-| **Arquitectura** | Tres capas: presentación → lógica de negocio → datos, con dependencias unidireccionales y sin saltos de capa. | [`docs/adr/ADR-000`](docs/adr/ADR-000-arquitectura-tres-capas.md) |
-| **Modelo de datos** | Modelo E/R preliminar independiente del gestor de datos. | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) |
-| **Contenerización** | Docker Compose. Imagen base `node:22-alpine` para backend y frontend. | `opsx/docker-compose.yml` |
-| **Puertos** | Backend `3000`, frontend `5173`. | `opsx/docker-compose.yml` |
-| **CI/CD** | GitHub Actions: construcción de los servicios Docker en cada *push* y *pull request* sobre `main` y `develop`. | `.github/workflows/ci.yml` |
-| **API** | REST bajo `/api/v1`, JSON, documentada con Swagger/OpenAPI en `/api/docs`. | Especificación, secc. 10 |
-| **Backend / Frontend / Base de datos** | **Pendiente** | `ADR-003` |
+| Elemento | Tecnología |
+|---|---|
+| **Arquitectura** | Tres capas: presentación → lógica de negocio → datos, con dependencias unidireccionales y sin saltos de capa ([`ADR-000`](docs/adr/ADR-000-arquitectura-tres-capas.md)) |
+| **Backend** | Python 3.12 + FastAPI + Pydantic |
+| **Acceso a datos** | SQLAlchemy 2.0 + Alembic |
+| **Base de datos** | PostgreSQL 16 |
+| **Captura RSS y planificación** | feedparser + APScheduler |
+| **Frontend** | React + Vite + TypeScript |
+| **Mapa y gráficos** | react-simple-maps (coropleta por continente), Chart.js, d3-cloud |
+| **Pruebas** | pytest + pytest-cov (backend), Vitest + Testing Library (frontend) |
+| **Calidad de código** | SonarCloud |
+| **Contenerización** | Docker Compose: backend, frontend y base de datos |
+| **CI/CD** | GitHub Actions (`.github/workflows/ci.yml`) |
+| **API** | REST bajo `/api/v1`, JSON, OpenAPI generado en `/api/docs` |
+| **Modelo de datos** | [`MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) |
+
+> El entorno de Sprint 0 todavía corre con los contenedores esqueleto anteriores a `ADR-003` (imagen base `node:22-alpine`, puertos `3000` y `5173`). Su migración al stack decidido es trabajo de `INFRA-02` y `CICD-00`.
 
 ## 4. Estructura del repositorio
 
@@ -103,6 +111,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | Documento | Contenido |
 |---|---|
 | [`docs/adr/ADR-000`](docs/adr/ADR-000-arquitectura-tres-capas.md) | Arquitectura en tres capas y reglas de dependencia |
+| [`docs/adr/ADR-003`](docs/adr/ADR-003-stack-tecnologico.md) | Selección del stack tecnológico y justificación del gestor de datos |
 | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) | Modelo E/R preliminar: entidades, relaciones e integridad |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación y seguimiento por sprint |
@@ -120,6 +129,6 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
 ## 9. Estado del proyecto
 
-**Sprint 0 — Entorno técnico, de gestión y de calidad.** Repositorio base y estructura `/docs` y `/opsx`, `ADR-000`, Docker Compose base, CI inicial, Definition of Done y modelo de datos inicial (`MOD-01`).
+**Sprint 0 — Entorno técnico, de gestión y de calidad.** Repositorio base y estructura `/docs` y `/opsx`, `ADR-000` (arquitectura), `ADR-003` (stack), Docker Compose base, CI inicial, Definition of Done acordada y modelo de datos inicial (`MOD-01`).
 
 El desarrollo funcional comienza en el Sprint 1 con la épica de captura RSS.

@@ -25,7 +25,7 @@ Entidades cubiertas: **Canal**, **Fuente RSS**, **Noticia**, **Término** y **Co
 
 Este documento es deliberadamente agnóstico respecto de tres decisiones aún abiertas (ver secc. 8):
 
-1. **El gestor de datos concreto** (relacional vs. documental) — pendiente de `ADR-003`. Por eso los tipos son genéricos (`texto`, `entero`, `decimal`, `timestamp`) y no tipos SQL ni esquemas Mongo.
+1. **Los tipos físicos del gestor de datos.** `ADR-003` ya fijó PostgreSQL 16 con SQLAlchemy y Alembic, pero este documento se mantiene en tipos genéricos (`texto`, `entero`, `decimal`, `timestamp`): la traducción a tipos SQL concretos y a migraciones vive en `backend/models/` y en Alembic, no aquí.
 2. **El rango y la fórmula de agregación del valor de humor** — pendiente de `ADR-001`. El modelo reserva el campo numérico y su granularidad, no su escala.
 3. **La métrica de "noticia influyente"** — pendiente de `ADR-002`. El modelo persiste los datos necesarios para calcularla, no la fórmula.
 
@@ -303,7 +303,7 @@ El modelo vive íntegramente en la **capa de datos** (`backend/models/` y `backe
 |---|---|---|---|
 | 1 | Rango y fórmula de agregación del humor | Escala y precisión de `TERMINO.valor`, `NOTICIA.valor_humor` y `NOTICIA_TERMINO.aporte_humor`. No afecta a entidades ni relaciones. | `ADR-001` |
 | 2 | Métrica de "noticia influyente" | Puede exigir un atributo derivado adicional en `NOTICIA` (p. ej. número de términos evaluables) si la métrica no se resuelve con `valor_humor`. | `ADR-002` |
-| 3 | Gestor de datos (relacional vs. documental) | Traducción de tipos y de la asociativa `NOTICIA_TERMINO` (tabla puente vs. array embebido). Entidades y cardinalidades no cambian. | `ADR-003` |
+| ~~3~~ | ~~Gestor de datos (relacional vs. documental)~~ | **Cerrada el 2026-08-25: PostgreSQL 16 + SQLAlchemy 2.0 + Alembic** (`ADR-003`). `NOTICIA_TERMINO` se implementa como tabla puente; entidades, cardinalidades e índices del modelo se trasladan sin reinterpretación. | `ADR-003` |
 | 4 | Modelado de `CONFIGURACION` como clave-valor | Confirmar o rechazar la propuesta de la secc. 3.5 (Backlog Final, decisión pendiente n.º 5). | Revisión de este documento |
 | ~~5~~ | ~~Inclusión de `NOTICIA_TERMINO` en Sprint 1~~ | **Cerrada el 2026-08-25: se adopta en Sprint 1** (secc. 4.6). | — |
 
