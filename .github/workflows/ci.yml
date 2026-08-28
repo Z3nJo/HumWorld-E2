@@ -13,30 +13,47 @@ on:
 jobs:
   docker-compose-check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: humworld_test
+          POSTGRES_USER: humworld
+          POSTGRES_PASSWORD: humworld
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U humworld -d humworld_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://humworld:humworld@localhost:5432/humworld_test
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Validate Docker Compose configuration
         run: docker compose -f opsx/docker-compose.yml config
 
-      - name: Backend quality check
+      - name: Install backend Python dependencies
         shell: bash
         run: |
-          if [ ! -f backend/package.json ]; then
-            echo "backend/package.json not found; skipping backend quality check."
+          if [ ! -f backend/requirements.txt ]; then
+            echo "backend/requirements.txt not found; backend Python tests cannot run yet."
             exit 0
           fi
 
-          if ! node -e "const p = require('./backend/package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
-            echo "backend lint script not found; skipping backend quality check."
-            exit 0
-          fi
-
-          cd backend
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm run lint
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+          python -m pip install pytest pytest-cov
 
       - name: Frontend quality check
         shell: bash
@@ -55,22 +72,37 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npm run lint
 
-      - name: Backend tests
+      - name: Apply backend migrations
         shell: bash
         run: |
-          if [ ! -f backend/package.json ]; then
-            echo "backend/package.json not found; skipping backend tests."
-            exit 0
-          fi
-
-          if ! node -e "const p = require('./backend/package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
-            echo "backend test script not found; skipping backend tests."
+          if [ ! -f backend/requirements.txt ]; then
+            echo "backend/requirements.txt not found; no backend migrations to apply yet."
             exit 0
           fi
 
           cd backend
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test
+          if [ -f alembic.ini ]; then
+            alembic upgrade head
+          else
+            echo "No backend migration mechanism found; skipping migration step."
+          fi
+
+      - name: Backend tests
+        shell: bash
+        run: |
+          if [ ! -f backend/requirements.txt ]; then
+            echo "backend/requirements.txt not found; backend Python tests cannot run yet."
+            exit 0
+          fi
+
+          test_file="$(find backend -maxdepth 3 \( -name 'test_*.py' -o -name '*_test.py' \) | head -n 1)"
+          if [ ! -d backend/tests ] && [ -z "$test_file" ]; then
+            echo "No backend pytest test surface found; skipping backend tests until tests exist."
+            exit 0
+          fi
+
+          cd backend
+          pytest --cov=. --cov-report=term-missing --cov-fail-under=80
 
       - name: Frontend tests
         shell: bash
