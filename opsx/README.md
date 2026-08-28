@@ -17,3 +17,5 @@ docker compose down
 ```
 
 Mas adelante esta carpeta podra incorporar configuraciones de entorno, contratos OpenSpec y archivos de despliegue.
+
+
