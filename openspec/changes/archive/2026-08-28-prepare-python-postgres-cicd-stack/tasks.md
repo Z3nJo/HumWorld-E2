@@ -27,7 +27,7 @@
 - [x] 4.4 Ejecutar cobertura con `pytest-cov`.
 - [x] 4.5 Hacer fallar el workflow cuando pytest falle o la cobertura backend sea inferior a 80%.
 
-## 5. Validacion Docker y Workflow
+## 5. Validacion Docker y Workflow Github
 
 - [x] 5.1 Mantener la validacion de configuracion Docker Compose antes del build.
 - [x] 5.2 Mantener el build de servicios Docker definidos por Compose.
