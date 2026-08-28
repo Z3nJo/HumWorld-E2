@@ -9,6 +9,8 @@ __pycache__/
 dist/
 build/
 coverage/
+.coverage
+.pytest_cache/
 
 # Environment files
 .env
