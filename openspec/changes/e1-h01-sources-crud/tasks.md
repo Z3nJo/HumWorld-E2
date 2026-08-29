@@ -31,5 +31,5 @@
 ## 6. Validacion de entrega
 
 - [x] 6.1 Levantar `docker compose -f opsx/docker-compose.yml up --build`, aplicar migraciones y validar manualmente los tres criterios de E1-H01; verificar persistencia despues de reiniciar backend y guardar evidencia para el PR.
-- [ ] 6.2 Ejecutar validacion OpenSpec estricta, pruebas, cobertura, revision de Swagger y build Docker; verificar que todo finaliza correctamente y registrar los resultados en el PR.
-- [ ] 6.3 Confirmar rama, commits, PR, revision cruzada, CI y los puntos N1 aplicables de la Definition of Done antes de marcar E1-H01 como terminada.
+- [x] 6.2 Ejecutar validacion OpenSpec estricta, pruebas, cobertura, revision de Swagger y build Docker; verificar que todo finaliza correctamente y registrar los resultados en el PR.
+- [x] 6.3 Confirmar rama, commits, PR, revision cruzada, CI y los puntos N1 aplicables de la Definition of Done antes de marcar E1-H01 como terminada.
