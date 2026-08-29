@@ -43,6 +43,9 @@ jobs:
       - name: Validate Docker Compose configuration
         run: docker compose -f opsx/docker-compose.yml config
 
+      - name: Validate generated OpenSpec contracts
+        run: python opsx/sync_contracts.py --check
+
       - name: Install backend Python dependencies
         shell: bash
         run: |

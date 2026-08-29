@@ -48,17 +48,18 @@ El stack está decidido en [`ADR-003`](docs/adr/ADR-003-stack-tecnologico.md), c
 | **API** | REST bajo `/api/v1`, JSON, OpenAPI generado en `/api/docs` |
 | **Modelo de datos** | [`MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) |
 
-> El entorno de Sprint 0 todavía corre con los contenedores esqueleto anteriores a `ADR-003` (imagen base `node:22-alpine`, puertos `3000` y `5173`). Su migración al stack decidido es trabajo de `INFRA-02` y `CICD-00`.
+`INFRA-02` y `CICD-00` ya proporcionan PostgreSQL 16, backend Python 3.12 y pruebas pytest contra PostgreSQL en el pipeline.
 
 ## 4. Estructura del repositorio
 
 ```text
 HumWorld-E2/
 ├── backend/              Capa de lógica de negocio y API REST
-│   ├── api/              Adaptador REST: rutas /api/v1, validación, códigos de respuesta
-│   ├── services/         Captura, análisis de sentimiento, agregación, purgado
-│   ├── repositories/     Acceso al gestor de datos
-│   ├── models/           Entidades y esquema
+│   ├── app/api/          Adaptador REST: rutas /api/v1, validación, códigos de respuesta
+│   ├── app/services/     Casos de uso y reglas de negocio
+│   ├── app/repositories/ Acceso a PostgreSQL mediante SQLAlchemy
+│   ├── app/models/       Entidades y dominios
+│   ├── alembic/          Migraciones versionadas
 │   └── tests/            Pruebas unitarias y de integración
 ├── frontend/             Capa de presentación: dashboards y panel de administración
 ├── docs/
@@ -77,27 +78,27 @@ Los subdirectorios de `backend/` se crean conforme avanzan las historias; su cor
 
 **Requisitos:** Docker y Docker Compose.
 
-Levantar el entorno desde la carpeta `opsx`:
+Levantar el entorno desde la raiz del repositorio:
 
 ```bash
-docker compose up --build
+docker compose -f opsx/docker-compose.yml up --build
 ```
 
 Detenerlo:
 
 ```bash
-docker compose down
+docker compose -f opsx/docker-compose.yml down
 ```
 
-> En Sprint 0 los contenedores son esqueletos: el objetivo es verificar que Docker Compose levanta backend y frontend sin errores, no que expongan funcionalidad.
+El backend aplica las migraciones al iniciar. Swagger queda disponible en `http://localhost:3000/api/docs`.
 
-## 6. API prevista
+## 6. API
 
 Base: `/api/v1` · Formato: JSON · Documentación interactiva: `/api/docs`
 
 | Recurso | Métodos | Propósito |
 |---|---|---|
-| `/sources` | GET, POST, PUT, PATCH, DELETE | Gestión de canales y fuentes RSS |
+| `/sources` | GET, POST, PUT, PATCH, DELETE | Implementado en E1-H01: gestión de canales y fuentes RSS |
 | `/news` | GET, DELETE | Consulta de noticias, noticias influyentes y purgado |
 | `/dictionary` | GET, POST, PUT, PATCH, DELETE | Diccionario de términos evaluables |
 | `/config` | GET, PUT | Parámetros generales (periodicidad de captura, caducidad de noticias) |
@@ -116,7 +117,8 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación y seguimiento por sprint |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
-| `opsx/` | Contratos y especificaciones generadas por OpenSpec |
+| `openspec/` | Fuente editable de propuestas, especificaciones y tareas OpenSpec |
+| `opsx/contracts/` | Copia entregable generada mediante `python opsx/sync_contracts.py` |
 
 ## 8. Equipo
 
@@ -129,6 +131,4 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
 ## 9. Estado del proyecto
 
-**Sprint 0 — Entorno técnico, de gestión y de calidad.** Repositorio base y estructura `/docs` y `/opsx`, `ADR-000` (arquitectura), `ADR-003` (stack), Docker Compose base, CI inicial, Definition of Done acordada y modelo de datos inicial (`MOD-01`).
-
-El desarrollo funcional comienza en el Sprint 1 con la épica de captura RSS.
+**Sprint 1 — Captura RSS.** `INFRA-02` y `CICD-00` están integradas. E1-H01 incorpora el primer vertical funcional del backend con persistencia y CRUD de fuentes RSS.
