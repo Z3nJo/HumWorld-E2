@@ -20,7 +20,7 @@
 
 - [x] 4.1 Completar pruebas unitarias parametrizadas para dominios, alta simple/multiple, canal existente, rollback, duplicados, consultas, actualizaciones y eliminacion; verificar que pytest pasa sin requerir PostgreSQL para estas pruebas.
 - [x] 4.2 Completar pruebas API-PostgreSQL de todo el CRUD, filtros y persistencia despues de reiniciar la API; verificar que las migraciones se aplican en una base aislada y que la suite no usa SQLite.
-- [ ] 4.3 Configurar y ejecutar cobertura minima de 80 % sobre el codigo nuevo y la suite en CI; verificar que pytest-cov y GitHub Actions fallan cuando el umbral o cualquier prueba no se cumplen.
+- [x] 4.3 Configurar y ejecutar cobertura minima de 80 % sobre el codigo nuevo y la suite en CI; verificar que pytest-cov y GitHub Actions fallan cuando el umbral o cualquier prueba no se cumplen.
 
 ## 5. Contratos y documentacion
 
