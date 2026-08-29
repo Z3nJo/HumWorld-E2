@@ -9,8 +9,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (
     PROJECT_ROOT
     / "openspec"
-    / "changes"
-    / "e1-h01-sources-crud"
     / "specs"
     / "rss-source-management"
     / "spec.md"
