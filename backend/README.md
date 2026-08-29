@@ -32,6 +32,23 @@ alembic downgrade base
 
 La migracion inicial crea exclusivamente `canal` y `fuente_rss` conforme a MOD-01.
 
+## Carga inicial de fuentes RSS
+
+Despues de aplicar las migraciones, ejecute el seed versionado desde `backend/`:
+
+```bash
+alembic upgrade head
+python -m app.seeds.sources
+```
+
+El comando registra seis canales y seis fuentes RSS activas, una para cada
+continente admitido: `Africa`, `America`, `Antartida`, `Asia`, `Europa` y
+`Oceania`. No descarga ni valida remotamente los feeds.
+
+El seed es idempotente: puede ejecutarse nuevamente sin duplicar registros. Si
+encuentra un canal o una URL con datos incompatibles, revierte la ejecucion
+completa y muestra el conflicto en lugar de sobrescribir los datos existentes.
+
 ## API de fuentes RSS
 
 Base: `/api/v1` · Swagger: `/api/docs` · OpenAPI JSON: `/api/openapi.json`.

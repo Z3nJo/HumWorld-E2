@@ -2,7 +2,7 @@
 
 Permitir que HumWorld registre canales y administre sus fuentes RSS categorizadas, proporcionando los origenes persistentes que consumiran la carga inicial, la captura automatica, la captura manual y el panel de administracion.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Alta atomica de canal y fuentes RSS
 El sistema SHALL exponer `POST /api/v1/sources` para crear un canal con nombre y continente y asociarle una o mas fuentes RSS en una unica operacion. La solicitud MUST incluir exactamente una referencia de canal: los datos de un canal nuevo o el identificador de un canal existente. La operacion MUST ser atomica y responder `201` con el canal y las fuentes creadas.
