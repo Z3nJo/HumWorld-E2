@@ -12,13 +12,7 @@ CONTRACTS = {
         PROJECT_ROOT / "opsx" / "contracts" / "rss-source-management" / "spec.md",
     ),
     "runtime-configuration": (
-        PROJECT_ROOT
-        / "openspec"
-        / "changes"
-        / "e1-h04-config-cron-periodicity"
-        / "specs"
-        / "runtime-configuration"
-        / "spec.md",
+        PROJECT_ROOT / "openspec" / "specs" / "runtime-configuration" / "spec.md",
         PROJECT_ROOT / "opsx" / "contracts" / "runtime-configuration" / "spec.md",
     ),
 }
