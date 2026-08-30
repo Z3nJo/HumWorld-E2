@@ -45,7 +45,8 @@ docker compose -f opsx/docker-compose.yml build
 Ambos comandos finalizaron con codigo 0 y se construyeron las imagenes de
 backend y frontend.
 
-## Pendiente en GitHub
+## Confirmacion en GitHub
 
-- Confirmar el job de CI del PR.
-- Obtener revision cruzada antes de cerrar E1-H02.
+- PR #7 fusionado el 2026-08-29.
+- Revision cruzada aprobada.
+- Job de CI `docker-compose-check` finalizado correctamente.
