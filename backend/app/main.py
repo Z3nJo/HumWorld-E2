@@ -7,7 +7,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api import sources_router
+from app.api import configuration_router, sources_router
+from app.services.configuration import ConfigurationValidationError
 from app.services.sources import ResourceNotFoundError, SourceValidationError
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.include_router(configuration_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 
 
@@ -62,6 +64,17 @@ async def request_validation_error_handler(
 async def source_validation_error_handler(
     request: Request,
     error: SourceValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(error)},
+    )
+
+
+@app.exception_handler(ConfigurationValidationError)
+async def configuration_validation_error_handler(
+    request: Request,
+    error: ConfigurationValidationError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,

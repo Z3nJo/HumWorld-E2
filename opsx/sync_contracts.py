@@ -6,25 +6,37 @@ import argparse
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (
-    PROJECT_ROOT
-    / "openspec"
-    / "specs"
-    / "rss-source-management"
-    / "spec.md"
-)
-DESTINATION = PROJECT_ROOT / "opsx" / "contracts" / "rss-source-management" / "spec.md"
+CONTRACTS = {
+    "rss-source-management": (
+        PROJECT_ROOT / "openspec" / "specs" / "rss-source-management" / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "rss-source-management" / "spec.md",
+    ),
+    "runtime-configuration": (
+        PROJECT_ROOT
+        / "openspec"
+        / "changes"
+        / "e1-h04-config-cron-periodicity"
+        / "specs"
+        / "runtime-configuration"
+        / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "runtime-configuration" / "spec.md",
+    ),
+}
 
 
 def is_synchronized() -> bool:
-    return DESTINATION.exists() and DESTINATION.read_bytes() == SOURCE.read_bytes()
+    return all(
+        destination.exists() and destination.read_bytes() == source.read_bytes()
+        for source, destination in CONTRACTS.values()
+    )
 
 
 def synchronize() -> None:
-    DESTINATION.parent.mkdir(parents=True, exist_ok=True)
-    source_content = SOURCE.read_bytes()
-    if not DESTINATION.exists() or DESTINATION.read_bytes() != source_content:
-        DESTINATION.write_bytes(source_content)
+    for source, destination in CONTRACTS.values():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source_content = source.read_bytes()
+        if not destination.exists() or destination.read_bytes() != source_content:
+            destination.write_bytes(source_content)
 
 
 def main() -> int:
@@ -42,7 +54,7 @@ def main() -> int:
         print("OpenSpec contracts are out of date")
         return 1
     synchronize()
-    print(f"Synchronized {DESTINATION.relative_to(PROJECT_ROOT)}")
+    print("Synchronized OpenSpec contracts")
     return 0
 
 

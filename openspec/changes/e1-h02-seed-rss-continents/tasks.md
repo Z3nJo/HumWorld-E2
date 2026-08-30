@@ -13,5 +13,5 @@
 ## 3. Documentacion y entrega
 
 - [x] 3.1 Documentar en `backend/README.md` la secuencia `alembic upgrade head` y `python -m app.seeds.sources`, los seis continentes resultantes y el comportamiento idempotente; verificar los comandos desde una base limpia.
-- [ ] 3.2 Ejecutar la suite completa con el umbral de cobertura de CI, la validacion OpenSpec estricta y el build de Docker Compose; verificar que todo finaliza correctamente y registrar la evidencia en el PR de E1-H02.
-- [ ] 3.3 Confirmar que el diff no agrega endpoints, campos, migraciones de esquema ni dependencias de red, y que el PR tiene CI exitoso y revision cruzada antes de marcar E1-H02 como terminada.
+- [x] 3.2 Ejecutar la suite completa con el umbral de cobertura de CI, la validacion OpenSpec estricta y el build de Docker Compose; verificar que todo finaliza correctamente y registrar la evidencia en el PR de E1-H02.
+- [x] 3.3 Confirmar que el diff no agrega endpoints, campos, migraciones de esquema ni dependencias de red, y que el PR tiene CI exitoso y revision cruzada antes de marcar E1-H02 como terminada.
