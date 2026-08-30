@@ -19,4 +19,4 @@
 
 - [x] 4.1 Agregar pruebas de integracion API contra PostgreSQL migrado para `GET` sobre base limpia, `PUT` valido, segundo `GET` persistido y `PUT` invalido.
 - [x] 4.2 Actualizar documentacion del backend con el valor por defecto, ejemplos de `GET`/`PUT /config` y comandos de verificacion.
-- [ ] 4.3 Ejecutar la suite completa, validacion OpenSpec estricta y build/configuracion Docker Compose; registrar evidencia en el PR de E1-H04 antes de marcar la historia como terminada.
+- [x] 4.3 Ejecutar la suite completa, validacion OpenSpec estricta y build/configuracion Docker Compose; registrar evidencia en el PR de E1-H04 antes de marcar la historia como terminada.
