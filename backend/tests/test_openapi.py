@@ -31,9 +31,12 @@ def test_openapi_documents_required_source_operations_and_errors() -> None:
 def test_openapi_documents_config_operations_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/config"]
+    schemas = schema["components"]["schemas"]
     assert {"get", "put"} <= collection.keys()
     assert collection["get"]["responses"].keys() >= {"200", "400", "500"}
     assert collection["put"]["responses"].keys() >= {"200", "400", "500"}
+    assert "noticias_caducidad_dias" in schemas["ConfigResponse"]["properties"]
+    assert "noticias_caducidad_dias" in schemas["ConfigReplace"]["properties"]
     for operation in collection.values():
         assert "422" not in operation["responses"]
 

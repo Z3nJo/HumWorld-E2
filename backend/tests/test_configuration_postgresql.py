@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from app.config import normalize_database_url
 from app.database import get_db
 from app.main import app
-from app.services.configuration import CAPTURE_PERIODICITY_KEY
+from app.services.configuration import CAPTURE_PERIODICITY_KEY, NEWS_RETENTION_KEY
 
 pytestmark = pytest.mark.integration
 
@@ -57,50 +57,62 @@ def client(engine):
 def test_get_config_returns_default_on_clean_database(client) -> None:
     response = client.get("/api/v1/config")
     assert response.status_code == 200
-    assert response.json() == {"captura_periodicidad_minutos": 60}
+    assert response.json() == {
+        "captura_periodicidad_minutos": 60,
+        "noticias_caducidad_dias": 30,
+    }
 
 
 def test_put_config_persists_and_next_get_returns_value(client, engine) -> None:
     updated = client.put(
         "/api/v1/config",
-        json={"captura_periodicidad_minutos": 30},
+        json={"captura_periodicidad_minutos": 30, "noticias_caducidad_dias": 45},
     )
     assert updated.status_code == 200
-    assert updated.json() == {"captura_periodicidad_minutos": 30}
+    assert updated.json() == {
+        "captura_periodicidad_minutos": 30,
+        "noticias_caducidad_dias": 45,
+    }
 
     persisted = client.get("/api/v1/config")
     assert persisted.status_code == 200
-    assert persisted.json() == {"captura_periodicidad_minutos": 30}
+    assert persisted.json() == {
+        "captura_periodicidad_minutos": 30,
+        "noticias_caducidad_dias": 45,
+    }
 
     with engine.connect() as connection:
-        row = connection.execute(
+        rows = connection.execute(
             text(
                 "SELECT clave, valor, tipo, descripcion, fecha_modificacion "
-                "FROM configuracion WHERE clave = :key"
-            ),
-            {"key": CAPTURE_PERIODICITY_KEY},
-        ).one()
-    assert row.clave == CAPTURE_PERIODICITY_KEY
-    assert row.valor == "30"
-    assert row.tipo == "entero"
-    assert row.descripcion
-    assert row.fecha_modificacion is not None
+                "FROM configuracion ORDER BY clave"
+            )
+        ).all()
+    by_key = {row.clave: row for row in rows}
+    assert by_key[CAPTURE_PERIODICITY_KEY].valor == "30"
+    assert by_key[NEWS_RETENTION_KEY].valor == "45"
+    assert all(row.tipo == "entero" for row in rows)
+    assert all(row.descripcion for row in rows)
+    assert all(row.fecha_modificacion is not None for row in rows)
 
 
 def test_put_config_replaces_existing_value_without_duplicate(client, engine) -> None:
     assert client.put(
         "/api/v1/config",
-        json={"captura_periodicidad_minutos": 20},
+        json={"captura_periodicidad_minutos": 20, "noticias_caducidad_dias": 10},
     ).status_code == 200
     assert client.put(
         "/api/v1/config",
-        json={"captura_periodicidad_minutos": 25},
+        json={"captura_periodicidad_minutos": 25, "noticias_caducidad_dias": 15},
     ).status_code == 200
 
     with engine.connect() as connection:
         count = connection.scalar(text("SELECT count(*) FROM configuracion"))
-    assert count == 1
-    assert client.get("/api/v1/config").json() == {"captura_periodicidad_minutos": 25}
+    assert count == 2
+    assert client.get("/api/v1/config").json() == {
+        "captura_periodicidad_minutos": 25,
+        "noticias_caducidad_dias": 15,
+    }
 
 
 @pytest.mark.parametrize(
@@ -108,20 +120,27 @@ def test_put_config_replaces_existing_value_without_duplicate(client, engine) ->
     [
         {"captura_periodicidad_minutos": 0},
         {"captura_periodicidad_minutos": -1},
+        {"captura_periodicidad_minutos": 12},
+        {"captura_periodicidad_minutos": 12, "noticias_caducidad_dias": 0},
+        {"captura_periodicidad_minutos": 12, "noticias_caducidad_dias": -1},
         {},
         {"captura_periodicidad_minutos": "treinta"},
         {"captura_periodicidad_minutos": "30"},
+        {"captura_periodicidad_minutos": 12, "noticias_caducidad_dias": "30"},
     ],
 )
-def test_put_config_rejects_invalid_payload_without_changing_previous_value(
+def test_put_config_rejects_invalid_payload_without_changing_previous_values(
     client,
     payload: dict[str, object],
 ) -> None:
     assert client.put(
         "/api/v1/config",
-        json={"captura_periodicidad_minutos": 12},
+        json={"captura_periodicidad_minutos": 12, "noticias_caducidad_dias": 20},
     ).status_code == 200
 
     response = client.put("/api/v1/config", json=payload)
     assert response.status_code == 400
-    assert client.get("/api/v1/config").json() == {"captura_periodicidad_minutos": 12}
+    assert client.get("/api/v1/config").json() == {
+        "captura_periodicidad_minutos": 12,
+        "noticias_caducidad_dias": 20,
+    }

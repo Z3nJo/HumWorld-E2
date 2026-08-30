@@ -33,6 +33,7 @@ def get_config(
     config = service.get_runtime_configuration()
     return ConfigResponse(
         captura_periodicidad_minutos=config.captura_periodicidad_minutos,
+        noticias_caducidad_dias=config.noticias_caducidad_dias,
     )
 
 
@@ -48,7 +49,9 @@ def replace_config(
 ) -> ConfigResponse:
     config = service.update_runtime_configuration(
         captura_periodicidad_minutos=payload.captura_periodicidad_minutos,
+        noticias_caducidad_dias=payload.noticias_caducidad_dias,
     )
     return ConfigResponse(
         captura_periodicidad_minutos=config.captura_periodicidad_minutos,
+        noticias_caducidad_dias=config.noticias_caducidad_dias,
     )

@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from app.models import Configuration
 
 
+ParameterData = dict[str, str]
+
+
 class ConfigurationRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -10,28 +13,28 @@ class ConfigurationRepository:
     def get_parameter(self, key: str) -> Configuration | None:
         return self._session.get(Configuration, key)
 
-    def save_parameter(
+    def save_parameters(
         self,
-        *,
-        key: str,
-        value: str,
-        type_: str,
-        description: str,
-    ) -> Configuration:
-        parameter = self.get_parameter(key)
-        if parameter is None:
-            parameter = Configuration(
-                clave=key,
-                valor=value,
-                tipo=type_,
-                descripcion=description,
-            )
-            self._session.add(parameter)
-        else:
-            parameter.valor = value
-            parameter.tipo = type_
-            parameter.descripcion = description
+        parameters: dict[str, ParameterData],
+    ) -> dict[str, Configuration]:
+        saved = {}
+        for key, data in parameters.items():
+            parameter = self.get_parameter(key)
+            if parameter is None:
+                parameter = Configuration(
+                    clave=key,
+                    valor=data["value"],
+                    tipo=data["type"],
+                    descripcion=data["description"],
+                )
+                self._session.add(parameter)
+            else:
+                parameter.valor = data["value"]
+                parameter.tipo = data["type"]
+                parameter.descripcion = data["description"]
+            saved[key] = parameter
 
         self._session.commit()
-        self._session.refresh(parameter)
-        return parameter
+        for parameter in saved.values():
+            self._session.refresh(parameter)
+        return saved
