@@ -30,7 +30,7 @@ alembic upgrade head
 alembic downgrade base
 ```
 
-La migracion inicial crea exclusivamente `canal` y `fuente_rss` conforme a MOD-01.
+Las migraciones crean las tablas del backend implementadas hasta el momento conforme a MOD-01, incluyendo `canal`, `fuente_rss` y `configuracion`.
 
 ## Carga inicial de fuentes RSS
 
@@ -82,6 +82,36 @@ Ejemplo de alta:
 ```
 
 Para un canal existente, sustituya `channel` por `"channel_id": 1`. `PUT` y `PATCH` no permiten modificar `id_canal`.
+
+## API de configuracion
+
+Base: `/api/v1` · Swagger: `/api/docs` · OpenAPI JSON: `/api/openapi.json`.
+
+| Metodo | Ruta | Proposito |
+|---|---|---|
+| `GET` | `/config` | Consultar la configuracion runtime |
+| `PUT` | `/config` | Actualizar la periodicidad del cron de captura |
+
+`GET /api/v1/config` devuelve `captura_periodicidad_minutos`. En una base migrada
+limpia, el valor por defecto es `60` minutos.
+
+```json
+{
+  "captura_periodicidad_minutos": 60
+}
+```
+
+`PUT /api/v1/config` persiste un entero positivo para la clave interna
+`captura.periodicidad_minutos`:
+
+```json
+{
+  "captura_periodicidad_minutos": 30
+}
+```
+
+Valores menores que `1`, campos ausentes o tipos incompatibles se rechazan con
+respuesta `400` y no reemplazan el valor persistido previamente.
 
 ## Pruebas
 

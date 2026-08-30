@@ -81,5 +81,13 @@ class SourceBatchResponse(BaseModel):
     sources: list[SourceResponse]
 
 
+class ConfigResponse(BaseModel):
+    captura_periodicidad_minutos: int = Field(examples=[60])
+
+
+class ConfigReplace(BaseModel):
+    captura_periodicidad_minutos: int = Field(gt=0, strict=True, examples=[30])
+
+
 class ErrorResponse(BaseModel):
     detail: str | list[dict[str, object]]

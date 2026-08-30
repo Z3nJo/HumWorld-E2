@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.api.configuration import get_configuration_service
 from app.api.sources import get_source_service
 from app.main import app
 
@@ -7,6 +8,11 @@ from app.main import app
 class UnusedService:
     def list_sources(self, **kwargs: object) -> list[object]:
         return []
+
+
+class UnusedConfigurationService:
+    def update_runtime_configuration(self, **kwargs: object) -> object:
+        raise AssertionError("Service should not be called for invalid payloads")
 
 
 def test_openapi_documents_required_source_operations_and_errors() -> None:
@@ -20,6 +26,16 @@ def test_openapi_documents_required_source_operations_and_errors() -> None:
     for path_item in (collection, item):
         for operation in path_item.values():
             assert "422" not in operation["responses"]
+
+
+def test_openapi_documents_config_operations_and_errors() -> None:
+    schema = app.openapi()
+    collection = schema["paths"]["/api/v1/config"]
+    assert {"get", "put"} <= collection.keys()
+    assert collection["get"]["responses"].keys() >= {"200", "400", "500"}
+    assert collection["put"]["responses"].keys() >= {"200", "400", "500"}
+    for operation in collection.values():
+        assert "422" not in operation["responses"]
 
 
 def test_update_schemas_do_not_expose_channel_id() -> None:
@@ -58,6 +74,19 @@ def test_aggregate_model_validation_is_serialized_as_400() -> None:
             )
         assert response.status_code == 400
         assert "exactamente" in str(response.json()["detail"])
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_config_validation_errors_are_400_not_default_422() -> None:
+    app.dependency_overrides[get_configuration_service] = (
+        lambda: UnusedConfigurationService()
+    )
+    try:
+        with TestClient(app) as client:
+            response = client.put("/api/v1/config", json={})
+        assert response.status_code == 400
+        assert "detail" in response.json()
     finally:
         app.dependency_overrides.clear()
 
