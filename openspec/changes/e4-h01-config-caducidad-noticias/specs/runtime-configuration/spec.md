@@ -1,8 +1,8 @@
 ## Purpose
 
-Permitir que HumWorld gestione parametros globales de ejecucion mediante `/config`, comenzando por la periodicidad configurable del cron de captura y la caducidad de noticias.
+Extender la configuracion runtime de HumWorld para gestionar la caducidad de noticias mediante el endpoint `/config` existente.
 
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Consulta de configuracion runtime
 El sistema SHALL exponer `GET /api/v1/config` para recuperar la configuracion runtime minima requerida por el backend, incluyendo la periodicidad de captura y la caducidad de noticias.
@@ -33,41 +33,6 @@ El sistema SHALL exponer `PUT /api/v1/config` para actualizar y persistir la con
 - **AND** se solicita `PUT /api/v1/config` con otros enteros positivos
 - **THEN** los registros persistidos se actualizan sin crear claves duplicadas
 
-### Requirement: Actualizacion de caducidad de noticias
-El sistema SHALL permitir actualizar y persistir el parametro `noticias.caducidad_dias` mediante `PUT /api/v1/config`.
-
-#### Scenario: Actualizar caducidad con valor valido
-- **WHEN** se solicita `PUT /api/v1/config` con `noticias_caducidad_dias` igual a un entero positivo y el resto de la configuracion runtime valida
-- **THEN** la respuesta es `200`
-- **AND** devuelve la caducidad actualizada
-- **AND** una consulta posterior a `GET /api/v1/config` recupera el mismo valor
-
-### Requirement: Validacion del valor de periodicidad
-El sistema MUST rechazar valores de periodicidad que no sean enteros positivos.
-
-#### Scenario: Rechazar periodicidad menor al minimo
-- **WHEN** se solicita `PUT /api/v1/config` con `captura_periodicidad_minutos` menor que `1`
-- **THEN** la respuesta es `400`
-- **AND** el valor persistido previamente no cambia
-
-#### Scenario: Rechazar cuerpo invalido
-- **WHEN** se solicita `PUT /api/v1/config` sin `captura_periodicidad_minutos` o con un tipo incompatible
-- **THEN** la respuesta es `400`
-- **AND** no se persiste una configuracion invalida
-
-### Requirement: Validacion del valor de caducidad
-El sistema MUST rechazar valores de caducidad que no sean enteros positivos.
-
-#### Scenario: Rechazar caducidad menor al minimo
-- **WHEN** se solicita `PUT /api/v1/config` con `noticias_caducidad_dias` menor que `1`
-- **THEN** la respuesta es `400`
-- **AND** los valores persistidos previamente no cambian
-
-#### Scenario: Rechazar cuerpo invalido para caducidad
-- **WHEN** se solicita `PUT /api/v1/config` sin `noticias_caducidad_dias` o con un tipo incompatible
-- **THEN** la respuesta es `400`
-- **AND** no se persiste una configuracion invalida
-
 ### Requirement: Persistencia clave-valor de configuracion
 El sistema SHALL persistir los parametros runtime en una tabla de configuracion de tipo clave-valor compatible con MOD-01.
 
@@ -84,3 +49,27 @@ El sistema SHALL persistir los parametros runtime en una tabla de configuracion 
 - **AND** conserva tipo `entero`
 - **AND** conserva una descripcion legible
 - **AND** registra la fecha de modificacion
+
+## ADDED Requirements
+
+### Requirement: Actualizacion de caducidad de noticias
+El sistema SHALL permitir actualizar y persistir el parametro `noticias.caducidad_dias` mediante `PUT /api/v1/config`.
+
+#### Scenario: Actualizar caducidad con valor valido
+- **WHEN** se solicita `PUT /api/v1/config` con `noticias_caducidad_dias` igual a un entero positivo y el resto de la configuracion runtime valida
+- **THEN** la respuesta es `200`
+- **AND** devuelve la caducidad actualizada
+- **AND** una consulta posterior a `GET /api/v1/config` recupera el mismo valor
+
+### Requirement: Validacion del valor de caducidad
+El sistema MUST rechazar valores de caducidad que no sean enteros positivos.
+
+#### Scenario: Rechazar caducidad menor al minimo
+- **WHEN** se solicita `PUT /api/v1/config` con `noticias_caducidad_dias` menor que `1`
+- **THEN** la respuesta es `400`
+- **AND** los valores persistidos previamente no cambian
+
+#### Scenario: Rechazar cuerpo invalido para caducidad
+- **WHEN** se solicita `PUT /api/v1/config` sin `noticias_caducidad_dias` o con un tipo incompatible
+- **THEN** la respuesta es `400`
+- **AND** no se persiste una configuracion invalida

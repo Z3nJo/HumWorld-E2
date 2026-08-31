@@ -83,10 +83,12 @@ class SourceBatchResponse(BaseModel):
 
 class ConfigResponse(BaseModel):
     captura_periodicidad_minutos: int = Field(examples=[60])
+    noticias_caducidad_dias: int = Field(examples=[30])
 
 
 class ConfigReplace(BaseModel):
     captura_periodicidad_minutos: int = Field(gt=0, strict=True, examples=[30])
+    noticias_caducidad_dias: int = Field(gt=0, strict=True, examples=[30])
 
 
 class ErrorResponse(BaseModel):

@@ -6,6 +6,8 @@ from app.services.configuration import (
     CAPTURE_PERIODICITY_TYPE,
     ConfigurationService,
     ConfigurationValidationError,
+    NEWS_RETENTION_KEY,
+    NEWS_RETENTION_TYPE,
 )
 
 
@@ -16,28 +18,27 @@ class FakeConfigurationRepository:
     def get_parameter(self, key: str) -> Configuration | None:
         return self.parameters.get(key)
 
-    def save_parameter(
+    def save_parameters(
         self,
-        *,
-        key: str,
-        value: str,
-        type_: str,
-        description: str,
-    ) -> Configuration:
-        parameter = self.parameters.get(key)
-        if parameter is None:
-            parameter = Configuration(
-                clave=key,
-                valor=value,
-                tipo=type_,
-                descripcion=description,
-            )
-            self.parameters[key] = parameter
-        else:
-            parameter.valor = value
-            parameter.tipo = type_
-            parameter.descripcion = description
-        return parameter
+        parameters: dict[str, dict[str, str]],
+    ) -> dict[str, Configuration]:
+        saved = {}
+        for key, data in parameters.items():
+            parameter = self.parameters.get(key)
+            if parameter is None:
+                parameter = Configuration(
+                    clave=key,
+                    valor=data["value"],
+                    tipo=data["type"],
+                    descripcion=data["description"],
+                )
+                self.parameters[key] = parameter
+            else:
+                parameter.valor = data["value"]
+                parameter.tipo = data["type"]
+                parameter.descripcion = data["description"]
+            saved[key] = parameter
+        return saved
 
 
 @pytest.fixture
@@ -50,14 +51,15 @@ def service(repository: FakeConfigurationRepository) -> ConfigurationService:
     return ConfigurationService(repository)
 
 
-def test_returns_default_capture_periodicity_when_missing(
+def test_returns_default_runtime_configuration_when_missing(
     service: ConfigurationService,
 ) -> None:
     config = service.get_runtime_configuration()
     assert config.captura_periodicidad_minutos == 60
+    assert config.noticias_caducidad_dias == 30
 
 
-def test_returns_persisted_capture_periodicity(
+def test_returns_persisted_runtime_configuration(
     service: ConfigurationService,
     repository: FakeConfigurationRepository,
 ) -> None:
@@ -67,36 +69,68 @@ def test_returns_persisted_capture_periodicity(
         tipo=CAPTURE_PERIODICITY_TYPE,
         descripcion="Periodicidad",
     )
+    repository.parameters[NEWS_RETENTION_KEY] = Configuration(
+        clave=NEWS_RETENTION_KEY,
+        valor="45",
+        tipo=NEWS_RETENTION_TYPE,
+        descripcion="Caducidad",
+    )
     config = service.get_runtime_configuration()
     assert config.captura_periodicidad_minutos == 15
+    assert config.noticias_caducidad_dias == 45
 
 
-def test_updates_and_replaces_capture_periodicity(
+def test_updates_and_replaces_runtime_configuration(
     service: ConfigurationService,
     repository: FakeConfigurationRepository,
 ) -> None:
-    created = service.update_runtime_configuration(captura_periodicidad_minutos=30)
-    replaced = service.update_runtime_configuration(captura_periodicidad_minutos=45)
+    created = service.update_runtime_configuration(
+        captura_periodicidad_minutos=30,
+        noticias_caducidad_dias=15,
+    )
+    replaced = service.update_runtime_configuration(
+        captura_periodicidad_minutos=45,
+        noticias_caducidad_dias=90,
+    )
 
     assert created.captura_periodicidad_minutos == 30
+    assert created.noticias_caducidad_dias == 15
     assert replaced.captura_periodicidad_minutos == 45
-    assert len(repository.parameters) == 1
-    parameter = repository.parameters[CAPTURE_PERIODICITY_KEY]
-    assert parameter.valor == "45"
-    assert parameter.tipo == CAPTURE_PERIODICITY_TYPE
-    assert parameter.descripcion
+    assert replaced.noticias_caducidad_dias == 90
+    assert len(repository.parameters) == 2
+    periodicity = repository.parameters[CAPTURE_PERIODICITY_KEY]
+    retention = repository.parameters[NEWS_RETENTION_KEY]
+    assert periodicity.valor == "45"
+    assert periodicity.tipo == CAPTURE_PERIODICITY_TYPE
+    assert periodicity.descripcion
+    assert retention.valor == "90"
+    assert retention.tipo == NEWS_RETENTION_TYPE
+    assert retention.descripcion
 
 
 def test_rejects_invalid_updates_without_changing_previous_state(
     service: ConfigurationService,
     repository: FakeConfigurationRepository,
 ) -> None:
-    service.update_runtime_configuration(captura_periodicidad_minutos=20)
+    service.update_runtime_configuration(
+        captura_periodicidad_minutos=20,
+        noticias_caducidad_dias=30,
+    )
 
     with pytest.raises(ConfigurationValidationError, match="mayor o igual"):
-        service.update_runtime_configuration(captura_periodicidad_minutos=0)
+        service.update_runtime_configuration(
+            captura_periodicidad_minutos=0,
+            noticias_caducidad_dias=60,
+        )
+
+    with pytest.raises(ConfigurationValidationError, match="caducidad"):
+        service.update_runtime_configuration(
+            captura_periodicidad_minutos=60,
+            noticias_caducidad_dias=0,
+        )
 
     assert repository.parameters[CAPTURE_PERIODICITY_KEY].valor == "20"
+    assert repository.parameters[NEWS_RETENTION_KEY].valor == "30"
 
 
 def test_rejects_corrupted_persisted_capture_periodicity(
@@ -108,6 +142,21 @@ def test_rejects_corrupted_persisted_capture_periodicity(
         valor="no-entero",
         tipo=CAPTURE_PERIODICITY_TYPE,
         descripcion="Periodicidad",
+    )
+
+    with pytest.raises(ConfigurationValidationError, match="entero"):
+        service.get_runtime_configuration()
+
+
+def test_rejects_corrupted_persisted_news_retention(
+    service: ConfigurationService,
+    repository: FakeConfigurationRepository,
+) -> None:
+    repository.parameters[NEWS_RETENTION_KEY] = Configuration(
+        clave=NEWS_RETENTION_KEY,
+        valor="no-entero",
+        tipo=NEWS_RETENTION_TYPE,
+        descripcion="Caducidad",
     )
 
     with pytest.raises(ConfigurationValidationError, match="entero"):

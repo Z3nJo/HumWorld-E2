@@ -90,28 +90,31 @@ Base: `/api/v1` · Swagger: `/api/docs` · OpenAPI JSON: `/api/openapi.json`.
 | Metodo | Ruta | Proposito |
 |---|---|---|
 | `GET` | `/config` | Consultar la configuracion runtime |
-| `PUT` | `/config` | Actualizar la periodicidad del cron de captura |
+| `PUT` | `/config` | Actualizar la configuracion runtime |
 
-`GET /api/v1/config` devuelve `captura_periodicidad_minutos`. En una base migrada
-limpia, el valor por defecto es `60` minutos.
+`GET /api/v1/config` devuelve `captura_periodicidad_minutos` y
+`noticias_caducidad_dias`. En una base migrada limpia, los valores por defecto
+son `60` minutos para la captura y `30` dias para la caducidad de noticias.
 
 ```json
 {
-  "captura_periodicidad_minutos": 60
+  "captura_periodicidad_minutos": 60,
+  "noticias_caducidad_dias": 30
 }
 ```
 
-`PUT /api/v1/config` persiste un entero positivo para la clave interna
-`captura.periodicidad_minutos`:
+`PUT /api/v1/config` persiste enteros positivos para las claves internas
+`captura.periodicidad_minutos` y `noticias.caducidad_dias`:
 
 ```json
 {
-  "captura_periodicidad_minutos": 30
+  "captura_periodicidad_minutos": 30,
+  "noticias_caducidad_dias": 45
 }
 ```
 
 Valores menores que `1`, campos ausentes o tipos incompatibles se rechazan con
-respuesta `400` y no reemplazan el valor persistido previamente.
+respuesta `400` y no reemplazan los valores persistidos previamente.
 
 ## Pruebas
 
