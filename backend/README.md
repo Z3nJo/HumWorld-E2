@@ -30,7 +30,7 @@ alembic upgrade head
 alembic downgrade base
 ```
 
-Las migraciones crean las tablas del backend implementadas hasta el momento conforme a MOD-01, incluyendo `canal`, `fuente_rss` y `configuracion`.
+Las migraciones crean las tablas del backend implementadas hasta el momento conforme a MOD-01, incluyendo `canal`, `fuente_rss`, `configuracion` y `noticia`.
 
 ## Carga inicial de fuentes RSS
 
@@ -115,6 +115,62 @@ son `60` minutos para la captura y `30` dias para la caducidad de noticias.
 
 Valores menores que `1`, campos ausentes o tipos incompatibles se rechazan con
 respuesta `400` y no reemplazan los valores persistidos previamente.
+
+Cuando el scheduler esta activo, cambiar `captura_periodicidad_minutos`
+reprograma el job sin reiniciar el backend y sin lanzar una captura inmediata.
+
+## Captura automatica de noticias
+
+El backend inicia un unico job APScheduler que, al cumplirse la periodicidad
+configurada, consulta todas las fuentes activas, descarga sus feeds y persiste
+las noticias nuevas. La primera ejecucion ocurre despues del intervalo; el
+arranque de la API no depende de los proveedores RSS.
+
+La captura usa el `guid` publicado por el item y, si no existe, su `link`.
+PostgreSQL garantiza la unicidad de `(id_fuente, guid_origen)`, por lo que
+repetir un ciclo no duplica noticias. Una fuente fallida queda registrada en
+los logs y no detiene las restantes. `fecha_ultima_captura` solo cambia cuando
+el feed fue descargado y procesado correctamente.
+
+El scheduler esta habilitado por defecto. Puede desactivarse, por ejemplo para
+una ejecucion de pruebas que no evalua el cron:
+
+```bash
+CAPTURE_SCHEDULER_ENABLED=false
+```
+
+El scheduler vive dentro del proceso del backend. El despliegue actual debe
+mantener una sola instancia de Uvicorn; multiples workers o replicas
+necesitarian coordinacion externa para evitar cron duplicados.
+
+### Comprobacion manual en Docker
+
+Desde la raiz del repositorio:
+
+```bash
+docker compose -f opsx/docker-compose.yml up --build -d
+docker compose -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
+```
+
+Configure temporalmente un minuto mediante `PUT /api/v1/config` y observe el
+backend durante dos ciclos:
+
+```bash
+curl -X PUT http://localhost:3000/api/v1/config \
+  -H "Content-Type: application/json" \
+  -d '{"captura_periodicidad_minutos":1,"noticias_caducidad_dias":30}'
+docker compose -f opsx/docker-compose.yml logs -f backend
+```
+
+Compruebe las noticias, fechas y duplicados desde PostgreSQL:
+
+```bash
+docker compose -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT count(*) AS noticias, count(DISTINCT (id_fuente, guid_origen)) AS unicas FROM noticia;"
+docker compose -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT id_fuente, activa, fecha_ultima_captura FROM fuente_rss ORDER BY id_fuente;"
+```
+
+Después de la prueba puede restablecer la periodicidad a `60` mediante el mismo
+`PUT`, conservando `noticias_caducidad_dias` con el valor que corresponda.
 
 ## Pruebas
 
