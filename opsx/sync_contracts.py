@@ -7,6 +7,10 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = {
+    "rss-news-capture": (
+        PROJECT_ROOT / "openspec" / "specs" / "rss-news-capture" / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "rss-news-capture" / "spec.md",
+    ),
     "rss-source-management": (
         PROJECT_ROOT / "openspec" / "specs" / "rss-source-management" / "spec.md",
         PROJECT_ROOT / "opsx" / "contracts" / "rss-source-management" / "spec.md",

@@ -13,6 +13,7 @@ def normalize_database_url(database_url: str) -> str:
 
 class Settings(BaseSettings):
     database_url: str = Field(min_length=1)
+    capture_scheduler_enabled: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

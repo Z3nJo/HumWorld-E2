@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, status
@@ -8,10 +9,28 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.api import configuration_router, sources_router
-from app.services.configuration import ConfigurationValidationError
+from app.config import get_settings
+from app.scheduler import CaptureScheduler, read_capture_periodicity
+from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
 from app.services.sources import ResourceNotFoundError, SourceValidationError
 
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    scheduler: CaptureScheduler | NullCaptureSchedule
+    if get_settings().capture_scheduler_enabled:
+        scheduler = CaptureScheduler()
+        scheduler.start(read_capture_periodicity())
+    else:
+        scheduler = NullCaptureSchedule()
+    application.state.capture_scheduler = scheduler
+    try:
+        yield
+    finally:
+        if isinstance(scheduler, CaptureScheduler):
+            scheduler.shutdown()
 
 app = FastAPI(
     title="HumWorld API",
@@ -19,6 +38,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.include_router(configuration_router, prefix="/api/v1")

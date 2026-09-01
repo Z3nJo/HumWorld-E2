@@ -41,6 +41,14 @@ class FakeConfigurationRepository:
         return saved
 
 
+class FakeCaptureSchedule:
+    def __init__(self) -> None:
+        self.periodicities: list[int] = []
+
+    def reschedule(self, periodicity_minutes: int) -> None:
+        self.periodicities.append(periodicity_minutes)
+
+
 @pytest.fixture
 def repository() -> FakeConfigurationRepository:
     return FakeConfigurationRepository()
@@ -106,6 +114,18 @@ def test_updates_and_replaces_runtime_configuration(
     assert retention.valor == "90"
     assert retention.tipo == NEWS_RETENTION_TYPE
     assert retention.descripcion
+
+
+def test_successful_update_reprograms_active_capture_schedule(
+    repository: FakeConfigurationRepository,
+) -> None:
+    schedule = FakeCaptureSchedule()
+    service = ConfigurationService(repository, schedule)
+    service.update_runtime_configuration(
+        captura_periodicidad_minutos=12,
+        noticias_caducidad_dias=30,
+    )
+    assert schedule.periodicities == [12]
 
 
 def test_rejects_invalid_updates_without_changing_previous_state(

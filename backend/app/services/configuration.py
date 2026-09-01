@@ -33,9 +33,23 @@ class ConfigurationRepositoryProtocol(Protocol):
     ) -> dict[str, Configuration]: ...
 
 
+class CaptureScheduleProtocol(Protocol):
+    def reschedule(self, periodicity_minutes: int) -> None: ...
+
+
+class NullCaptureSchedule:
+    def reschedule(self, periodicity_minutes: int) -> None:
+        return None
+
+
 class ConfigurationService:
-    def __init__(self, repository: ConfigurationRepositoryProtocol) -> None:
+    def __init__(
+        self,
+        repository: ConfigurationRepositoryProtocol,
+        schedule: CaptureScheduleProtocol | None = None,
+    ) -> None:
         self._repository = repository
+        self._schedule = schedule or NullCaptureSchedule()
 
     def get_runtime_configuration(self) -> RuntimeConfiguration:
         return RuntimeConfiguration(
@@ -65,6 +79,7 @@ class ConfigurationService:
                 },
             }
         )
+        self._schedule.reschedule(captura_periodicidad_minutos)
         return RuntimeConfiguration(
             captura_periodicidad_minutos=captura_periodicidad_minutos,
             noticias_caducidad_dias=noticias_caducidad_dias,

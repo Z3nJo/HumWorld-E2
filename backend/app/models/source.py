@@ -8,6 +8,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.channel import Channel
+    from app.models.news import News
 
 
 class RssSource(Base):
@@ -54,3 +55,8 @@ class RssSource(Base):
     )
 
     canal: Mapped["Channel"] = relationship(back_populates="fuentes")
+    noticias: Mapped[list["News"]] = relationship(
+        back_populates="fuente",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
