@@ -131,4 +131,4 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
 ## 9. Estado del proyecto
 
-**Sprint 1 — Captura RSS.** `INFRA-02` y `CICD-00` están integradas. E1-H01 incorpora el primer vertical funcional del backend con persistencia y CRUD de fuentes RSS.
+**Sprint 1 — Captura RSS.** `INFRA-02`, `CICD-00`, E1-H01, E1-H02, E1-H04 y E4-H01 están integradas. E1-H03 incorpora captura automática de noticias desde fuentes activas, periodicidad reconfigurable en caliente y control de duplicados en PostgreSQL.

@@ -1,12 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.api.schemas import ConfigReplace, ConfigResponse, ErrorResponse
 from app.database import get_db
 from app.repositories import ConfigurationRepository
-from app.services.configuration import ConfigurationService
+from app.services.configuration import ConfigurationService, NullCaptureSchedule
 
 router = APIRouter(prefix="/config", tags=["config"])
 ERROR_RESPONSES = {
@@ -16,9 +16,11 @@ ERROR_RESPONSES = {
 
 
 def get_configuration_service(
+    request: Request,
     session: Annotated[Session, Depends(get_db)],
 ) -> ConfigurationService:
-    return ConfigurationService(ConfigurationRepository(session))
+    schedule = getattr(request.app.state, "capture_scheduler", NullCaptureSchedule())
+    return ConfigurationService(ConfigurationRepository(session), schedule)
 
 
 @router.get(

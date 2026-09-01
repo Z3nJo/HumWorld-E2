@@ -13,6 +13,14 @@ from app.services.configuration import CAPTURE_PERIODICITY_KEY, NEWS_RETENTION_K
 pytestmark = pytest.mark.integration
 
 
+class FakeCaptureSchedule:
+    def __init__(self) -> None:
+        self.periodicities: list[int] = []
+
+    def reschedule(self, periodicity_minutes: int) -> None:
+        self.periodicities.append(periodicity_minutes)
+
+
 @pytest.fixture(scope="module")
 def database_url() -> str:
     value = os.getenv("DATABASE_URL")
@@ -113,6 +121,17 @@ def test_put_config_replaces_existing_value_without_duplicate(client, engine) ->
         "captura_periodicidad_minutos": 25,
         "noticias_caducidad_dias": 15,
     }
+
+
+def test_put_config_reprograms_active_scheduler_without_restart(client) -> None:
+    schedule = FakeCaptureSchedule()
+    app.state.capture_scheduler = schedule
+    response = client.put(
+        "/api/v1/config",
+        json={"captura_periodicidad_minutos": 7, "noticias_caducidad_dias": 30},
+    )
+    assert response.status_code == 200
+    assert schedule.periodicities == [7]
 
 
 @pytest.mark.parametrize(
