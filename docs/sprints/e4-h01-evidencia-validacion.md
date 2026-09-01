@@ -30,8 +30,15 @@ docker compose -f opsx/docker-compose.yml build
 Ambos comandos finalizaron con codigo 0 y se construyeron las imagenes de
 backend y frontend.
 
-## Pendiente en GitHub
+## Confirmacion en GitHub
 
-- Confirmar validacion OpenSpec estricta cuando el CLI `openspec` este disponible.
-- Confirmar el job de CI del PR.
-- Obtener revision cruzada antes de cerrar E4-H01.
+- PR #9 fusionado el 2026-08-31.
+- Revision cruzada aprobada.
+- Job de CI `docker-compose-check` finalizado correctamente.
+
+## Nota OpenSpec
+
+El CLI `openspec` no estuvo disponible en la terminal local de esta sesion. La
+estructura del change fue mantenida manualmente siguiendo el workflow
+`spec-driven`, y el contrato entregable quedo sincronizado mediante
+`opsx/sync_contracts.py --check`.
