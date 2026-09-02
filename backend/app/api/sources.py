@@ -4,6 +4,9 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
+    CaptureRequest,
+    CaptureResponse,
+    CaptureSourceResponse,
     ErrorResponse,
     SourceBatchCreate,
     SourceBatchResponse,
@@ -14,6 +17,8 @@ from app.api.schemas import (
 from app.database import get_db
 from app.models.domains import Continent
 from app.repositories import SourceRepository
+from app.repositories import NewsCaptureRepository
+from app.services.capture import HttpxFeedparserClient, NewsCaptureService
 from app.services.sources import (
     ChannelCreateData,
     SourceCreateData,
@@ -33,6 +38,35 @@ def get_source_service(
     session: Annotated[Session, Depends(get_db)],
 ) -> SourceService:
     return SourceService(SourceRepository(session))
+
+
+def get_capture_service(
+    session: Annotated[Session, Depends(get_db)],
+) -> NewsCaptureService:
+    return NewsCaptureService(NewsCaptureRepository(session), HttpxFeedparserClient())
+
+
+@router.post(
+    "/capture",
+    response_model=CaptureResponse,
+    summary="Ejecutar captura RSS inmediata",
+    responses={
+        400: {"model": ErrorResponse, "description": "Solicitud invalida"},
+        404: {"model": ErrorResponse, "description": "Fuente no encontrada"},
+        500: {"model": ErrorResponse, "description": "Error interno"},
+    },
+)
+def capture_sources(
+    service: Annotated[NewsCaptureService, Depends(get_capture_service)],
+    payload: CaptureRequest | None = None,
+) -> CaptureResponse:
+    report = service.capture_sources(payload.source_ids if payload else None)
+    return CaptureResponse(
+        sources=[CaptureSourceResponse(**item.__dict__) for item in report.sources],
+        skipped_source_ids=list(report.skipped_source_ids),
+        inserted=report.inserted,
+        failed_sources=report.failed_sources,
+    )
 
 
 @router.post(

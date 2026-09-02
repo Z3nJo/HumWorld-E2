@@ -105,3 +105,25 @@ La logica de captura MUST poder probarse sin acceso a Internet mediante entradas
 - **WHEN** se ejecutan las pruebas de integracion sobre una base migrada
 - **THEN** se comprueban la persistencia de noticias, sus fechas, la unicidad compuesta y la actualizacion de la fuente
 
+### Requirement: Captura manual de fuentes RSS
+El sistema SHALL exponer `POST /api/v1/sources/capture` para ejecutar inmediatamente la captura RSS de todas las fuentes activas o de un subconjunto seleccionado mediante `source_ids`.
+
+#### Scenario: Capturar todas las fuentes activas
+- **WHEN** se solicita `POST /api/v1/sources/capture` sin identificadores
+- **THEN** el sistema procesa todas las fuentes activas y responde con el resumen de la ejecucion
+
+#### Scenario: Capturar fuentes seleccionadas
+- **WHEN** se solicita el endpoint con una lista valida de `source_ids`
+- **THEN** el sistema procesa solo las fuentes activas seleccionadas y conserva la deduplicacion existente
+
+#### Scenario: Informar fuentes omitidas y errores
+- **WHEN** existen fuentes inactivas o una fuente falla durante la captura
+- **THEN** la respuesta identifica las fuentes omitidas o fallidas y continua con las restantes
+
+#### Scenario: Rechazar fuente inexistente
+- **WHEN** la lista contiene un identificador que no existe
+- **THEN** el sistema responde `404` sin iniciar la captura parcial
+
+### Requirement: Resultado de captura manual
+La respuesta SHALL incluir el resultado por fuente y los totales de noticias insertadas y fuentes fallidas, y SHALL estar documentada en OpenAPI.
+

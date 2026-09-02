@@ -20,6 +20,14 @@ class NewsCaptureRepository:
         )
         return list(self._session.scalars(statement).all())
 
+    def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]:
+        statement = (
+            select(RssSource)
+            .where(RssSource.id_fuente.in_(source_ids))
+            .order_by(RssSource.id_fuente)
+        )
+        return list(self._session.scalars(statement).all())
+
     def persist_source_capture(
         self,
         source_id: int,
