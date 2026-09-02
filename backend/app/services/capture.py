@@ -20,6 +20,10 @@ class FeedReadError(Exception):
     pass
 
 
+class CaptureSourceNotFoundError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class FeedEntry:
     guid: str | None
@@ -45,6 +49,7 @@ class SourceCaptureReport:
 @dataclass(frozen=True)
 class CaptureRunReport:
     sources: tuple[SourceCaptureReport, ...]
+    skipped_source_ids: tuple[int, ...] = ()
 
     @property
     def inserted(self) -> int:
@@ -61,6 +66,8 @@ class FeedClientProtocol(Protocol):
 
 class CaptureRepositoryProtocol(Protocol):
     def list_active_sources(self) -> list[RssSource]: ...
+
+    def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]: ...
 
     def persist_source_capture(
         self,
@@ -138,11 +145,25 @@ class NewsCaptureService:
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def capture_active_sources(self) -> CaptureRunReport:
-        reports = [
-            self._capture_source(source)
-            for source in self._repository.list_active_sources()
-        ]
-        return CaptureRunReport(tuple(reports))
+        return self.capture_sources()
+
+    def capture_sources(self, source_ids: Sequence[int] | None = None) -> CaptureRunReport:
+        skipped: tuple[int, ...] = ()
+        if source_ids is None:
+            sources = self._repository.list_active_sources()
+        else:
+            requested = list(dict.fromkeys(source_ids))
+            selected = self._repository.list_sources_by_ids(requested)
+            found_ids = {source.id_fuente for source in selected}
+            missing = sorted(set(requested) - found_ids)
+            if missing:
+                raise CaptureSourceNotFoundError(
+                    f"Fuentes RSS no encontradas: {', '.join(map(str, missing))}"
+                )
+            skipped = tuple(source.id_fuente for source in selected if not source.activa)
+            sources = [source for source in selected if source.activa]
+        reports = [self._capture_source(source) for source in sources]
+        return CaptureRunReport(tuple(reports), skipped_source_ids=skipped)
 
     def _capture_source(self, source: RssSource) -> SourceCaptureReport:
         try:

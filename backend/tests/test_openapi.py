@@ -1,8 +1,9 @@
 from fastapi.testclient import TestClient
 
 from app.api.configuration import get_configuration_service
-from app.api.sources import get_source_service
+from app.api.sources import get_capture_service, get_source_service
 from app.main import app
+from app.services.capture import CaptureRunReport, SourceCaptureReport
 
 
 class UnusedService:
@@ -15,11 +16,26 @@ class UnusedConfigurationService:
         raise AssertionError("Service should not be called for invalid payloads")
 
 
+class FakeManualCaptureService:
+    def __init__(self) -> None:
+        self.received: list[object] = []
+
+    def capture_sources(self, source_ids: object = None) -> CaptureRunReport:
+        self.received.append(source_ids)
+        return CaptureRunReport(
+            sources=(SourceCaptureReport(source_id=1, inserted=2, duplicates=1, invalid=0),),
+            skipped_source_ids=(2,),
+        )
+
+
 def test_openapi_documents_required_source_operations_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/sources"]
     item = schema["paths"]["/api/v1/sources/{source_id}"]
+    capture = schema["paths"]["/api/v1/sources/capture"]["post"]
     assert {"get", "post"} <= collection.keys()
+    assert "captura" in capture["summary"].lower()
+    assert capture["responses"].keys() >= {"200", "400", "404", "500"}
     assert {"get", "put", "patch", "delete"} <= item.keys()
     assert collection["post"]["responses"].keys() >= {"201", "400", "404", "500"}
     assert item["delete"]["responses"].keys() >= {"204", "400", "404", "500"}
@@ -39,6 +55,32 @@ def test_openapi_documents_config_operations_and_errors() -> None:
     assert "noticias_caducidad_dias" in schemas["ConfigReplace"]["properties"]
     for operation in collection.values():
         assert "422" not in operation["responses"]
+
+
+def test_manual_capture_endpoint_returns_report() -> None:
+    service = FakeManualCaptureService()
+    app.dependency_overrides[get_capture_service] = lambda: service
+    try:
+        with TestClient(app) as client:
+            response = client.post("/api/v1/sources/capture", json={"source_ids": [1, 2]})
+        assert response.status_code == 200
+        assert response.json() == {
+            "sources": [
+                {
+                    "source_id": 1,
+                    "inserted": 2,
+                    "duplicates": 1,
+                    "invalid": 0,
+                    "error": None,
+                }
+            ],
+            "skipped_source_ids": [2],
+            "inserted": 2,
+            "failed_sources": 0,
+        }
+        assert service.received == [[1, 2]]
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_update_schemas_do_not_expose_channel_id() -> None:

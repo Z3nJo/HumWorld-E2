@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.scheduler import CaptureScheduler, read_capture_periodicity
 from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
 from app.services.sources import ResourceNotFoundError, SourceValidationError
+from app.services.capture import CaptureSourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,14 @@ async def resource_not_found_error_handler(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": str(error)},
     )
+
+
+@app.exception_handler(CaptureSourceNotFoundError)
+async def capture_source_not_found_handler(
+    request: Request,
+    error: CaptureSourceNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(error)})
 
 
 @app.exception_handler(Exception)

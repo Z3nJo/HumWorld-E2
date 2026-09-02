@@ -19,4 +19,4 @@
 
 - [x] 4.1 Actualizar pruebas de integracion PostgreSQL para `GET` en base limpia, `PUT` valido, segundo `GET` persistido, reemplazo e invalidos de caducidad.
 - [x] 4.2 Actualizar `backend/README.md`, evidencia del sprint y contratos OpenSpec sincronizados.
-- [ ] 4.3 Ejecutar suite completa, validacion OpenSpec estricta y build/configuracion Docker Compose; registrar evidencia en el PR de E4-H01 antes de marcar la historia como terminada.
+- [x] 4.3 Ejecutar suite completa, validacion OpenSpec estricta y build/configuracion Docker Compose; registrar evidencia en el PR de E4-H01 antes de marcar la historia como terminada.

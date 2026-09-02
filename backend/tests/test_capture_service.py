@@ -30,6 +30,9 @@ class FakeCaptureRepository:
     def list_active_sources(self) -> list[RssSource]:
         return [source for source in self.sources if source.activa]
 
+    def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]:
+        return [source for source in self.sources if source.id_fuente in source_ids]
+
     def persist_source_capture(
         self,
         source_id: int,
@@ -150,3 +153,28 @@ def test_rejects_values_that_exceed_mod_01_lengths() -> None:
     ).capture_active_sources()
     assert report.sources[0].invalid == 1
     assert repository.persisted[0][1] == []
+
+
+def test_captures_selected_sources_and_skips_inactive() -> None:
+    active = source(1)
+    inactive = source(2, active=False)
+    repository = FakeCaptureRepository([active, inactive])
+    report = NewsCaptureService(
+        repository,
+        FakeFeedClient({active.url_feed: [entry("one", "https://example.com/one")]}),
+        clock=lambda: CAPTURED_AT,
+    ).capture_sources([1, 2])
+    assert report.inserted == 1
+    assert report.skipped_source_ids == (2,)
+    assert [item.source_id for item in report.sources] == [1]
+
+
+def test_rejects_unknown_selected_source() -> None:
+    from app.services.capture import CaptureSourceNotFoundError
+
+    try:
+        NewsCaptureService(FakeCaptureRepository([]), FakeFeedClient({})).capture_sources([99])
+    except CaptureSourceNotFoundError as error:
+        assert "99" in str(error)
+    else:
+        raise AssertionError("Expected CaptureSourceNotFoundError")

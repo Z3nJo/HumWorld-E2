@@ -93,3 +93,22 @@ class ConfigReplace(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str | list[dict[str, object]]
+
+
+class CaptureRequest(BaseModel):
+    source_ids: list[int] | None = Field(default=None, min_length=1, examples=[[1, 3]])
+
+
+class CaptureSourceResponse(BaseModel):
+    source_id: int
+    inserted: int
+    duplicates: int
+    invalid: int
+    error: str | None
+
+
+class CaptureResponse(BaseModel):
+    sources: list[CaptureSourceResponse]
+    skipped_source_ids: list[int]
+    inserted: int
+    failed_sources: int

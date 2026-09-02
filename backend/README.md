@@ -143,6 +143,15 @@ El scheduler vive dentro del proceso del backend. El despliegue actual debe
 mantener una sola instancia de Uvicorn; multiples workers o replicas
 necesitarian coordinacion externa para evitar cron duplicados.
 
+### Captura manual
+
+`POST /api/v1/sources/capture` ejecuta una captura inmediata. Sin cuerpo
+procesa todas las fuentes activas; para limitarla, envie `source_ids`, por
+ejemplo `{"source_ids":[1,3]}`. La respuesta incluye el detalle por fuente
+(`inserted`, `duplicates`, `invalid`, `error`) y los totales de la ejecucion.
+Las fuentes inactivas se omiten y los errores de una fuente no detienen a las
+restantes. Los identificadores inexistentes responden `404`.
+
 ### Comprobacion manual en Docker
 
 Desde la raiz del repositorio:
