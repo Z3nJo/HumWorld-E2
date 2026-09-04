@@ -150,6 +150,7 @@ def test_put_config_reprograms_active_scheduler_without_restart(client) -> None:
 )
 def test_put_config_rejects_invalid_payload_without_changing_previous_values(
     client,
+    engine,
     payload: dict[str, object],
 ) -> None:
     assert client.put(
@@ -163,3 +164,11 @@ def test_put_config_rejects_invalid_payload_without_changing_previous_values(
         "captura_periodicidad_minutos": 12,
         "noticias_caducidad_dias": 20,
     }
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text("SELECT clave, valor FROM configuracion ORDER BY clave")
+        ).all()
+    assert [(row.clave, row.valor) for row in rows] == [
+        (CAPTURE_PERIODICITY_KEY, "12"),
+        (NEWS_RETENTION_KEY, "20"),
+    ]
