@@ -19,6 +19,10 @@ CONTRACTS = {
         PROJECT_ROOT / "openspec" / "specs" / "runtime-configuration" / "spec.md",
         PROJECT_ROOT / "opsx" / "contracts" / "runtime-configuration" / "spec.md",
     ),
+    "integration-verification": (
+        PROJECT_ROOT / "openspec" / "specs" / "integration-verification" / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "integration-verification" / "spec.md",
+    ),
 }
 
 
