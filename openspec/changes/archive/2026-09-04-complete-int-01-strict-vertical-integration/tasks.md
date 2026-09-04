@@ -31,4 +31,4 @@
 - [x] 5.2 Confirmar que `.github/workflows/ci.yml` ejecuta migraciones y pruebas de integracion backend contra PostgreSQL.
 - [x] 5.3 Sincronizar contratos OpenSpec hacia `opsx/contracts` y validar `python opsx/sync_contracts.py --check`.
 - [x] 5.4 Registrar evidencia de INT-01/INT-S1 en `docs/sprints/` o en el PR con comandos ejecutados, resultado de CI y escenarios cubiertos.
-- [ ] 5.5 Verificar el run remoto de CI en verde antes de marcar la tarea como completada.
+- [x] 5.5 Verificar el run remoto de CI en verde antes de marcar la tarea como completada.

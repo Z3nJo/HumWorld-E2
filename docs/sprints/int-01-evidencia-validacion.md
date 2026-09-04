@@ -32,7 +32,7 @@ Resultado: `78 passed in 4.13s`, cobertura total `96.92%` y umbral requerido
 del `80%` superado. Las dos pruebas de `test_capture_api_postgresql.py`
 cubrieron la captura API-BD, la deduplicacion y el `404` atomico.
 
-El ultimo run remoto observado esta en verde: [CI en main, run 33684045586](https://github.com/Z3nJo/HumWorld-E2/actions/runs/33684045586), finalizado el 2026-09-02. Ese run es anterior a este cambio local en `ramaCICD`; la evidencia definitiva de INT-01 requiere un nuevo run verde tras publicar una rama o pull request hacia `main` o `develop`.
+La evidencia remota definitiva esta en verde: [CI del PR de ramaCICD, run 33873089786](https://github.com/Z3nJo/HumWorld-E2/actions/runs/33873089786), ejecutado sobre el commit `2494b04ea83d40728ebcf356f4cb68f19c44d415`. El workflow de tipo `pull_request` finalizo correctamente el 2026-09-04 y el job `docker-compose-check` valido migraciones, contratos y pruebas backend contra PostgreSQL.
 
 ## Frontend-API pendiente
 
