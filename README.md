@@ -99,6 +99,7 @@ Base: `/api/v1` · Formato: JSON · Documentación interactiva: `/api/docs`
 | Recurso | Métodos | Propósito |
 |---|---|---|
 | `/sources` | GET, POST, PUT, PATCH, DELETE | Implementado en E1-H01: gestión de canales y fuentes RSS |
+| `/sources/capture` | POST | Implementado en E1-H05: captura manual inmediata de todas las fuentes activas o de una selección |
 | `/news` | GET, DELETE | Consulta de noticias, noticias influyentes y purgado |
 | `/dictionary` | GET, POST, PUT, PATCH, DELETE | Diccionario de términos evaluables |
 | `/config` | GET, PUT | Parámetros generales (periodicidad de captura, caducidad de noticias) |
@@ -115,7 +116,8 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-stack-tecnologico.md) | Selección del stack tecnológico y justificación del gestor de datos |
 | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) | Modelo E/R preliminar: entidades, relaciones e integridad |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
-| [`docs/sprints/`](docs/sprints/) | Planificación y seguimiento por sprint |
+| [`docs/sprints/`](docs/sprints/) | Planificación, cierre y evidencia de validación por sprint e historia |
+| [`docs/sprints/cierre-sprint-1.md`](docs/sprints/cierre-sprint-1.md) | Resultado del Sprint 1, métricas reales y recalibración de velocidad |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
 | `openspec/` | Fuente editable de propuestas, especificaciones y tareas OpenSpec |
 | `opsx/contracts/` | Copia entregable generada mediante `python opsx/sync_contracts.py` |
@@ -131,4 +133,10 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
 ## 9. Estado del proyecto
 
-**Sprint 1 — Captura RSS.** `INFRA-02`, `CICD-00`, E1-H01, E1-H02, E1-H04 y E4-H01 están integradas. E1-H03 incorpora captura automática de noticias desde fuentes activas, periodicidad reconfigurable en caliente y control de duplicados en PostgreSQL.
+**Sprint 1 — Captura RSS: cerrado.** Se entregaron los 31 puntos comprometidos: `INFRA-02`, `CICD-00`, E1-H01, E1-H02, E1-H04, E4-H01, E1-H03, E1-H05, `QA-S1` e `INT-S1`.
+
+El sistema captura noticias desde las fuentes activas por cron, con periodicidad reconfigurable en caliente y control de duplicados en PostgreSQL, y admite captura manual bajo demanda mediante `POST /api/v1/sources/capture`. La suite cuenta con 78 pruebas y 97,01 % de cobertura, con las pruebas API-BD ejecutándose contra PostgreSQL 16 real.
+
+El detalle del resultado, las métricas y la recalibración de velocidad están en [`docs/sprints/cierre-sprint-1.md`](docs/sprints/cierre-sprint-1.md).
+
+**Siguiente:** Sprint 2 — motor de sentimiento y purgado de noticias.
