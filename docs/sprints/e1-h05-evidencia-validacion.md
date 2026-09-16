@@ -197,3 +197,63 @@ procesamiento asincrono, y no altera el modelo de noticias.
 
 La ejecucion definitiva de GitHub Actions y la revision cruzada deben adjuntarse al PR antes
 de declarar la historia terminada.
+
+## Validacion Docker posterior al cierre
+
+Fecha de validacion: 16 de septiembre de 2026.
+
+La comprobacion pendiente se repitio sobre un entorno Docker Compose aislado construido
+desde el estado cerrado del Sprint 1. Se uso un override temporal unicamente para asignar
+nombres distintos a los contenedores y no reutilizar los contenedores ni el volumen local de
+una ejecucion anterior. No se modifico codigo de aplicacion.
+
+El entorno quedo compuesto por Python 3.12.14 y PostgreSQL 16.15. El backend aplico la cadena
+completa de migraciones hasta `20260901_01` y el seed creo seis canales y seis fuentes sobre
+una base limpia.
+
+### Captura manual y persistencia
+
+La primera llamada a `POST /api/v1/sources/capture` respondio `200` y produjo:
+
+| Fuente | Insertadas | Duplicadas | Resultado |
+| ---: | ---: | ---: | --- |
+| 1 | 50 | 0 | Correcto |
+| 2 | 0 | 0 | Fallo aislado de descarga de CBC |
+| 3 | 635 | 19 | Correcto |
+| 4 | 20 | 0 | Correcto |
+| 5 | 141 | 0 | Correcto |
+| 6 | 25 | 0 | Correcto |
+
+El total fue de 871 noticias insertadas y una fuente fallida. PostgreSQL confirmo 871
+registros y 871 claves unicas `(id_fuente, guid_origen)`, todos con `fecha_registro` y con
+`valor_humor` nulo. Las cinco fuentes procesadas correctamente actualizaron
+`fecha_ultima_captura`; CBC la mantuvo sin valor.
+
+Una segunda captura inmediata respondio `200`, inserto cero noticias y conservo los 871
+registros unicos. Esto confirma la deduplicacion dentro del entorno Docker.
+
+Tambien se verificaron los escenarios complementarios:
+
+- seleccion explicita de la fuente 1: `200`, sin procesar otras fuentes;
+- fuente 6 inactiva: `200`, informada en `skipped_source_ids`, y restaurada al finalizar;
+- fuente inexistente `9999`: `404`, sin captura parcial;
+- lista `source_ids` vacia: `400`;
+- `/api/openapi.json`: nueve operaciones publicadas.
+
+### Suite automatizada en Docker
+
+La suite completa se ejecuto dentro de una instancia del contenedor backend contra una base
+PostgreSQL separada del escenario funcional:
+
+```text
+pytest --cov=app --cov-report=term-missing --cov-fail-under=80 -p no:cacheprovider
+78 passed in 5.07s
+Total coverage: 95.07%
+```
+
+La ejecucion emitio una advertencia de obsolescencia de `starlette.testclient` respecto de
+`httpx`, sin pruebas fallidas ni omitidas.
+
+**Resultado:** la validacion Docker pendiente de E1-H05 queda completada. La inaccesibilidad
+de CBC permanece como observacion independiente y no impidio procesar las otras cinco
+fuentes. Los contenedores, la red y el volumen temporales se eliminaron al finalizar.
