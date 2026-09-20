@@ -115,11 +115,16 @@ Sprint 2 antes de tratarla como velocidad estable.
 
 | Punto | Detalle | Destino propuesto |
 | --- | --- | --- |
-| Fuente RSS de CBC inaccesible | `https://www.cbc.ca/cmlink/rss-topstories` falla la descarga de forma sostenida desde E1-H03. El aislamiento de errores funciona y no bloquea al resto, pero el continente America queda sin cobertura efectiva | Reemplazar la fuente en el seed de E1-H02 |
 | `docs/openapi/openapi.yaml` desactualizado | El archivo versionado es un esqueleto con `paths: {}`, mientras el contrato real vive en `/api/openapi.json` y publica nueve operaciones | SWG-04 o tarea previa del Sprint 2 |
 | Caducidad de noticias sin efecto | `noticias.caducidad_dias` se persiste y valida, pero todavia no purga | E4-H02, ya planificada en Sprint 2 |
 | Validacion sobre Docker pendiente para E1-H05 | La evidencia de E1-H05 se levanto sobre PostgreSQL y Python nativos de igual version, no sobre Docker Compose | Adjuntar al PR de la historia |
 | Horas reales sin registrar | Impide validar el factor efectivo 0,6 y refinar la capacidad en horas | Acordar registro de horas en el Sprint 2 |
+
+## Observaciones resueltas posteriormente
+
+| Punto | Resolucion |
+| --- | --- |
+| Fuente RSS de CBC inaccesible | Resuelta el 20 de septiembre de 2026 reemplazando CBC por PBS NewsHour Headlines. El seed reconcilia instalaciones existentes sin cambiar los identificadores ni las noticias relacionadas; PBS respondio HTTP 200 con 20 entradas utilizables desde Docker. Evidencia en [`reemplazo-cbc-pbs-evidencia-validacion.md`](reemplazo-cbc-pbs-evidencia-validacion.md). |
 
 ## Estado de la cadena critica
 

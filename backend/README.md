@@ -43,11 +43,14 @@ python -m app.seeds.sources
 
 El comando registra seis canales y seis fuentes RSS activas, una para cada
 continente admitido: `Africa`, `America`, `Antartida`, `Asia`, `Europa` y
-`Oceania`. No descarga ni valida remotamente los feeds.
+`Oceania`. Para America usa `PBS NewsHour Headlines`. No descarga ni valida
+remotamente los feeds.
 
 El seed es idempotente: puede ejecutarse nuevamente sin duplicar registros. Si
 encuentra un canal o una URL con datos incompatibles, revierte la ejecucion
 completa y muestra el conflicto en lugar de sobrescribir los datos existentes.
+Las instalaciones inicializadas con la antigua fuente CBC se reconcilian en
+sitio hacia PBS, conservando los identificadores y las noticias relacionadas.
 
 ## API de fuentes RSS
 
