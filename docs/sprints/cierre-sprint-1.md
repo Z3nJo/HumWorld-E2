@@ -117,14 +117,13 @@ Sprint 2 antes de tratarla como velocidad estable.
 | --- | --- | --- |
 | `docs/openapi/openapi.yaml` desactualizado | El archivo versionado es un esqueleto con `paths: {}`, mientras el contrato real vive en `/api/openapi.json` y publica nueve operaciones | SWG-04 o tarea previa del Sprint 2 |
 | Caducidad de noticias sin efecto | `noticias.caducidad_dias` se persiste y valida, pero todavia no purga | E4-H02, ya planificada en Sprint 2 |
-| Validacion sobre Docker pendiente para E1-H05 | La evidencia de E1-H05 se levanto sobre PostgreSQL y Python nativos de igual version, no sobre Docker Compose | Adjuntar al PR de la historia |
 | Horas reales sin registrar | Impide validar el factor efectivo 0,6 y refinar la capacidad en horas | Acordar registro de horas en el Sprint 2 |
 
 ## Observaciones resueltas posteriormente
 
 | Punto | Resolucion |
 | --- | --- |
-| Fuente RSS de CBC inaccesible | Resuelta el 20 de septiembre de 2026 reemplazando CBC por PBS NewsHour Headlines. El seed reconcilia instalaciones existentes sin cambiar los identificadores ni las noticias relacionadas; PBS respondio HTTP 200 con 20 entradas utilizables desde Docker. Evidencia en [`reemplazo-cbc-pbs-evidencia-validacion.md`](reemplazo-cbc-pbs-evidencia-validacion.md). |
+| Validacion sobre Docker para E1-H05 | Completada el 16 de septiembre de 2026 sobre Docker Compose: 78 pruebas aprobadas, 95,07 % de cobertura de `app`, captura manual verificada con 871 noticias unicas y deduplicacion confirmada. La evidencia se incorporo en [`e1-h05-evidencia-validacion.md`](e1-h05-evidencia-validacion.md). |
 
 ## Estado de la cadena critica
 
