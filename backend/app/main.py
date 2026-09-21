@@ -8,10 +8,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api import configuration_router, sources_router
+from app.api import configuration_router, dictionary_router, sources_router
 from app.config import get_settings
 from app.scheduler import CaptureScheduler, read_capture_periodicity
 from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
+from app.services.dictionary import DictionaryValidationError, TermNotFoundError
 from app.services.sources import ResourceNotFoundError, SourceValidationError
 from app.services.capture import CaptureSourceNotFoundError
 
@@ -43,6 +44,7 @@ app = FastAPI(
 )
 
 app.include_router(configuration_router, prefix="/api/v1")
+app.include_router(dictionary_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 
 
@@ -103,10 +105,32 @@ async def configuration_validation_error_handler(
     )
 
 
+@app.exception_handler(DictionaryValidationError)
+async def dictionary_validation_error_handler(
+    request: Request,
+    error: DictionaryValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(error)},
+    )
+
+
 @app.exception_handler(ResourceNotFoundError)
 async def resource_not_found_error_handler(
     request: Request,
     error: ResourceNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": str(error)},
+    )
+
+
+@app.exception_handler(TermNotFoundError)
+async def term_not_found_error_handler(
+    request: Request,
+    error: TermNotFoundError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,

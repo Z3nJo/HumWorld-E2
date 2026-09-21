@@ -1,4 +1,5 @@
 from app.api.configuration import router as configuration_router
+from app.api.dictionary import router as dictionary_router
 from app.api.sources import router as sources_router
 
-__all__ = ["configuration_router", "sources_router"]
+__all__ = ["configuration_router", "dictionary_router", "sources_router"]
