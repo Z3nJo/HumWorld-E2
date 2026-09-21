@@ -30,7 +30,7 @@ alembic upgrade head
 alembic downgrade base
 ```
 
-Las migraciones crean las tablas del backend implementadas hasta el momento conforme a MOD-01, incluyendo `canal`, `fuente_rss`, `configuracion` y `noticia`.
+Las migraciones crean las tablas del backend implementadas hasta el momento conforme a MOD-01, incluyendo `canal`, `fuente_rss`, `configuracion`, `noticia` y `termino`.
 
 ## Carga inicial de fuentes RSS
 
@@ -85,6 +85,39 @@ Ejemplo de alta:
 ```
 
 Para un canal existente, sustituya `channel` por `"channel_id": 1`. `PUT` y `PATCH` no permiten modificar `id_canal`.
+
+## API de diccionario
+
+Base: `/api/v1` · Swagger: `/api/docs` · OpenAPI JSON: `/api/openapi.json`.
+
+| Metodo | Ruta | Proposito |
+|---|---|---|
+| `GET` | `/dictionary` | Listar todos los terminos o buscar por palabra mediante `q` |
+| `GET` | `/dictionary/{term_id}` | Consultar un termino por identificador |
+| `POST` | `/dictionary` | Crear un termino |
+| `PUT` | `/dictionary/{term_id}` | Reemplazar todos los campos editables |
+| `PATCH` | `/dictionary/{term_id}` | Actualizar uno o mas campos editables |
+| `DELETE` | `/dictionary/{term_id}` | Desactivar logicamente un termino |
+
+Las palabras se almacenan en minusculas, sin espacios exteriores y conservando
+las tildes. Solo se admiten los idiomas `es` y `en`; la pareja formada por
+palabra e idioma es unica. `valor` acepta cualquier decimal finito representable
+por PostgreSQL, sin aplicar todavia el rango o la precision semantica que debera
+definir ADR-001.
+
+Ejemplo de alta:
+
+```json
+{
+  "palabra": "alegría",
+  "idioma": "es",
+  "valor": "0.75"
+}
+```
+
+`DELETE` conserva el registro con `activo=false`; repetir la operacion sobre un
+termino ya inactivo tambien responde `204`. El listado incluye terminos activos
+e inactivos y se ordena por palabra, idioma e identificador.
 
 ## API de configuracion
 
