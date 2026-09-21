@@ -1,3 +1,5 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
@@ -93,6 +95,47 @@ class ConfigReplace(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str | list[dict[str, object]]
+
+
+class TermCreate(BaseModel):
+    palabra: str = Field(examples=["alegría"])
+    idioma: Language = Field(examples=[Language.SPANISH])
+    valor: Decimal = Field(allow_inf_nan=False, examples=["0.75"])
+    activo: bool = Field(default=True)
+
+
+class TermReplace(BaseModel):
+    palabra: str = Field(examples=["alegría"])
+    idioma: Language = Field(examples=[Language.SPANISH])
+    valor: Decimal = Field(allow_inf_nan=False, examples=["0.75"])
+    activo: bool
+
+
+class TermPatch(BaseModel):
+    palabra: str | None = None
+    idioma: Language | None = None
+    valor: Decimal | None = Field(default=None, allow_inf_nan=False)
+    activo: bool | None = None
+
+    @model_validator(mode="after")
+    def at_least_one_non_null_field(self) -> Self:
+        if not self.model_fields_set:
+            raise ValueError("Debe indicar al menos un campo editable")
+        if any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError("Los campos editables no aceptan null")
+        return self
+
+
+class TermResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id_termino: int
+    palabra: str
+    idioma: Language
+    valor: Decimal
+    activo: bool
+    fecha_alta: datetime
+    fecha_modificacion: datetime
 
 
 class CaptureRequest(BaseModel):

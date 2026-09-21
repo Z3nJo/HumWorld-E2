@@ -57,6 +57,32 @@ def test_openapi_documents_config_operations_and_errors() -> None:
         assert "422" not in operation["responses"]
 
 
+def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
+    schema = app.openapi()
+    collection = schema["paths"]["/api/v1/dictionary"]
+    item = schema["paths"]["/api/v1/dictionary/{term_id}"]
+    schemas = schema["components"]["schemas"]
+
+    assert {"get", "post"} <= collection.keys()
+    assert {"get", "put", "patch", "delete"} <= item.keys()
+    assert collection["post"]["responses"].keys() >= {"201", "400", "404", "500"}
+    assert item["delete"]["responses"].keys() >= {"204", "400", "404", "500"}
+    assert set(schemas["TermResponse"]["properties"]) == {
+        "id_termino",
+        "palabra",
+        "idioma",
+        "valor",
+        "activo",
+        "fecha_alta",
+        "fecha_modificacion",
+    }
+    assert schemas.keys() >= {"TermCreate", "TermReplace", "TermPatch", "TermResponse"}
+    assert collection["post"]["requestBody"]["content"]["application/json"]["schema"]
+    for path_item in (collection, item):
+        for operation in path_item.values():
+            assert "422" not in operation["responses"]
+
+
 def test_manual_capture_endpoint_returns_report() -> None:
     service = FakeManualCaptureService()
     app.dependency_overrides[get_capture_service] = lambda: service
