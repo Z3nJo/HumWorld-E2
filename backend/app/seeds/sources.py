@@ -30,6 +30,25 @@ class SeedResult:
     existing_sources: int
 
 
+LEGACY_AMERICA_SOURCE = SourceSeed(
+    channel_name="CBC News",
+    continent=Continent.AMERICA,
+    source_name="CBC News Top Stories",
+    feed_url="https://www.cbc.ca/cmlink/rss-topstories",
+    category=IptcCategory.SOCIETY,
+    language=Language.ENGLISH,
+)
+
+PBS_AMERICA_SOURCE = SourceSeed(
+    channel_name="PBS NewsHour",
+    continent=Continent.AMERICA,
+    source_name="PBS NewsHour Headlines",
+    feed_url="https://www.pbs.org/newshour/feeds/rss/headlines",
+    category=IptcCategory.SOCIETY,
+    language=Language.ENGLISH,
+)
+
+
 SOURCE_SEEDS: tuple[SourceSeed, ...] = (
     SourceSeed(
         channel_name="Africanews",
@@ -39,14 +58,7 @@ SOURCE_SEEDS: tuple[SourceSeed, ...] = (
         category=IptcCategory.SOCIETY,
         language=Language.ENGLISH,
     ),
-    SourceSeed(
-        channel_name="CBC News",
-        continent=Continent.AMERICA,
-        source_name="CBC News Top Stories",
-        feed_url="https://www.cbc.ca/cmlink/rss-topstories",
-        category=IptcCategory.SOCIETY,
-        language=Language.ENGLISH,
-    ),
+    PBS_AMERICA_SOURCE,
     SourceSeed(
         channel_name="United States Antarctic Program",
         continent=Continent.ANTARCTICA,
@@ -99,6 +111,14 @@ def seed_sources(session: Session) -> SeedResult:
                 select(RssSource).where(RssSource.url_feed == entry.feed_url)
             )
 
+            if entry is PBS_AMERICA_SOURCE and _reconcile_legacy_america_source(
+                session,
+                channel,
+                source,
+            ):
+                existing_sources += 1
+                continue
+
             if channel is not None:
                 _ensure_channel_compatible(channel, entry)
             elif source is not None:
@@ -141,6 +161,51 @@ def seed_sources(session: Session) -> SeedResult:
         created_sources=created_sources,
         existing_sources=existing_sources,
     )
+
+
+def _reconcile_legacy_america_source(
+    session: Session,
+    target_channel: Channel | None,
+    target_source: RssSource | None,
+) -> bool:
+    legacy_channel = session.scalar(
+        select(Channel).where(Channel.nombre == LEGACY_AMERICA_SOURCE.channel_name)
+    )
+    legacy_source = session.scalar(
+        select(RssSource).where(
+            RssSource.url_feed == LEGACY_AMERICA_SOURCE.feed_url
+        )
+    )
+
+    if legacy_channel is None and legacy_source is None:
+        return False
+
+    if target_channel is not None or target_source is not None:
+        raise SeedConflictError(
+            "Las fuentes CBC y PBS coexisten y no pueden reconciliarse de forma segura"
+        )
+
+    if legacy_channel is None or legacy_source is None:
+        raise SeedConflictError(
+            "Los datos legados de CBC estan incompletos y no pueden reconciliarse"
+        )
+
+    _ensure_channel_compatible(legacy_channel, LEGACY_AMERICA_SOURCE)
+    _ensure_source_compatible(
+        legacy_source,
+        legacy_channel,
+        LEGACY_AMERICA_SOURCE,
+    )
+
+    legacy_channel.nombre = PBS_AMERICA_SOURCE.channel_name
+    legacy_channel.continente = PBS_AMERICA_SOURCE.continent.value
+    legacy_source.nombre = PBS_AMERICA_SOURCE.source_name
+    legacy_source.url_feed = PBS_AMERICA_SOURCE.feed_url
+    legacy_source.categoria_iptc = PBS_AMERICA_SOURCE.category.value
+    legacy_source.idioma = PBS_AMERICA_SOURCE.language.value
+    legacy_source.activa = PBS_AMERICA_SOURCE.active
+    session.flush()
+    return True
 
 
 def _ensure_channel_compatible(channel: Channel, entry: SourceSeed) -> None:
