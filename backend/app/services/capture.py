@@ -9,7 +9,16 @@ from typing import Any, Protocol
 import feedparser
 import httpx
 
-from app.models import RssSource
+from app.models import Configuration, News, RssSource, Term
+from app.services.sentiment_configuration import SentimentConfigurationService
+from app.services.sentiment_engine import (
+    ExactTermRecognizer,
+    SentimentParameters,
+    SentimentResult,
+    SentimentTerm,
+    TermRecognizer,
+    calculate_sentiment,
+)
 
 logger = logging.getLogger(__name__)
 MAX_NEWS_TEXT_LENGTH = 500
@@ -69,12 +78,23 @@ class CaptureRepositoryProtocol(Protocol):
 
     def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]: ...
 
-    def persist_source_capture(
-        self,
-        source_id: int,
-        news: Sequence[Mapping[str, object]],
-        captured_at: datetime,
-    ) -> int: ...
+    def insert_news(self, news: Sequence[Mapping[str, object]]) -> list[News]: ...
+
+    def list_active_terms(self, language: str) -> list[Term]: ...
+
+    def get_parameter(self, key: str) -> Configuration | None: ...
+
+    def persist_sentiment(
+        self, news: News, result: SentimentResult, analyzed_at: datetime
+    ) -> None: ...
+
+    def update_source_capture(self, source_id: int, captured_at: datetime) -> None: ...
+
+    def claim_pending_news(self, limit: int) -> list[News]: ...
+
+    def commit(self) -> None: ...
+
+    def rollback(self) -> None: ...
 
 
 class HttpxFeedparserClient:
@@ -139,10 +159,12 @@ class NewsCaptureService:
         feed_client: FeedClientProtocol,
         *,
         clock: Callable[[], datetime] | None = None,
+        recognizer: TermRecognizer | None = None,
     ) -> None:
         self._repository = repository
         self._feed_client = feed_client
         self._clock = clock or (lambda: datetime.now(UTC))
+        self._recognizer = recognizer or ExactTermRecognizer()
 
     def capture_active_sources(self) -> CaptureRunReport:
         return self.capture_sources()
@@ -177,11 +199,14 @@ class NewsCaptureService:
                 else:
                     normalized.append(news)
             captured_at = self._clock()
-            inserted = self._repository.persist_source_capture(
-                source.id_fuente,
-                normalized,
-                captured_at,
-            )
+            inserted_news = self._repository.insert_news(normalized)
+            if inserted_news:
+                parameters = SentimentConfigurationService(self._repository).resolve()
+                terms = self._repository.list_active_terms(source.idioma)
+                self._analyze_news(inserted_news, terms, parameters, captured_at)
+            self._repository.update_source_capture(source.id_fuente, captured_at)
+            self._repository.commit()
+            inserted = len(inserted_news)
             return SourceCaptureReport(
                 source_id=source.id_fuente,
                 inserted=inserted,
@@ -189,6 +214,7 @@ class NewsCaptureService:
                 invalid=invalid,
             )
         except Exception as error:
+            self._repository.rollback()
             logger.warning(
                 "RSS capture failed for source %s (%s): %s",
                 source.id_fuente,
@@ -196,6 +222,54 @@ class NewsCaptureService:
                 error,
             )
             return SourceCaptureReport(source_id=source.id_fuente, error=str(error))
+
+    def process_pending_news(self, *, limit: int = 100) -> int:
+        if limit < 1:
+            raise ValueError("El límite de pendientes debe ser positivo")
+        try:
+            pending = self._repository.claim_pending_news(limit)
+            if pending:
+                parameters = SentimentConfigurationService(self._repository).resolve()
+                terms_by_language = {
+                    language: self._repository.list_active_terms(language)
+                    for language in {news.idioma for news in pending}
+                }
+                analyzed_at = self._clock()
+                for language, terms in terms_by_language.items():
+                    language_news = [news for news in pending if news.idioma == language]
+                    self._analyze_news(language_news, terms, parameters, analyzed_at)
+            self._repository.commit()
+            return len(pending)
+        except Exception:
+            self._repository.rollback()
+            raise
+
+    def _analyze_news(
+        self,
+        news_items: Sequence[News],
+        terms: Sequence[Term],
+        parameters: SentimentParameters,
+        analyzed_at: datetime,
+    ) -> None:
+        candidates = tuple(
+            SentimentTerm(
+                id_termino=term.id_termino,
+                palabra=term.palabra,
+                idioma=term.idioma,
+                valor=term.valor,
+                activo=term.activo,
+            )
+            for term in terms
+        )
+        for news in news_items:
+            recognized = self._recognizer.recognize(
+                title=news.titulo,
+                description=news.descripcion,
+                language=news.idioma,
+                terms=candidates,
+            )
+            result = calculate_sentiment(recognized, parameters)
+            self._repository.persist_sentiment(news, result, analyzed_at)
 
     @staticmethod
     def _normalize_entry(

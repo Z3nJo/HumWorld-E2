@@ -16,15 +16,18 @@ CAPTURE_JOB_ID = "rss-news-capture"
 
 def run_capture_job() -> None:
     with get_session_factory()() as session:
-        report = NewsCaptureService(
+        service = NewsCaptureService(
             NewsCaptureRepository(session),
             HttpxFeedparserClient(),
-        ).capture_active_sources()
+        )
+        report = service.capture_active_sources()
+        recovered = service.process_pending_news()
     logger.info(
-        "RSS capture completed: sources=%s inserted=%s failed=%s",
+        "RSS capture completed: sources=%s inserted=%s failed=%s recovered=%s",
         len(report.sources),
         report.inserted,
         report.failed_sources,
+        recovered,
     )
 
 

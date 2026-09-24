@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 
-from app.models import RssSource
+from app.models import News, RssSource
 from app.services.capture import FeedEntry, NewsCaptureService
 
 
@@ -26,6 +26,8 @@ class FakeCaptureRepository:
         self.sources = sources
         self.seen: set[tuple[int, str]] = set()
         self.persisted: list[tuple[int, list[Mapping[str, object]], datetime]] = []
+        self._pending_rows: list[Mapping[str, object]] = []
+        self._next_news_id = 1
 
     def list_active_sources(self) -> list[RssSource]:
         return [source for source in self.sources if source.activa]
@@ -33,21 +35,39 @@ class FakeCaptureRepository:
     def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]:
         return [source for source in self.sources if source.id_fuente in source_ids]
 
-    def persist_source_capture(
-        self,
-        source_id: int,
-        news: Sequence[Mapping[str, object]],
-        captured_at: datetime,
-    ) -> int:
+    def insert_news(self, news: Sequence[Mapping[str, object]]) -> list[News]:
         rows = list(news)
-        self.persisted.append((source_id, rows, captured_at))
-        inserted = 0
+        self._pending_rows = rows
+        inserted: list[News] = []
         for row in rows:
-            key = source_id, str(row["guid_origen"])
+            key = int(row["id_fuente"]), str(row["guid_origen"])
             if key not in self.seen:
                 self.seen.add(key)
-                inserted += 1
+                inserted.append(News(id_noticia=self._next_news_id, **row))
+                self._next_news_id += 1
         return inserted
+
+    def list_active_terms(self, language: str):
+        return []
+
+    def get_parameter(self, key: str):
+        return None
+
+    def persist_sentiment(self, news, result, analyzed_at):
+        news.valor_humor = result.valor_humor
+        news.fecha_analisis = analyzed_at
+
+    def update_source_capture(self, source_id: int, captured_at: datetime) -> None:
+        self.persisted.append((source_id, self._pending_rows, captured_at))
+
+    def claim_pending_news(self, limit: int):
+        return []
+
+    def commit(self) -> None:
+        self._pending_rows = []
+
+    def rollback(self) -> None:
+        self._pending_rows = []
 
 
 def source(source_id: int, *, active: bool = True, language: str = "es") -> RssSource:

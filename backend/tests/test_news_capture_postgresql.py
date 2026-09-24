@@ -94,25 +94,22 @@ def test_lists_only_active_sources_and_persists_idempotently(engine) -> None:
         assert [item.id_fuente for item in repository.list_active_sources()] == [
             active.id_fuente
         ]
-        assert repository.persist_source_capture(
-            active.id_fuente,
-            [news_values(active.id_fuente)],
-            captured_at,
-        ) == 1
+        assert len(repository.insert_news([news_values(active.id_fuente)])) == 1
+        repository.update_source_capture(active.id_fuente, captured_at)
+        repository.commit()
         later = captured_at + timedelta(minutes=5)
-        assert repository.persist_source_capture(
-            active.id_fuente,
-            [news_values(active.id_fuente)],
-            later,
-        ) == 0
+        assert len(repository.insert_news([news_values(active.id_fuente)])) == 0
+        repository.update_source_capture(active.id_fuente, later)
+        repository.commit()
 
         rows = list(session.scalars(select(News)).all())
-        session.refresh(active)
+        persisted_active = session.get(RssSource, active.id_fuente)
         assert len(rows) == 1
         assert rows[0].fecha_registro is not None
         assert rows[0].valor_humor is None
         assert rows[0].fecha_analisis is None
-        assert active.fecha_ultima_captura == later
+        assert persisted_active is not None
+        assert persisted_active.fecha_ultima_captura == later
 
 
 def test_failed_persistence_rolls_back_news_and_capture_timestamp(engine) -> None:
@@ -124,12 +121,10 @@ def test_failed_persistence_rolls_back_news_and_capture_timestamp(engine) -> Non
         invalid = news_values(source.id_fuente)
         invalid["idioma"] = "fr"
 
+        repository = NewsCaptureRepository(session)
         with pytest.raises(Exception):
-            NewsCaptureRepository(session).persist_source_capture(
-                source.id_fuente,
-                [invalid],
-                original + timedelta(hours=1),
-            )
+            repository.insert_news([invalid])
+        repository.rollback()
 
         session.refresh(source)
         assert source.fecha_ultima_captura == original
@@ -139,11 +134,10 @@ def test_failed_persistence_rolls_back_news_and_capture_timestamp(engine) -> Non
 def test_deleting_source_cascades_captured_news(engine) -> None:
     with Session(engine, expire_on_commit=False) as session:
         source = create_source(session)
-        NewsCaptureRepository(session).persist_source_capture(
-            source.id_fuente,
-            [news_values(source.id_fuente)],
-            datetime.now(UTC),
-        )
+        repository = NewsCaptureRepository(session)
+        repository.insert_news([news_values(source.id_fuente)])
+        repository.update_source_capture(source.id_fuente, datetime.now(UTC))
+        repository.commit()
         session.delete(source)
         session.commit()
         assert session.scalar(select(text("count(*)")).select_from(News)) == 0
