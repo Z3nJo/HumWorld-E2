@@ -12,6 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +33,15 @@ class News(Base):
         ),
         Index("ix_noticia_fecha_registro", "fecha_registro"),
         Index("ix_noticia_valor_humor", "valor_humor"),
+        Index(
+            "ix_noticia_pendiente_analisis",
+            "id_noticia",
+            postgresql_where=text("fecha_analisis IS NULL"),
+        ),
+        CheckConstraint(
+            "valor_humor BETWEEN -1 AND 1",
+            name="ck_noticia_valor_humor_rango",
+        ),
     )
 
     id_noticia: Mapped[int] = mapped_column(primary_key=True)
@@ -55,7 +65,9 @@ class News(Base):
         default=func.now(),
         server_default=func.now(),
     )
-    valor_humor: Mapped[Decimal | None] = mapped_column(Numeric(), nullable=True)
+    valor_humor: Mapped[Decimal | None] = mapped_column(
+        Numeric(4, 3), nullable=True
+    )
     fecha_analisis: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
