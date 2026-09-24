@@ -10,8 +10,15 @@ from fastapi.responses import JSONResponse
 
 from app.api import configuration_router, dictionary_router, sources_router
 from app.config import get_settings
+from app.database import get_session_factory
+from app.repositories import ConfigurationRepository
 from app.scheduler import CaptureScheduler, read_capture_periodicity
+from app.seeds.sentiment import seed_sentiment_configuration
 from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
+from app.services.sentiment_configuration import (
+    SentimentConfigurationService,
+    warn_if_scale_differs_from_dictionary,
+)
 from app.services.dictionary import DictionaryValidationError, TermNotFoundError
 from app.services.sources import ResourceNotFoundError, SourceValidationError
 from app.services.capture import CaptureSourceNotFoundError
@@ -23,6 +30,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(application: FastAPI):
     scheduler: CaptureScheduler | NullCaptureSchedule
     if get_settings().capture_scheduler_enabled:
+        with get_session_factory()() as session:
+            seed_sentiment_configuration(session)
+            parameters = SentimentConfigurationService(
+                ConfigurationRepository(session)
+            ).resolve()
+            warn_if_scale_differs_from_dictionary(session, parameters)
         scheduler = CaptureScheduler()
         scheduler.start(read_capture_periodicity())
     else:
