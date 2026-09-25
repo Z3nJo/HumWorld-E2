@@ -13,7 +13,11 @@ from sqlalchemy.orm import Session
 from app.config import normalize_database_url
 from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
 from app.repositories import ConfigurationRepository, NewsCaptureRepository
-from app.seeds.sentiment import seed_sentiment_configuration
+from app.seeds.sentiment import (
+    SENTIMENT_LEXICON,
+    seed_sentiment_configuration,
+    seed_sentiment_terms,
+)
 from app.services.capture import FeedEntry, NewsCaptureService
 from app.services.sentiment_configuration import (
     SENTIMENT_SETTINGS,
@@ -165,6 +169,34 @@ def test_sentiment_seed_is_idempotent_and_keeps_changed_formula(engine) -> None:
         ).resolve().formula_noticia == "promedio_simple"
         session.execute(text("TRUNCATE configuracion"))
         session.commit()
+
+
+def test_lexicon_seed_is_idempotent_and_preserves_admin_changes(engine) -> None:
+    with Session(engine) as session:
+        seed_sentiment_terms(session)
+
+        terms = list(session.scalars(select(Term)).all())
+        by_identity = {(term.palabra, term.idioma): term for term in terms}
+        assert len(terms) == 60
+        for spanish, english, raw_value in SENTIMENT_LEXICON:
+            spanish_term = by_identity[(spanish, "es")]
+            english_term = by_identity[(english, "en")]
+            assert spanish_term.activo is True
+            assert english_term.activo is True
+            assert spanish_term.valor == english_term.valor == Decimal(raw_value)
+
+        edited = by_identity[("feliz", "es")]
+        edited.valor = Decimal("2")
+        edited.activo = False
+        session.commit()
+        edited_id = edited.id_termino
+
+        seed_sentiment_terms(session)
+        assert session.scalar(select(func.count()).select_from(Term)) == 60
+        preserved = session.get(Term, edited_id)
+        assert preserved is not None
+        assert preserved.valor == Decimal("2")
+        assert preserved.activo is False
 
 
 def test_startup_scale_warning_ignores_empty_dictionary(engine, caplog, monkeypatch) -> None:

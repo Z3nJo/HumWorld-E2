@@ -24,3 +24,20 @@ El sistema SHALL analizar `titulo` seguido de `descripcion`, separados por un es
 #### Scenario: Analizar una noticia sin descripción
 - **WHEN** una noticia no tiene descripción
 - **THEN** el análisis utiliza solamente su título
+
+## ADDED Requirements
+
+### Requirement: Léxico inicial bilingüe de sentimiento
+El sistema SHALL disponer de un léxico inicial curado de aproximadamente 30 pares de conceptos en español e inglés, con términos activos en el idioma correspondiente y valores de sentimiento revisados y comparables entre ambos idiomas.
+
+#### Scenario: Inicializar el léxico en una instalación limpia
+- **WHEN** se inicializa una base de datos sin los términos del léxico inicial
+- **THEN** se insertan los pares de términos españoles e ingleses con sus valores y estados definidos
+
+#### Scenario: Repetir la inicialización del léxico
+- **WHEN** se ejecuta nuevamente la inicialización del léxico
+- **THEN** no se duplican sus términos ni se reemplazan valores o estados existentes, incluidos cambios realizados por un administrador
+
+#### Scenario: Usar el léxico según el idioma de la noticia
+- **WHEN** una noticia analizada contiene una forma canónica o flexionada de un término del léxico inicial
+- **THEN** solo contribuyen los términos correspondientes al idioma de la noticia y sus aportes quedan asociados a la entrada canónica

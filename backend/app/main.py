@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.database import get_session_factory
 from app.repositories import ConfigurationRepository
 from app.scheduler import CaptureScheduler, read_capture_periodicity
-from app.seeds.sentiment import seed_sentiment_configuration
+from app.seeds.sentiment import seed_sentiment_configuration, seed_sentiment_terms
 from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
 from app.services.sentiment_configuration import (
     SentimentConfigurationService,
@@ -36,6 +36,7 @@ async def lifespan(application: FastAPI):
                 ConfigurationRepository(session)
             ).resolve()
             warn_if_scale_differs_from_dictionary(session, parameters)
+            seed_sentiment_terms(session)
         scheduler = CaptureScheduler()
         scheduler.start(read_capture_periodicity())
     else:
