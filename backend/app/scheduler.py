@@ -6,12 +6,18 @@ from typing import Any
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.database import get_session_factory
-from app.repositories import ConfigurationRepository, NewsCaptureRepository
+from app.repositories import (
+    ConfigurationRepository,
+    NewsCaptureRepository,
+    NewsPurgeRepository,
+)
 from app.services.capture import HttpxFeedparserClient, NewsCaptureService
 from app.services.configuration import ConfigurationService
+from app.services.purging import NewsPurgeService
 
 logger = logging.getLogger(__name__)
 CAPTURE_JOB_ID = "rss-news-capture"
+PURGE_JOB_ID = "news-purging"
 
 
 def run_capture_job() -> None:
@@ -31,6 +37,23 @@ def run_capture_job() -> None:
     )
 
 
+def run_purge_job() -> int | None:
+    with get_session_factory()() as session:
+        try:
+            retention_days = ConfigurationService(
+                ConfigurationRepository(session)
+            ).get_runtime_configuration().noticias_caducidad_dias
+            deleted = NewsPurgeService(NewsPurgeRepository(session)).purge_expired(
+                retention_days
+            )
+        except Exception:
+            session.rollback()
+            logger.exception("News purge failed")
+            return None
+    logger.info("News purge completed: deleted=%s", deleted)
+    return deleted
+
+
 def read_capture_periodicity() -> int:
     with get_session_factory()() as session:
         config = ConfigurationService(
@@ -43,9 +66,11 @@ class CaptureScheduler:
     def __init__(
         self,
         job: Callable[[], None] = run_capture_job,
+        purge_job: Callable[[], object] = run_purge_job,
         scheduler: BackgroundScheduler | None = None,
     ) -> None:
         self._job = job
+        self._purge_job = purge_job
         self._scheduler = scheduler or BackgroundScheduler(timezone=UTC)
         self._started = False
 
@@ -55,6 +80,15 @@ class CaptureScheduler:
             trigger="interval",
             minutes=periodicity_minutes,
             id=CAPTURE_JOB_ID,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self._scheduler.add_job(
+            self._purge_job,
+            trigger="interval",
+            minutes=periodicity_minutes,
+            id=PURGE_JOB_ID,
             replace_existing=True,
             max_instances=1,
             coalesce=True,
@@ -70,11 +104,16 @@ class CaptureScheduler:
             trigger="interval",
             minutes=periodicity_minutes,
         )
+        self._scheduler.reschedule_job(
+            PURGE_JOB_ID,
+            trigger="interval",
+            minutes=periodicity_minutes,
+        )
 
     def shutdown(self) -> None:
         if self._started:
             self._scheduler.shutdown(wait=False)
             self._started = False
 
-    def get_job(self) -> Any:
-        return self._scheduler.get_job(CAPTURE_JOB_ID)
+    def get_job(self, job_id: str = CAPTURE_JOB_ID) -> Any:
+        return self._scheduler.get_job(job_id)
