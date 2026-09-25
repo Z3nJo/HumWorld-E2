@@ -2,7 +2,14 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    field_validator,
+    model_validator,
+)
 
 from app.models.domains import Continent, IptcCategory, Language
 
@@ -155,3 +162,32 @@ class CaptureResponse(BaseModel):
     skipped_source_ids: list[int]
     inserted: int
     failed_sources: int
+
+
+class SentimentRequest(BaseModel):
+    texto: str = Field(
+        min_length=1,
+        max_length=10_000,
+        examples=["La comunidad celebró una buena noticia"],
+    )
+    idioma: Language = Field(examples=[Language.SPANISH])
+
+    @field_validator("texto")
+    @classmethod
+    def text_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("El texto no puede estar vacío o contener solo espacios")
+        return value
+
+
+class SentimentTermResponse(BaseModel):
+    id_termino: int
+    palabra: str
+    valor: Decimal
+    ocurrencias: int = Field(gt=0)
+    aporte_humor: Decimal
+
+
+class SentimentResponse(BaseModel):
+    valor_humor: Decimal | None
+    terminos: list[SentimentTermResponse]
