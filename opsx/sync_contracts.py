@@ -27,6 +27,10 @@ CONTRACTS = {
         PROJECT_ROOT / "openspec" / "specs" / "news-sentiment-analysis" / "spec.md",
         PROJECT_ROOT / "opsx" / "contracts" / "news-sentiment-analysis" / "spec.md",
     ),
+    "news-purging": (
+        PROJECT_ROOT / "openspec" / "specs" / "news-purging" / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "news-purging" / "spec.md",
+    ),
 }
 
 
