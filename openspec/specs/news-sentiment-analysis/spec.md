@@ -7,11 +7,19 @@ Calcular y conservar el humor de cada noticia capturada, junto con las aparicion
 ## Requirements
 
 ### Requirement: Reconocimiento de términos en noticias
-El sistema SHALL analizar `titulo` seguido de `descripcion`, separados por un espacio cuando exista descripción, sin descargar el cuerpo del artículo. SHALL contar las apariciones completas de cada término activo cuyo idioma coincida con el de la noticia, sin distinguir mayúsculas ni tildes. La coincidencia inicial SHALL basarse en la palabra o secuencia de palabras registrada, sin exigir lematización ni formas flexionadas de E2-H03.
+El sistema SHALL analizar `titulo` seguido de `descripcion`, separados por un espacio cuando exista descripción, sin descargar el cuerpo del artículo. SHALL contar las apariciones completas de cada término activo cuyo idioma coincida con el de la noticia, sin distinguir mayúsculas ni tildes. SHALL reconocer formas flexionadas comunes en español e inglés como apariciones del término canónico correspondiente, conservando ese término para el cálculo y el desglose. Las coincidencias MUST respetar límites de palabra y MUST NOT incluir términos inactivos ni términos de otro idioma.
 
 #### Scenario: Reconocer términos del idioma de la noticia
 - **WHEN** el título y la descripción de una noticia `es` contienen dos apariciones completas de un término español activo, con diferencias de mayúsculas o tildes
 - **THEN** el análisis reconoce ese término con dos ocurrencias
+
+#### Scenario: Reconocer términos del idioma inglés
+- **WHEN** el título y la descripción de una noticia `en` contienen apariciones completas de términos ingleses activos, incluyendo diferencias de mayúsculas
+- **THEN** el análisis reconoce esas apariciones y las asocia a sus términos canónicos ingleses
+
+#### Scenario: Reconocer una forma flexionada común
+- **WHEN** una noticia `es` contiene una forma flexionada común de un término español activo o una noticia `en` contiene una forma flexionada común de un término inglés activo
+- **THEN** el análisis contabiliza la aparición bajo el término canónico activo correspondiente
 
 #### Scenario: Excluir términos no aplicables
 - **WHEN** el texto contiene un término inactivo, uno registrado solo en otro idioma o una coincidencia que es parte de una palabra más larga
@@ -20,6 +28,21 @@ El sistema SHALL analizar `titulo` seguido de `descripcion`, separados por un es
 #### Scenario: Analizar una noticia sin descripción
 - **WHEN** una noticia no tiene descripción
 - **THEN** el análisis utiliza solamente su título
+
+### Requirement: Léxico inicial bilingüe de sentimiento
+El sistema SHALL disponer de un léxico inicial curado de aproximadamente 30 pares de conceptos en español e inglés, con términos activos en el idioma correspondiente y valores de sentimiento revisados y comparables entre ambos idiomas.
+
+#### Scenario: Inicializar el léxico en una instalación limpia
+- **WHEN** se inicializa una base de datos sin los términos del léxico inicial
+- **THEN** se insertan los pares de términos españoles e ingleses con sus valores y estados definidos
+
+#### Scenario: Repetir la inicialización del léxico
+- **WHEN** se ejecuta nuevamente la inicialización del léxico
+- **THEN** no se duplican sus términos ni se reemplazan valores o estados existentes, incluidos cambios realizados por un administrador
+
+#### Scenario: Usar el léxico según el idioma de la noticia
+- **WHEN** una noticia analizada contiene una forma canónica o flexionada de un término del léxico inicial
+- **THEN** solo contribuyen los términos correspondientes al idioma de la noticia y sus aportes quedan asociados a la entrada canónica
 
 ### Requirement: Cálculo parametrizado del humor
 El sistema SHALL calcular el valor a partir de los pares `(valor, ocurrencias)` reconocidos y de parámetros ya resueltos. Con `humor.formula_noticia = promedio_ponderado`, SHALL usar `Σ(ocurrencias × valor) / (humor.escala_maxima × Σocurrencias)`. SHALL admitir también `promedio_simple`, que promedia los valores de los términos distintos reconocidos y los divide por la escala, y `suma_acotada`, que acota `Σ(ocurrencias × valor) / (humor.escala_maxima × humor.saturacion_suma)` a `[-1, 1]`. El motor MUST rechazar un valor de término fuera de `[-10, 10]` o con más de un decimal efectivo, conforme a la precisión de ADR-001, en vez de recortarlo o redondearlo silenciosamente. MUST devolver `NULL` si no hay términos reconocidos.
