@@ -1,5 +1,6 @@
 import os
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import pytest
 from fastapi import Depends
@@ -11,7 +12,7 @@ from app.api.sources import get_capture_service
 from app.config import normalize_database_url
 from app.database import get_db
 from app.main import app
-from app.models import Channel, News, RssSource
+from app.models import Channel, News, NewsTerm, RssSource, Term
 from app.repositories import NewsCaptureRepository
 from app.services.capture import FeedEntry, NewsCaptureService
 
@@ -58,7 +59,7 @@ def clean_database(engine):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE noticia, fuente_rss, canal, configuracion "
+                "TRUNCATE noticia, termino, fuente_rss, canal, configuracion "
                 "RESTART IDENTITY CASCADE"
             )
         )
@@ -66,7 +67,7 @@ def clean_database(engine):
     with engine.begin() as connection:
         connection.execute(
             text(
-                "TRUNCATE noticia, fuente_rss, canal, configuracion "
+                "TRUNCATE noticia, termino, fuente_rss, canal, configuracion "
                 "RESTART IDENTITY CASCADE"
             )
         )
@@ -136,6 +137,9 @@ def test_manual_capture_api_persists_and_deduplicates_controlled_feed(
     engine,
 ) -> None:
     source = create_active_source(engine)
+    with Session(engine) as session:
+        session.add(Term(palabra="noticia", idioma="es", valor=Decimal("5")))
+        session.commit()
     client, feed_client = capture_client
 
     first_response = client.post("/api/v1/sources/capture")
@@ -166,6 +170,13 @@ def test_manual_capture_api_persists_and_deduplicates_controlled_feed(
         assert news.url == "https://example.com/vertical-1"
         assert news.idioma == "es"
         assert news.fecha_registro is not None
+        assert news.valor_humor == Decimal("0.500")
+        assert news.fecha_analisis == CAPTURED_AT
+        contribution = session.scalar(select(NewsTerm))
+        assert contribution is not None
+        assert contribution.id_noticia == news.id_noticia
+        assert contribution.ocurrencias == 1
+        assert contribution.aporte_humor == Decimal("5.00")
         assert persisted_source.fecha_ultima_captura == CAPTURED_AT
 
     second_response = client.post("/api/v1/sources/capture")
@@ -181,6 +192,7 @@ def test_manual_capture_api_persists_and_deduplicates_controlled_feed(
     ]
     with Session(engine) as session:
         assert session.scalar(select(text("count(*)")).select_from(News)) == 1
+        assert session.scalar(select(text("count(*)")).select_from(NewsTerm)) == 1
     assert feed_client.urls == [source.url_feed, source.url_feed]
 
 
@@ -200,3 +212,50 @@ def test_manual_capture_api_rejects_missing_source_without_partial_news(
     with Session(engine) as session:
         assert session.scalar(select(text("count(*)")).select_from(News)) == 0
     assert feed_client.urls == []
+
+
+def test_manual_capture_without_recognized_terms_is_still_analyzed(
+    capture_client, engine
+) -> None:
+    create_active_source(engine)
+    client, _ = capture_client
+
+    assert client.post("/api/v1/sources/capture").status_code == 200
+    with Session(engine) as session:
+        news = session.scalar(select(News))
+        assert news is not None
+        assert news.valor_humor is None
+        assert news.fecha_analisis == CAPTURED_AT
+        assert session.scalar(select(NewsTerm)) is None
+
+
+def test_invalid_term_rolls_back_only_its_source(capture_client, engine) -> None:
+    failed_source = create_active_source(engine)
+    with Session(engine) as session:
+        session.add(Term(palabra="noticia", idioma="es", valor=Decimal("11")))
+        session.add(
+            RssSource(
+                canal=Channel(nombre="Canal inglés", continente="Europa"),
+                nombre="Feed inglés",
+                url_feed="https://example.com/english.xml",
+                categoria_iptc="politics",
+                idioma="en",
+                activa=True,
+            )
+        )
+        session.commit()
+    client, _ = capture_client
+
+    response = client.post("/api/v1/sources/capture")
+    assert response.status_code == 200
+    report = response.json()
+    assert report["failed_sources"] == 1
+    assert report["inserted"] == 1
+    assert report["sources"][0]["source_id"] == failed_source.id_fuente
+    assert "fuera" in report["sources"][0]["error"]
+    assert report["sources"][1]["inserted"] == 1
+    with Session(engine) as session:
+        news = session.scalar(select(News))
+        assert news is not None and news.idioma == "en"
+        assert news.fecha_analisis == CAPTURED_AT
+        assert session.get(RssSource, failed_source.id_fuente).fecha_ultima_captura is None

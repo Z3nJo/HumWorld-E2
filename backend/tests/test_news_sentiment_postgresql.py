@@ -1,0 +1,353 @@
+import logging
+import os
+from datetime import UTC, datetime
+from decimal import Decimal
+from types import SimpleNamespace
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, func, inspect, select, text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.config import normalize_database_url
+from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
+from app.repositories import ConfigurationRepository, NewsCaptureRepository
+from app.seeds.sentiment import seed_sentiment_configuration
+from app.services.capture import FeedEntry, NewsCaptureService
+from app.services.sentiment_configuration import (
+    SENTIMENT_SETTINGS,
+    SentimentConfigurationService,
+    warn_if_scale_differs_from_dictionary,
+)
+
+pytestmark = pytest.mark.integration
+
+
+@pytest.fixture(scope="module")
+def engine():
+    raw_url = os.getenv("DATABASE_URL")
+    if not raw_url:
+        pytest.skip("DATABASE_URL is required for PostgreSQL integration tests")
+    database_engine = create_engine(normalize_database_url(raw_url), pool_pre_ping=True)
+    with database_engine.connect() as connection:
+        assert connection.scalar(text("SELECT 1")) == 1
+    assert "noticia_termino" in inspect(database_engine).get_table_names()
+    yield database_engine
+    database_engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def clean_database(engine):
+    with engine.begin() as connection:
+        connection.execute(
+            text("TRUNCATE noticia, termino, fuente_rss, canal RESTART IDENTITY CASCADE")
+        )
+    yield
+    with engine.begin() as connection:
+        connection.execute(
+            text("TRUNCATE noticia, termino, fuente_rss, canal RESTART IDENTITY CASCADE")
+        )
+
+
+def _news(session: Session, guid: str, *, analyzed: bool = False) -> News:
+    channel = Channel(nombre=f"Canal {guid}", continente="America")
+    source = RssSource(
+        canal=channel,
+        nombre=f"Feed {guid}",
+        url_feed=f"https://example.com/{guid}.xml",
+        categoria_iptc="society",
+        idioma="es",
+    )
+    news = News(
+        fuente=source,
+        guid_origen=guid,
+        titulo="Acuerdo",
+        url=f"https://example.com/{guid}",
+        idioma="es",
+        valor_humor=Decimal("0.500") if analyzed else None,
+        fecha_analisis=datetime.now(UTC) if analyzed else None,
+    )
+    session.add(news)
+    session.flush()
+    return news
+
+
+def test_news_term_cascades_with_news_but_preserves_inactive_term(engine) -> None:
+    with Session(engine) as session:
+        news = _news(session, "one", analyzed=True)
+        term = Term(palabra="acuerdo", idioma="es", valor=Decimal("5"), activo=False)
+        session.add(term)
+        session.flush()
+        session.add(
+            NewsTerm(
+                id_noticia=news.id_noticia,
+                id_termino=term.id_termino,
+                ocurrencias=2,
+                aporte_humor=Decimal("10.00"),
+            )
+        )
+        session.commit()
+
+        session.delete(news)
+        session.commit()
+        assert session.scalar(select(NewsTerm)) is None
+        assert session.get(Term, term.id_termino) is not None
+
+
+def test_occurrences_must_be_positive(engine) -> None:
+    with Session(engine) as session:
+        news = _news(session, "two")
+        term = Term(palabra="acuerdo", idioma="es", valor=Decimal("5"))
+        session.add(term)
+        session.flush()
+        session.add(
+            NewsTerm(
+                id_noticia=news.id_noticia,
+                id_termino=term.id_termino,
+                ocurrencias=0,
+                aporte_humor=Decimal("0"),
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+
+def test_pending_selector_uses_analysis_date_and_humor_precision(engine) -> None:
+    with Session(engine) as session:
+        pending = _news(session, "pending")
+        _news(session, "analyzed", analyzed=True)
+        session.commit()
+        selected = list(
+            session.scalars(select(News).where(News.fecha_analisis.is_(None))).all()
+        )
+        assert [item.id_noticia for item in selected] == [pending.id_noticia]
+
+    inspector = inspect(engine)
+    humor_column = next(
+        column for column in inspector.get_columns("noticia")
+        if column["name"] == "valor_humor"
+    )
+    assert humor_column["type"].precision == 4
+    assert humor_column["type"].scale == 3
+    indexes = inspector.get_indexes("noticia")
+    assert any(index["name"] == "ix_noticia_pendiente_analisis" for index in indexes)
+
+
+def test_sentiment_seed_is_idempotent_and_keeps_changed_formula(engine) -> None:
+    with Session(engine) as session:
+        session.execute(text("TRUNCATE configuracion"))
+        session.commit()
+        seed_sentiment_configuration(session)
+        rows = list(session.scalars(select(Configuration)).all())
+        assert {row.clave for row in rows} == set(SENTIMENT_SETTINGS)
+        assert all(row.descripcion for row in rows)
+        assert {row.clave: row.tipo for row in rows} == {
+            key: config_type for key, (_, config_type, _) in SENTIMENT_SETTINGS.items()
+        }
+        formula = session.get(Configuration, "humor.formula_noticia")
+        assert formula is not None
+        formula.valor = "promedio_simple"
+        session.commit()
+
+        seed_sentiment_configuration(session)
+        session.refresh(formula)
+        assert formula.valor == "promedio_simple"
+        assert SentimentConfigurationService(
+            ConfigurationRepository(session)
+        ).resolve().formula_noticia == "promedio_simple"
+        session.execute(text("TRUNCATE configuracion"))
+        session.commit()
+
+
+def test_startup_scale_warning_ignores_empty_dictionary(engine, caplog, monkeypatch) -> None:
+    monkeypatch.setattr(
+        logging.getLogger("app.services.sentiment_configuration"), "disabled", False
+    )
+    with Session(engine) as session:
+        parameters = SentimentConfigurationService(
+            ConfigurationRepository(session)
+        ).resolve()
+        assert parameters.escala_maxima == Decimal("10")
+        warn_if_scale_differs_from_dictionary(session, parameters)
+        assert not caplog.records
+        session.add(Term(palabra="acuerdo", idioma="es", valor=Decimal("5")))
+        session.commit()
+        assert session.scalar(select(func.max(func.abs(Term.valor)))) == Decimal("5")
+        warn_if_scale_differs_from_dictionary(session, parameters)
+        assert "difiere" in caplog.text
+
+
+class UnusedFeedClient:
+    def fetch(self, url: str):
+        raise AssertionError("El procesamiento de pendientes no debe descargar RSS")
+
+
+def test_backfill_is_bounded_and_preserves_analyzed_snapshots(engine) -> None:
+    with Session(engine) as session:
+        first = _news(session, "backfill-one")
+        second = _news(session, "backfill-two")
+        second.titulo = "Sin coincidencias"
+        term = Term(palabra="acuerdo", idioma="es", valor=Decimal("5"))
+        session.add(term)
+        session.commit()
+        first_id, second_id = first.id_noticia, second.id_noticia
+
+    with Session(engine) as session:
+        service = NewsCaptureService(NewsCaptureRepository(session), UnusedFeedClient())
+        assert service.process_pending_news(limit=1) == 1
+        assert service.process_pending_news(limit=1) == 1
+        assert service.process_pending_news(limit=1) == 0
+
+    with Session(engine) as session:
+        first = session.get(News, first_id)
+        second = session.get(News, second_id)
+        assert first is not None and first.valor_humor == Decimal("0.500")
+        assert first.fecha_analisis is not None
+        assert second is not None and second.valor_humor is None
+        assert second.fecha_analisis is not None
+        term = session.scalar(select(Term))
+        assert term is not None
+        term.valor = Decimal("-5")
+        term.activo = False
+        session.commit()
+
+    with Session(engine) as session:
+        service = NewsCaptureService(NewsCaptureRepository(session), UnusedFeedClient())
+        assert service.process_pending_news() == 0
+        assert session.get(News, first_id).valor_humor == Decimal("0.500")
+        assert session.scalar(select(NewsTerm)).aporte_humor == Decimal("5.00")
+
+
+def test_concurrent_pending_claims_skip_locked_rows(engine) -> None:
+    with Session(engine) as setup:
+        _news(setup, "locked")
+        setup.commit()
+
+    with Session(engine) as first_session, Session(engine) as second_session:
+        first = NewsCaptureRepository(first_session).claim_pending_news(1)
+        second = NewsCaptureRepository(second_session).claim_pending_news(1)
+        assert len(first) == 1
+        assert second == []
+        first_session.rollback()
+        second_session.rollback()
+
+
+def test_scheduled_capture_recovers_pending_without_active_sources(engine, monkeypatch) -> None:
+    from app import scheduler
+
+    with Session(engine) as session:
+        news = _news(session, "scheduled")
+        news.fuente.activa = False
+        session.commit()
+        news_id = news.id_noticia
+
+    monkeypatch.setattr(scheduler, "get_session_factory", lambda: lambda: Session(engine))
+    scheduler.run_capture_job()
+
+    with Session(engine) as session:
+        recovered = session.get(News, news_id)
+        assert recovered is not None
+        assert recovered.fecha_analisis is not None
+        assert recovered.valor_humor is None
+
+
+def test_capture_reconstructs_weighted_humor_and_uses_changed_formula(engine) -> None:
+    class ControlledFeed:
+        def __init__(self) -> None:
+            self.guid = "weighted-one"
+
+        def fetch(self, url: str):
+            return [
+                FeedEntry(
+                    guid=self.guid,
+                    title="Guerra guerra acuerdo",
+                    description="Crisis",
+                    link=f"https://example.com/{self.guid}",
+                    published_at=None,
+                )
+            ]
+
+    with Session(engine, expire_on_commit=False) as session:
+        session.execute(text("TRUNCATE configuracion"))
+        session.commit()
+        seed_sentiment_configuration(session)
+        source = RssSource(
+            canal=Channel(nombre="Canal fórmula", continente="America"),
+            nombre="Feed fórmula",
+            url_feed="https://example.com/formula.xml",
+            categoria_iptc="society",
+            idioma="es",
+        )
+        session.add_all(
+            [
+                source,
+                Term(palabra="guerra", idioma="es", valor=Decimal("-9")),
+                Term(palabra="crisis", idioma="es", valor=Decimal("-6")),
+                Term(palabra="acuerdo", idioma="es", valor=Decimal("5")),
+            ]
+        )
+        session.commit()
+        feed = ControlledFeed()
+        service = NewsCaptureService(NewsCaptureRepository(session), feed)
+
+        assert service.capture_active_sources().inserted == 1
+        first = session.scalar(select(News).where(News.guid_origen == "weighted-one"))
+        assert first is not None and first.valor_humor == Decimal("-0.475")
+        contributions = list(
+            session.scalars(
+                select(NewsTerm).where(NewsTerm.id_noticia == first.id_noticia)
+            ).all()
+        )
+        assert len(contributions) == 3
+        numerator = sum((item.aporte_humor for item in contributions), Decimal(0))
+        occurrences = sum(item.ocurrencias for item in contributions)
+        assert numerator / (Decimal(10) * occurrences) == first.valor_humor
+
+        formula = session.get(Configuration, "humor.formula_noticia")
+        assert formula is not None
+        formula.valor = "promedio_simple"
+        session.commit()
+        feed.guid = "simple-two"
+        assert service.capture_active_sources().inserted == 1
+        second = session.scalar(select(News).where(News.guid_origen == "simple-two"))
+        assert second is not None and second.valor_humor == Decimal("-0.333")
+        assert first.valor_humor == Decimal("-0.475")
+        session.execute(text("TRUNCATE configuracion"))
+        session.commit()
+
+
+def test_enabled_startup_seeds_settings_and_warns_about_scale(engine, monkeypatch, caplog) -> None:
+    from app import main as main_module
+
+    monkeypatch.setattr(
+        logging.getLogger("app.services.sentiment_configuration"), "disabled", False
+    )
+
+    class FakeScheduler:
+        def start(self, periodicity_minutes: int) -> None:
+            assert periodicity_minutes == 60
+
+        def shutdown(self) -> None:
+            pass
+
+    with Session(engine) as session:
+        session.execute(text("TRUNCATE configuracion"))
+        session.add(Term(palabra="acuerdo", idioma="es", valor=Decimal("5")))
+        session.commit()
+
+    monkeypatch.setattr(main_module, "CaptureScheduler", FakeScheduler)
+    monkeypatch.setattr(
+        main_module,
+        "get_settings",
+        lambda: SimpleNamespace(capture_scheduler_enabled=True),
+    )
+    with TestClient(main_module.app):
+        pass
+
+    with Session(engine) as session:
+        keys = {row.clave for row in session.scalars(select(Configuration)).all()}
+        assert keys == set(SENTIMENT_SETTINGS)
+        assert "difiere" in caplog.text
+        session.execute(text("TRUNCATE configuracion"))
+        session.commit()
