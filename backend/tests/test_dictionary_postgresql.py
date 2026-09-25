@@ -39,7 +39,7 @@ def engine(database_url: str):
 def client(engine):
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE termino RESTART IDENTITY"))
+        connection.execute(text("TRUNCATE noticia_termino, termino RESTART IDENTITY"))
 
     def override_db():
         with factory() as session:
@@ -52,7 +52,7 @@ def client(engine):
     finally:
         app.dependency_overrides.clear()
         with engine.begin() as connection:
-            connection.execute(text("TRUNCATE termino RESTART IDENTITY"))
+            connection.execute(text("TRUNCATE noticia_termino, termino RESTART IDENTITY"))
 
 
 def create_payload(
@@ -209,7 +209,7 @@ def test_search_treats_sql_wildcards_as_literal_characters(client) -> None:
 
 def test_repository_rolls_back_after_database_uniqueness_error(engine) -> None:
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE termino RESTART IDENTITY"))
+        connection.execute(text("TRUNCATE noticia_termino, termino RESTART IDENTITY"))
     try:
         with Session(engine, expire_on_commit=False) as session:
             repository = TermRepository(session)
@@ -226,4 +226,4 @@ def test_repository_rolls_back_after_database_uniqueness_error(engine) -> None:
             assert session.scalar(text("SELECT count(*) FROM termino")) == 1
     finally:
         with engine.begin() as connection:
-            connection.execute(text("TRUNCATE termino RESTART IDENTITY"))
+            connection.execute(text("TRUNCATE noticia_termino, termino RESTART IDENTITY"))

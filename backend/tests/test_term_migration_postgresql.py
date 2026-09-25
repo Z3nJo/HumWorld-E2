@@ -32,6 +32,7 @@ def test_term_migration_supports_downgrade_and_upgrade() -> None:
 
         command.upgrade(config, "head")
         assert "termino" in inspect(engine).get_table_names()
+        assert "noticia_termino" in inspect(engine).get_table_names()
 
         command.downgrade(config, "20260901_01")
         tables = set(inspect(engine).get_table_names())
@@ -41,6 +42,7 @@ def test_term_migration_supports_downgrade_and_upgrade() -> None:
         command.upgrade(config, "head")
         inspector = inspect(engine)
         assert "termino" in inspector.get_table_names()
+        assert "noticia_termino" in inspector.get_table_names()
         assert {column["name"] for column in inspector.get_columns("termino")} == {
             "id_termino",
             "palabra",
@@ -52,7 +54,7 @@ def test_term_migration_supports_downgrade_and_upgrade() -> None:
         }
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
-                "20260921_01"
+                "20260924_01"
             )
     finally:
         command.upgrade(config, "head")
