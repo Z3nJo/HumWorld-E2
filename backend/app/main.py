@@ -8,7 +8,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
-from app.api import configuration_router, dictionary_router, sources_router
+from app.api import (
+    configuration_router,
+    dictionary_router,
+    sentiment_router,
+    sources_router,
+)
 from app.config import get_settings
 from app.database import get_session_factory
 from app.repositories import ConfigurationRepository
@@ -59,6 +64,7 @@ app = FastAPI(
 
 app.include_router(configuration_router, prefix="/api/v1")
 app.include_router(dictionary_router, prefix="/api/v1")
+app.include_router(sentiment_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 
 
