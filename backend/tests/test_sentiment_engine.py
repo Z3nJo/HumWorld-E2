@@ -43,6 +43,40 @@ def test_recognizes_title_without_description() -> None:
     assert recognized == (RecognizedTerm(1, Decimal("5"), 1),)
 
 
+def test_recognizes_common_spanish_inflections_as_canonical_terms() -> None:
+    recognized = ExactTermRecognizer().recognize(
+        title="Personas felices y una comunidad mala",
+        description="Un resultado feliz y varias malas noticias",
+        language="es",
+        terms=[
+            SentimentTerm(1, "feliz", "es", Decimal("7"), True),
+            SentimentTerm(2, "malo", "es", Decimal("-6"), True),
+        ],
+    )
+
+    assert recognized == (
+        RecognizedTerm(1, Decimal("7"), 2),
+        RecognizedTerm(2, Decimal("-6"), 2),
+    )
+
+
+def test_recognizes_common_english_inflections_as_canonical_terms() -> None:
+    recognized = ExactTermRecognizer().recognize(
+        title="Happier people found the best outcome",
+        description="A happy result, better than before",
+        language="en",
+        terms=[
+            SentimentTerm(1, "happy", "en", Decimal("7"), True),
+            SentimentTerm(2, "good", "en", Decimal("8"), True),
+        ],
+    )
+
+    assert recognized == (
+        RecognizedTerm(1, Decimal("7"), 2),
+        RecognizedTerm(2, Decimal("8"), 2),
+    )
+
+
 def test_weighted_formula_persists_auditable_contributions() -> None:
     result = calculate_sentiment(
         [

@@ -11,6 +11,16 @@ TERM_PRECISION = Decimal("0.1")
 HUMOR_PRECISION = Decimal("0.001")
 CONTRIBUTION_PRECISION = Decimal("0.01")
 FORMULAS = frozenset({"promedio_ponderado", "promedio_simple", "suma_acotada"})
+_SPANISH_GENDER_FORMS = {
+    "bueno": ("buen", "buena", "buenos", "buenas"),
+    "malo": ("mala", "malos", "malas"),
+}
+_IRREGULAR_ENGLISH_FORMS = {
+    "good": ("better", "best"),
+    "bad": ("worse", "worst"),
+    "crisis": ("crises",),
+    "happy": ("happier", "happiest"),
+}
 
 
 class SentimentValidationError(ValueError):
@@ -81,6 +91,55 @@ def _tokens(value: str) -> tuple[str, ...]:
     return tuple(re.findall(r"\w+", unaccented, flags=re.UNICODE))
 
 
+def _english_inflections(word: str) -> set[str]:
+    """Return a bounded set of common English plural and curated degree forms."""
+    irregular_forms = _IRREGULAR_ENGLISH_FORMS.get(word)
+    if irregular_forms is not None:
+        return set(irregular_forms)
+    forms: set[str] = set()
+    if len(word) < 3:
+        return forms
+
+    if word.endswith("y") and word[-2] not in "aeiou":
+        forms.add(f"{word[:-1]}ies")
+    elif word.endswith(("s", "x", "z", "ch", "sh")):
+        forms.add(f"{word}es")
+    else:
+        forms.add(f"{word}s")
+    return forms
+
+
+def _spanish_inflections(word: str) -> set[str]:
+    """Return common Spanish plural forms plus frequent gender variants."""
+    forms = set(_SPANISH_GENDER_FORMS.get(word, ()))
+    if len(word) < 3 or word.endswith("s"):
+        return forms
+    if word.endswith("z"):
+        forms.add(f"{word[:-1]}ces")
+    elif word.endswith(("a", "e", "i", "o", "u")):
+        forms.add(f"{word}s")
+    else:
+        forms.add(f"{word}es")
+    return forms
+
+
+def _term_patterns(term: str, language: str) -> set[tuple[str, ...]]:
+    canonical = _tokens(term)
+    if not canonical:
+        return set()
+
+    patterns = {canonical}
+    last_word = canonical[-1]
+    if language == "es":
+        inflections = _spanish_inflections(last_word)
+    elif language == "en":
+        inflections = _english_inflections(last_word)
+    else:
+        inflections = set()
+    patterns.update((*canonical[:-1], form) for form in inflections)
+    return patterns
+
+
 class ExactTermRecognizer:
     def recognize(
         self,
@@ -96,14 +155,13 @@ class ExactTermRecognizer:
         for term in terms:
             if not term.activo or term.idioma != language:
                 continue
-            pattern = _tokens(term.palabra)
-            if not pattern:
-                continue
-            size = len(pattern)
-            occurrences = sum(
-                words[index : index + size] == pattern
-                for index in range(len(words) - size + 1)
-            )
+            occurrences = 0
+            for pattern in _term_patterns(term.palabra, language):
+                size = len(pattern)
+                occurrences += sum(
+                    words[index : index + size] == pattern
+                    for index in range(len(words) - size + 1)
+                )
             if occurrences:
                 recognized.append(
                     RecognizedTerm(term.id_termino, term.valor, occurrences)
