@@ -31,6 +31,14 @@ class TermRepository:
         statement = statement.order_by(Term.palabra, Term.idioma, Term.id_termino)
         return list(self._session.scalars(statement).all())
 
+    def list_active_terms(self, language: str) -> list[Term]:
+        statement = (
+            select(Term)
+            .where(Term.idioma == language, Term.activo.is_(True))
+            .order_by(Term.id_termino)
+        )
+        return list(self._session.scalars(statement).all())
+
     def create_term(self, values: Mapping[str, Any]) -> Term:
         term = Term(**values)
         self._session.add(term)
