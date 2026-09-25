@@ -23,6 +23,10 @@ CONTRACTS = {
         PROJECT_ROOT / "openspec" / "specs" / "integration-verification" / "spec.md",
         PROJECT_ROOT / "opsx" / "contracts" / "integration-verification" / "spec.md",
     ),
+    "news-sentiment-analysis": (
+        PROJECT_ROOT / "openspec" / "specs" / "news-sentiment-analysis" / "spec.md",
+        PROJECT_ROOT / "opsx" / "contracts" / "news-sentiment-analysis" / "spec.md",
+    ),
 }
 
 
