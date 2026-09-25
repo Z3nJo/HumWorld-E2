@@ -50,21 +50,28 @@ def clean_database(engine):
         )
 
 
-def _news(session: Session, guid: str, *, analyzed: bool = False) -> News:
+def _news(
+    session: Session,
+    guid: str,
+    *,
+    analyzed: bool = False,
+    language: str = "es",
+    title: str = "Acuerdo",
+) -> News:
     channel = Channel(nombre=f"Canal {guid}", continente="America")
     source = RssSource(
         canal=channel,
         nombre=f"Feed {guid}",
         url_feed=f"https://example.com/{guid}.xml",
         categoria_iptc="society",
-        idioma="es",
+        idioma=language,
     )
     news = News(
         fuente=source,
         guid_origen=guid,
-        titulo="Acuerdo",
+        titulo=title,
         url=f"https://example.com/{guid}",
-        idioma="es",
+        idioma=language,
         valor_humor=Decimal("0.500") if analyzed else None,
         fecha_analisis=datetime.now(UTC) if analyzed else None,
     )
@@ -217,6 +224,64 @@ def test_backfill_is_bounded_and_preserves_analyzed_snapshots(engine) -> None:
         assert service.process_pending_news() == 0
         assert session.get(News, first_id).valor_humor == Decimal("0.500")
         assert session.scalar(select(NewsTerm)).aporte_humor == Decimal("5.00")
+
+
+def test_bilingual_inflections_persist_against_canonical_terms(engine) -> None:
+    with Session(engine) as session:
+        spanish_news = _news(
+            session,
+            "bilingual-es",
+            language="es",
+            title="Personas felices",
+        )
+        english_news = _news(
+            session,
+            "bilingual-en",
+            language="en",
+            title="Happier people",
+        )
+        spanish_term = Term(palabra="feliz", idioma="es", valor=Decimal("7"))
+        english_term = Term(palabra="happy", idioma="en", valor=Decimal("7"))
+        session.add_all([spanish_term, english_term])
+        session.commit()
+        news_ids = (spanish_news.id_noticia, english_news.id_noticia)
+        term_ids = (spanish_term.id_termino, english_term.id_termino)
+
+    with Session(engine) as session:
+        service = NewsCaptureService(NewsCaptureRepository(session), UnusedFeedClient())
+        assert service.process_pending_news() == 2
+
+    with Session(engine) as session:
+        persisted_news = {
+            news.idioma: news
+            for news in session.scalars(
+                select(News).where(News.id_noticia.in_(news_ids))
+            ).all()
+        }
+        contributions = {
+            contribution.id_noticia: contribution
+            for contribution in session.scalars(
+                select(NewsTerm).where(NewsTerm.id_noticia.in_(news_ids))
+            ).all()
+        }
+        assert persisted_news["es"].valor_humor == Decimal("0.700")
+        assert persisted_news["en"].valor_humor == Decimal("0.700")
+        assert contributions[news_ids[0]].id_termino == term_ids[0]
+        assert contributions[news_ids[1]].id_termino == term_ids[1]
+        assert contributions[news_ids[0]].ocurrencias == 1
+        assert contributions[news_ids[1]].ocurrencias == 1
+        assert contributions[news_ids[0]].aporte_humor == Decimal("7.00")
+        assert contributions[news_ids[1]].aporte_humor == Decimal("7.00")
+
+        session.get(Term, term_ids[0]).valor = Decimal("-7")
+        session.get(Term, term_ids[1]).valor = Decimal("-7")
+        session.commit()
+
+    with Session(engine) as session:
+        service = NewsCaptureService(NewsCaptureRepository(session), UnusedFeedClient())
+        assert service.process_pending_news() == 0
+        assert session.get(News, news_ids[0]).valor_humor == Decimal("0.700")
+        assert session.get(News, news_ids[1]).valor_humor == Decimal("0.700")
 
 
 def test_concurrent_pending_claims_skip_locked_rows(engine) -> None:
