@@ -8,9 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, inspect, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import normalize_database_url
+from app.database import get_db
+from app.main import app
 from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
 from app.repositories import ConfigurationRepository, NewsCaptureRepository
 from app.seeds.sentiment import (
@@ -314,6 +316,91 @@ def test_bilingual_inflections_persist_against_canonical_terms(engine) -> None:
         assert service.process_pending_news() == 0
         assert session.get(News, news_ids[0]).valor_humor == Decimal("0.700")
         assert session.get(News, news_ids[1]).valor_humor == Decimal("0.700")
+
+
+def test_sentiment_endpoint_matches_persisted_news_without_writes(engine) -> None:
+    with Session(engine) as session:
+        news = _news(
+            session,
+            "sentiment-endpoint-parity",
+            language="es",
+            title="Buenas noticias",
+        )
+        news.descripcion = "La comunidad celebra"
+        term = Term(palabra="bueno", idioma="es", valor=Decimal("5"))
+        session.add(term)
+        session.commit()
+        news_id, term_id = news.id_noticia, term.id_termino
+
+    with Session(engine) as session:
+        capture_service = NewsCaptureService(
+            NewsCaptureRepository(session), UnusedFeedClient()
+        )
+        assert capture_service.process_pending_news() == 1
+
+    with Session(engine) as session:
+        news = session.get(News, news_id)
+        contribution = session.scalar(
+            select(NewsTerm).where(NewsTerm.id_noticia == news_id)
+        )
+        assert news is not None and news.valor_humor == Decimal("0.500")
+        assert contribution is not None
+        assert contribution.id_termino == term_id
+        assert contribution.ocurrencias == 1
+        assert contribution.aporte_humor == Decimal("5.00")
+        expected_humor = news.valor_humor
+        expected_analysis_date = news.fecha_analisis
+        expected_text = f"{news.titulo} {news.descripcion}"
+        before_news_count = session.scalar(select(func.count()).select_from(News))
+        before_contribution_count = session.scalar(
+            select(func.count()).select_from(NewsTerm)
+        )
+
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+
+    def override_get_db():
+        with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/sentiment",
+                json={"texto": expected_text, "idioma": "es"},
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert Decimal(body["valor_humor"]) == expected_humor
+        assert body["terminos"] == [
+            {
+                "id_termino": term_id,
+                "palabra": "bueno",
+                "valor": "5",
+                "ocurrencias": 1,
+                "aporte_humor": "5.00",
+            }
+        ]
+    finally:
+        app.dependency_overrides.clear()
+
+    with Session(engine) as session:
+        assert session.scalar(select(func.count()).select_from(News)) == before_news_count
+        assert (
+            session.scalar(select(func.count()).select_from(NewsTerm))
+            == before_contribution_count
+        )
+        persisted = session.get(News, news_id)
+        persisted_contribution = session.scalar(
+            select(NewsTerm).where(NewsTerm.id_noticia == news_id)
+        )
+        assert persisted is not None
+        assert persisted.valor_humor == expected_humor
+        assert persisted.fecha_analisis == expected_analysis_date
+        assert persisted_contribution is not None
+        assert persisted_contribution.id_termino == term_id
+        assert persisted_contribution.ocurrencias == 1
+        assert persisted_contribution.aporte_humor == Decimal("5.00")
 
 
 def test_concurrent_pending_claims_skip_locked_rows(engine) -> None:

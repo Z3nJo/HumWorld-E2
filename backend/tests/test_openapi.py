@@ -57,6 +57,35 @@ def test_openapi_documents_config_operations_and_errors() -> None:
         assert "422" not in operation["responses"]
 
 
+def test_openapi_documents_sentiment_endpoint_and_schemas() -> None:
+    schema = app.openapi()
+    operation = schema["paths"]["/api/v1/sentiment"]["post"]
+    schemas = schema["components"]["schemas"]
+
+    assert operation["responses"].keys() >= {"200", "400", "500"}
+    assert "422" not in operation["responses"]
+    request_schema = operation["requestBody"]["content"]["application/json"][
+        "schema"
+    ]
+    assert request_schema["$ref"].endswith("/SentimentRequest")
+    response_schema = operation["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]
+    assert response_schema["$ref"].endswith("/SentimentResponse")
+    assert set(schemas["SentimentRequest"]["properties"]) == {"texto", "idioma"}
+    assert set(schemas["SentimentResponse"]["properties"]) == {
+        "valor_humor",
+        "terminos",
+    }
+    assert set(schemas["SentimentTermResponse"]["properties"]) == {
+        "id_termino",
+        "palabra",
+        "valor",
+        "ocurrencias",
+        "aporte_humor",
+    }
+
+
 def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/dictionary"]
