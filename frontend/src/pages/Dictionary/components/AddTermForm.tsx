@@ -34,6 +34,8 @@ export const AddTermForm = ({ maxAbsValue = 10, onSubmit }: AddTermFormProps) =>
       newErrors.value = 'Indica un valor numérico';
     } else if (isNaN(Number(valueStr))) {
       newErrors.value = 'El valor debe ser un número decimal';
+    } else if (Number(valueStr) < -10 || Number(valueStr) > 10) {
+      newErrors.value = 'El valor debe estar entre −10 y +10';
     }
 
     setErrors(newErrors);
@@ -107,6 +109,8 @@ export const AddTermForm = ({ maxAbsValue = 10, onSubmit }: AddTermFormProps) =>
               <input
                 type="number"
                 step="any"
+                min="-10"
+                max="10"
                 className={`inp mono ${errors.value ? 'err' : ''}`}
                 placeholder="0"
                 value={valueStr}

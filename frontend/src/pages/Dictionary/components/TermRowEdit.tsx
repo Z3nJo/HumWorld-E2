@@ -36,6 +36,11 @@ export const TermRowEdit = ({
       return;
     }
 
+    if (numericValue < -10 || numericValue > 10) {
+      setError('El valor debe estar entre −10 y +10');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -81,6 +86,8 @@ export const TermRowEdit = ({
           <input
             type="number"
             step="any"
+            min="-10"
+            max="10"
             className="inp mono"
             style={{ width: '90px' }}
             value={valueStr}

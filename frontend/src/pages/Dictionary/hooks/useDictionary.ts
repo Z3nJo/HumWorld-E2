@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createTerm, deleteTerm, fetchTerms, patchTerm } from '../../../api/dictionary';
-import type { CreateTermDto, PatchTermDto, StatusFilterOption, Term } from '../../../types/dictionary';
+import type { CreateTermDto, PatchTermDto, Term } from '../../../types/dictionary';
 
 export function useDictionary() {
   const [terms, setTerms] = useState<Term[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilterOption>('active');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Track latest terms in ref for safe rollbacks
@@ -95,14 +94,12 @@ export function useDictionary() {
     }
   }, []);
 
-  // Optimistic Remove (logical delete: sets active to false)
+  // Optimistic Remove (physical delete from list)
   const removeTerm = useCallback(async (id: number): Promise<void> => {
     const previous = termsRef.current;
 
-    // Optimistic update: mark as inactive
-    setTerms((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, active: false, updated_at: new Date().toISOString() } : t))
-    );
+    // Optimistic update: remove from list immediately
+    setTerms((prev) => prev.filter((t) => t.id !== id));
 
     try {
       await deleteTerm(id);
@@ -117,10 +114,10 @@ export function useDictionary() {
   const visibleTerms = useMemo(() => {
     return terms
       .filter((term) => {
-        // Status filter
-        if (statusFilter === 'active' && !term.active) return false;
-        if (statusFilter === 'inactive' && term.active) return false;
-        // 'all' includes both active and inactive
+        // La vista principal muestra únicamente términos vigentes.
+        // Los inactivos se conservan en la base de datos por el borrado lógico,
+        // pero no deben aparecer en el diccionario operativo.
+        if (!term.active) return false;
 
         // Text search filter (case-insensitive substring match)
         if (searchQuery.trim()) {
@@ -132,7 +129,7 @@ export function useDictionary() {
         return true;
       })
       .sort((a, b) => a.word.localeCompare(b.word, 'es', { sensitivity: 'base' }));
-  }, [terms, statusFilter, searchQuery]);
+  }, [terms, searchQuery]);
 
   // Max absolute value across visible terms for proportional ValueBar scaling
   const maxAbsValue = useMemo(() => {
@@ -147,8 +144,6 @@ export function useDictionary() {
     maxAbsValue,
     loading,
     error,
-    statusFilter,
-    setStatusFilter,
     searchQuery,
     setSearchQuery,
     load,

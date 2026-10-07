@@ -1,4 +1,4 @@
-import type { PatchTermDto, StatusFilterOption, Term } from '../../../types/dictionary';
+import type { PatchTermDto, Term } from '../../../types/dictionary';
 import { TermRow } from './TermRow';
 import './TermTable.css';
 
@@ -6,7 +6,6 @@ interface TermTableProps {
   terms: Term[];
   maxAbsValue: number;
   highlight?: string;
-  statusFilter: StatusFilterOption;
   searchQuery: string;
   newTermIds?: Set<number>;
   onUpdate: (id: number, data: PatchTermDto) => Promise<void>;
@@ -17,7 +16,6 @@ export const TermTable = ({
   terms,
   maxAbsValue,
   highlight,
-  statusFilter,
   searchQuery,
   newTermIds,
   onUpdate,
@@ -26,12 +24,6 @@ export const TermTable = ({
   const getEmptyMessage = () => {
     if (searchQuery.trim()) {
       return `Sin resultados para «${searchQuery}». Puedes añadirlo con el formulario superior.`;
-    }
-    if (statusFilter === 'inactive') {
-      return 'No hay términos inactivos en el diccionario.';
-    }
-    if (statusFilter === 'active') {
-      return 'No hay términos activos en el diccionario.';
     }
     return 'No hay términos registrados en el diccionario.';
   };

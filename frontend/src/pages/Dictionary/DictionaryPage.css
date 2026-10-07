@@ -128,9 +128,30 @@
   font: 500 16px var(--serif);
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line2);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media (max-width: 820px) {
   .top, .view {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

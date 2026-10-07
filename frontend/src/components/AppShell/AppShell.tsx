@@ -58,20 +58,11 @@ export const AppShell = () => {
           </NavLink>
         </nav>
 
-        <div className="navfoot">
-          API <code>/api/v1</code><br />
-          Contrato <code>/api/docs</code><br />
-          Prototipo · datos de ejemplo
-        </div>
+
       </aside>
 
       <main>
-        <div className="authbar">
-          <i aria-hidden="true" />
-          <span>
-            <b>Entorno sin autenticación.</b> Cualquier persona con acceso a esta URL puede modificar fuentes, diccionario y parámetros.
-          </span>
-        </div>
+
 
         <Outlet />
       </main>

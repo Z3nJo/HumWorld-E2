@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useToast } from '../../hooks/useToast';
 import type { CreateTermDto, PatchTermDto } from '../../types/dictionary';
 import { AddTermForm } from './components/AddTermForm';
 import { SearchBar } from './components/SearchBar';
-import { StatusFilter } from './components/StatusFilter';
 import { TermTable } from './components/TermTable';
 import { useDebounce } from './hooks/useDebounce';
 import { useDictionary } from './hooks/useDictionary';
 import './DictionaryPage.css';
+
+const TERMS_PER_PAGE = 12;
 
 export const DictionaryPage = () => {
   const {
@@ -16,8 +17,6 @@ export const DictionaryPage = () => {
     maxAbsValue,
     loading,
     error,
-    statusFilter,
-    setStatusFilter,
     searchQuery,
     setSearchQuery,
     addTerm,
@@ -27,10 +26,16 @@ export const DictionaryPage = () => {
 
   const { toasts, addToast, removeToast } = useToast();
   const [newTermIds, setNewTermIds] = useState<Set<number>>(new Set());
-  const [annotActive, setAnnotActive] = useState<boolean>(false);
+  const [page, setPage] = useState(0);
 
   // Debounced query for highlighting and text matching
   const debouncedQuery = useDebounce(searchQuery, 300);
+  const pageCount = Math.max(1, Math.ceil(visibleTerms.length / TERMS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedTerms = useMemo(() => {
+    const start = currentPage * TERMS_PER_PAGE;
+    return visibleTerms.slice(start, start + TERMS_PER_PAGE);
+  }, [currentPage, visibleTerms]);
 
   const handleCreateTerm = async (dto: CreateTermDto) => {
     try {
@@ -82,21 +87,11 @@ export const DictionaryPage = () => {
       <header className="top">
         <div>
           <h1>Diccionario de términos</h1>
-          <p>Términos en español e inglés con su valor de humor entre −10 y +10.</p>
-        </div>
-        <div className="tools">
-          <button
-            type="button"
-            className={`anntog ${annotActive ? 'on' : ''}`}
-            onClick={() => setAnnotActive(!annotActive)}
-            aria-pressed={annotActive}
-          >
-            Anotaciones de diseño
-          </button>
+          <p>Términos en español e inglés con su valor de humor entre − 10 y +10.</p>
         </div>
       </header>
 
-      <div className={`view ${annotActive ? 'annon' : ''}`}>
+      <div className="view">
         <AddTermForm maxAbsValue={maxAbsValue} onSubmit={handleCreateTerm} />
 
         <div className="card">
@@ -104,18 +99,17 @@ export const DictionaryPage = () => {
             <div className="row" style={{ gap: '16px', flex: 1 }}>
               <SearchBar
                 value={searchQuery}
-                onChange={setSearchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  setPage(0);
+                }}
                 count={visibleTerms.length}
-              />
-              <StatusFilter
-                value={statusFilter}
-                onChange={setStatusFilter}
               />
             </div>
             <small>Ordenado alfabéticamente</small>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', marginTop: '16px' }}>
             {loading && visibleTerms.length === 0 ? (
               <div className="empty">
                 <b>Cargando términos...</b>
@@ -128,10 +122,9 @@ export const DictionaryPage = () => {
               </div>
             ) : (
               <TermTable
-                terms={visibleTerms}
+                terms={pagedTerms}
                 maxAbsValue={maxAbsValue}
                 highlight={debouncedQuery}
-                statusFilter={statusFilter}
                 searchQuery={debouncedQuery}
                 newTermIds={newTermIds}
                 onUpdate={handleUpdateTerm}
@@ -139,6 +132,35 @@ export const DictionaryPage = () => {
               />
             )}
           </div>
+
+          {!loading && !error && visibleTerms.length > 0 && (
+            <nav className="pagination" aria-label="Paginación del diccionario">
+              <span className="meta">
+                {currentPage * TERMS_PER_PAGE + 1}–{Math.min((currentPage + 1) * TERMS_PER_PAGE, visibleTerms.length)} de {visibleTerms.length}
+              </span>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => setPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                  aria-label="Página anterior"
+                >
+                  ‹ Anterior
+                </button>
+                <span className="meta" aria-live="polite">Página {currentPage + 1} / {pageCount}</span>
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => setPage(Math.min(pageCount - 1, currentPage + 1))}
+                  disabled={currentPage >= pageCount - 1}
+                  aria-label="Página siguiente"
+                >
+                  Siguiente ›
+                </button>
+              </div>
+            </nav>
+          )}
         </div>
       </div>
     </>
