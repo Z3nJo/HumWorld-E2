@@ -1,0 +1,32 @@
+.dict-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dict-search-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dict-search-input-box .inp {
+  width: 280px;
+  padding-right: 28px;
+}
+
+.dict-search-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--ink3);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.dict-search-clear-btn:hover {
+  color: var(--ink);
+}
