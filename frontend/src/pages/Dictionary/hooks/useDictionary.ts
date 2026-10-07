@@ -11,7 +11,9 @@ export function useDictionary() {
 
   // Track latest terms in ref for safe rollbacks
   const termsRef = useRef<Term[]>(terms);
-  termsRef.current = terms;
+  useEffect(() => {
+    termsRef.current = terms;
+  }, [terms]);
 
   const load = useCallback(async (q?: string) => {
     setLoading(true);
@@ -29,6 +31,8 @@ export function useDictionary() {
 
   // Initial load
   useEffect(() => {
+    // The initial request synchronizes component state with the API.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
