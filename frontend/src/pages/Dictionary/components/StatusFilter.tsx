@@ -1,4 +1,4 @@
-import type { StatusFilterOption } from '../../../types/dictionary';
+import type { StatusFilterOption } from '../../../features/dictionary/domain/dictionary';
 import './StatusFilter.css';
 
 interface StatusFilterProps {

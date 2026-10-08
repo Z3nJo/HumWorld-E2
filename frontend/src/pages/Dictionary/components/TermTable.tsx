@@ -1,4 +1,9 @@
-import type { PatchTermDto, Term } from '../../../types/dictionary';
+import type {
+  LanguageFilterOption,
+  PatchTermInput,
+  StatusFilterOption,
+  Term,
+} from '../../../features/dictionary/domain/dictionary';
 import { TermRow } from './TermRow';
 import './TermTable.css';
 
@@ -7,8 +12,10 @@ interface TermTableProps {
   maxAbsValue: number;
   highlight?: string;
   searchQuery: string;
+  statusFilter: StatusFilterOption;
+  languageFilter: LanguageFilterOption;
   newTermIds?: Set<number>;
-  onUpdate: (id: number, data: PatchTermDto) => Promise<void>;
+  onUpdate: (id: number, data: PatchTermInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
 
@@ -17,6 +24,8 @@ export const TermTable = ({
   maxAbsValue,
   highlight,
   searchQuery,
+  statusFilter,
+  languageFilter,
   newTermIds,
   onUpdate,
   onDelete,
@@ -25,7 +34,11 @@ export const TermTable = ({
     if (searchQuery.trim()) {
       return `Sin resultados para «${searchQuery}». Puedes añadirlo con el formulario superior.`;
     }
-    return 'No hay términos registrados en el diccionario.';
+    if (languageFilter === 'es') return 'No hay términos en español para esta vista.';
+    if (languageFilter === 'en') return 'No hay términos en inglés para esta vista.';
+    if (statusFilter === 'inactive') return 'No hay términos inactivos.';
+    if (statusFilter === 'all') return 'No hay términos registrados en el diccionario.';
+    return 'No hay términos activos.';
   };
 
   if (terms.length === 0) {
@@ -39,12 +52,18 @@ export const TermTable = ({
 
   return (
     <table className="t" aria-label="Diccionario de términos">
+      <colgroup>
+        <col className="t-col-term" />
+        <col className="t-col-language" />
+        <col className="t-col-value" />
+        <col className="t-col-actions" />
+      </colgroup>
       <thead>
         <tr>
-          <th>Término</th>
-          <th>Idioma</th>
-          <th>Valor</th>
-          <th style={{ textAlign: 'right' }}>
+          <th className="t-col-term">Término</th>
+          <th className="t-col-language">Idioma</th>
+          <th className="t-col-value">Valor</th>
+          <th className="t-col-actions t-actions-heading">
             <span className="sr-only">Acciones</span>
           </th>
         </tr>

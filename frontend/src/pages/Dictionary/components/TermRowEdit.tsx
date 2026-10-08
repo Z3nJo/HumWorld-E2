@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import type { Language, PatchTermDto, Term } from '../../../types/dictionary';
+import type { Language, PatchTermInput, Term } from '../../../features/dictionary/domain/dictionary';
 import { ValueBar } from './ValueBar';
 import './TermRow.css';
 
 interface TermRowEditProps {
   term: Term;
   maxAbsValue: number;
-  onSave: (id: number, data: PatchTermDto) => Promise<void>;
+  onSave: (id: number, data: PatchTermInput) => Promise<void>;
   onCancel: () => void;
 }
 

@@ -48,6 +48,7 @@
    - los módulos de `api/` **no** contienen reglas de negocio: delegan en `services/`;
    - los módulos de `services/` **no** ejecutan sentencias contra el gestor de datos: usan los repositorios.
 6. Si el cambio exige apartarse de una decisión arquitectónica vigente, **existe un ADR nuevo o una revisión del ADR afectado** antes de mezclar el PR.
+7. En cambios de frontend, las funcionalidades nuevas respetan ADR-004: no realizan HTTP fuera de `shared/api/httpClient.ts`, no exponen DTOs a `application` o `presentation` y no importan directamente otra funcionalidad.
 
 ### 2.3 Pruebas
 

@@ -1,4 +1,4 @@
-import type { Language } from '../../../types/dictionary';
+import type { Language } from '../../../features/dictionary/domain/dictionary';
 
 interface LangBadgeProps {
   lang: Language;
