@@ -1,0 +1,14 @@
+.lp-whatis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 24px 64px;
+  align-items: start;
+}
+
+.lp-whatis__body {
+  gap: 14px;
+  padding-top: 6px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+}

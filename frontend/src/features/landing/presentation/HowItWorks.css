@@ -1,0 +1,57 @@
+.lp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  column-gap: 24px;
+}
+
+@media (min-width: 560px) {
+  .lp-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .lp-steps {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.lp-steps__item {
+  gap: 12px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-steps__top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.lp-steps__icon {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  fill: none;
+}
+
+.lp-steps__title {
+  margin: 0;
+  font: 500 22px / 1.2 var(--serif);
+}
+
+.lp-steps__text {
+  font-size: 14.5px;
+  color: var(--ink2);
+}
+
+/* Colors come from the global a / a:hover rules (--pos, then --ink). */
+.lp-steps__link {
+  margin-top: auto;
+  font: 500 12.5px var(--mono);
+  text-decoration: none;
+}
+
+.lp-steps__link:hover {
+  text-decoration: underline;
+}
