@@ -1,10 +1,6 @@
-# news-sentiment-analysis Specification
+# Spec Delta
 
-## Purpose
-
-Calcular y conservar el humor de cada noticia capturada, junto con las apariciones de términos que explican el resultado, de acuerdo con ADR-001.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Reconocimiento de términos en noticias
 El sistema SHALL analizar el título y, si existe, la descripción; reconocer términos activos del idioma de la noticia sin distinguir mayúsculas ni tildes; y respetar límites de palabra. MUST excluir términos inactivos, de otro idioma y el cuerpo remoto del artículo.
@@ -28,21 +24,6 @@ El sistema SHALL analizar el título y, si existe, la descripción; reconocer t�
 #### Scenario: Analizar una noticia sin descripción
 - **WHEN** una noticia no tiene descripción
 - **THEN** el análisis utiliza solamente su título
-
-### Requirement: Léxico inicial bilingüe de sentimiento
-El sistema SHALL disponer de un léxico inicial curado de aproximadamente 30 pares de conceptos en español e inglés, con términos activos en el idioma correspondiente y valores de sentimiento revisados y comparables entre ambos idiomas.
-
-#### Scenario: Inicializar el léxico en una instalación limpia
-- **WHEN** se inicializa una base de datos sin los términos del léxico inicial
-- **THEN** se insertan los pares de términos españoles e ingleses con sus valores y estados definidos
-
-#### Scenario: Repetir la inicialización del léxico
-- **WHEN** se ejecuta nuevamente la inicialización del léxico
-- **THEN** no se duplican sus términos ni se reemplazan valores o estados existentes, incluidos cambios realizados por un administrador
-
-#### Scenario: Usar el léxico según el idioma de la noticia
-- **WHEN** una noticia analizada contiene una forma canónica o flexionada de un término del léxico inicial
-- **THEN** solo contribuyen los términos correspondientes al idioma de la noticia y sus aportes quedan asociados a la entrada canónica
 
 ### Requirement: Cálculo parametrizado del humor
 El sistema SHALL calcular el humor a partir de términos reconocidos y parámetros resueltos, admitir las fórmulas configuradas y devolver `NULL` cuando no haya términos. MUST rechazar valores fuera de `[-10, 10]` o con más de un decimal efectivo sin redondearlos silenciosamente.
@@ -95,21 +76,6 @@ Para cada noticia procesada, el sistema SHALL guardar la fecha de análisis, el 
 #### Scenario: Evitar resultados parciales
 - **WHEN** falla el cálculo o la escritura de cualquiera de los aportes
 - **THEN** no se confirma un humor, fecha o desglose parcial de esa noticia
-
-### Requirement: Selección y recuperación de noticias pendientes
-El sistema MUST identificar noticias pendientes exclusivamente por `fecha_analisis IS NULL`. SHALL permitir procesar noticias ya almacenadas que sigan pendientes y MUST evitar recalcular noticias analizadas al repetir una captura o al editar términos o parámetros.
-
-#### Scenario: Recuperar una noticia anterior
-- **WHEN** una noticia almacenada antes de E2-H02 conserva `fecha_analisis = NULL`
-- **THEN** el procesamiento de pendientes puede calcularla y persistirla
-
-#### Scenario: No repetir una noticia sin términos
-- **WHEN** una noticia tiene `fecha_analisis` informada y `valor_humor = NULL`
-- **THEN** el procesamiento de pendientes no la selecciona de nuevo
-
-#### Scenario: Conservar la instantánea histórica
-- **WHEN** cambia el valor o el estado de un término, o cambia un parámetro de humor
-- **THEN** los resultados de noticias ya analizadas permanecen sin recalcular
 
 ### Requirement: Análisis de sentimiento de texto puntual por API
 El sistema SHALL exponer `POST /api/v1/sentiment` para analizar texto válido sin persistirlo, usando los términos activos y parámetros vigentes del reconocedor de noticias. La respuesta SHALL incluir el humor y el desglose canónico, y el contrato SHALL estar publicado en OpenAPI.
