@@ -1,0 +1,63 @@
+#toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ts {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  max-width: 420px;
+  animation: dictToastSlideIn 200ms ease forwards;
+}
+
+.ts--error {
+  background: var(--neg);
+  color: #fff;
+}
+
+.ts code {
+  font: 500 11px var(--mono);
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.ts-close {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  margin-left: auto;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.ts-close:hover {
+  opacity: 1;
+}
+
+@keyframes dictToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
