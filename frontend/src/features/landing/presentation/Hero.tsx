@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
+import { HUMOR_STOPS } from '../domain/humorScale';
 import './Hero.css';
 
-const RAMP_FULL = 'linear-gradient(90deg, var(--neg), #e2a383, var(--neu), #93b1d6, var(--pos))';
-const RAMP_POSITIVE = 'linear-gradient(90deg, var(--neu), #93b1d6, var(--pos))';
+const ramp = (stops: typeof HUMOR_STOPS) =>
+  `linear-gradient(90deg, ${stops.map(({ color }) => color).join(', ')})`;
+
+const RAMP_FULL = ramp(HUMOR_STOPS);
+const RAMP_POSITIVE = ramp(HUMOR_STOPS.filter(({ value }) => value >= 0));
 
 export const Hero = () => (
   <section id="inicio" aria-labelledby="hero-t" className="lp-hero">

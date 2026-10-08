@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { formatScore } from '../domain/humorScale';
 import './PanelPreview.css';
 
 type Tone = 'pos' | 'neg';
@@ -15,10 +16,6 @@ const NEWS = [
   { headline: 'Temporal deja cortes de luz en la zona costera', score: -0.76 },
   { headline: 'Central bank holds rates as inflation eases', score: 0.64 },
 ];
-
-// Spanish display: real minus sign and comma decimal, e.g. "−0,76".
-const formatScore = (score: number) =>
-  `${score < 0 ? '−' : '+'}${Math.abs(score).toFixed(2).replace('.', ',')}`;
 
 const MapPreview = () => (
   <>
