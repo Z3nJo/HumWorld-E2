@@ -7,14 +7,14 @@ Calcular y conservar el humor de cada noticia capturada, junto con las aparicion
 ## Requirements
 
 ### Requirement: Reconocimiento de términos en noticias
-El sistema SHALL analizar `titulo` seguido de `descripcion`, separados por un espacio cuando exista descripción, sin descargar el cuerpo del artículo. SHALL contar las apariciones completas de cada término activo cuyo idioma coincida con el de la noticia, sin distinguir mayúsculas ni tildes. SHALL reconocer formas flexionadas comunes en español e inglés como apariciones del término canónico correspondiente, conservando ese término para el cálculo y el desglose. Las coincidencias MUST respetar límites de palabra y MUST NOT incluir términos inactivos ni términos de otro idioma.
+El sistema SHALL analizar el título y, si existe, la descripción; reconocer términos activos del idioma de la noticia sin distinguir mayúsculas ni tildes; y respetar límites de palabra. MUST excluir términos inactivos, de otro idioma y el cuerpo remoto del artículo.
 
 #### Scenario: Reconocer términos del idioma de la noticia
 - **WHEN** el título y la descripción de una noticia `es` contienen dos apariciones completas de un término español activo, con diferencias de mayúsculas o tildes
 - **THEN** el análisis reconoce ese término con dos ocurrencias
 
 #### Scenario: Reconocer términos del idioma inglés
-- **WHEN** el título y la descripción de una noticia `en` contienen apariciones completas de términos ingleses activos, incluyendo diferencias de mayúsculas
+- **WHEN** una noticia `en` contiene apariciones completas de términos ingleses activos, incluyendo diferencias de mayúsculas
 - **THEN** el análisis reconoce esas apariciones y las asocia a sus términos canónicos ingleses
 
 #### Scenario: Reconocer una forma flexionada común
@@ -45,11 +45,19 @@ El sistema SHALL disponer de un léxico inicial curado de aproximadamente 30 par
 - **THEN** solo contribuyen los términos correspondientes al idioma de la noticia y sus aportes quedan asociados a la entrada canónica
 
 ### Requirement: Cálculo parametrizado del humor
-El sistema SHALL calcular el valor a partir de los pares `(valor, ocurrencias)` reconocidos y de parámetros ya resueltos. Con `humor.formula_noticia = promedio_ponderado`, SHALL usar `Σ(ocurrencias × valor) / (humor.escala_maxima × Σocurrencias)`. SHALL admitir también `promedio_simple`, que promedia los valores de los términos distintos reconocidos y los divide por la escala, y `suma_acotada`, que acota `Σ(ocurrencias × valor) / (humor.escala_maxima × humor.saturacion_suma)` a `[-1, 1]`. El motor MUST rechazar un valor de término fuera de `[-10, 10]` o con más de un decimal efectivo, conforme a la precisión de ADR-001, en vez de recortarlo o redondearlo silenciosamente. MUST devolver `NULL` si no hay términos reconocidos.
+El sistema SHALL calcular el humor a partir de términos reconocidos y parámetros resueltos, admitir las fórmulas configuradas y devolver `NULL` cuando no haya términos. MUST rechazar valores fuera de `[-10, 10]` o con más de un decimal efectivo sin redondearlos silenciosamente.
 
 #### Scenario: Calcular el promedio ponderado por defecto
 - **WHEN** se reconocen dos apariciones de un término de valor `-9`, una de `-6` y una de `+5`, con escala `10`
 - **THEN** el valor calculado es `-0,475`
+
+#### Scenario: Aplicar la fórmula ponderada
+- **WHEN** `humor.formula_noticia = promedio_ponderado`
+- **THEN** el sistema calcula `Σ(ocurrencias × valor) / (humor.escala_maxima × Σocurrencias)`
+
+#### Scenario: Aplicar las fórmulas alternativas
+- **WHEN** se selecciona `promedio_simple` o `suma_acotada`
+- **THEN** el sistema promedia los valores distintos reconocidos y los divide por la escala en el primer caso, o calcula `Σ(ocurrencias × valor) / (humor.escala_maxima × humor.saturacion_suma)` y acota el resultado a `[-1, 1]` en el segundo
 
 #### Scenario: Distinguir neutralidad de ausencia de evidencia
 - **WHEN** los aportes positivos y negativos se cancelan con términos reconocidos
@@ -69,12 +77,16 @@ El sistema SHALL calcular el valor a partir de los pares `(valor, ocurrencias)` 
 - **THEN** el cálculo falla de forma explícita y no persiste un aporte redondeado que impida reconstruir el humor
 
 ### Requirement: Persistencia coherente y auditable
-Para cada noticia procesada, el sistema SHALL guardar una `fecha_analisis` y el valor de humor resultante. SHALL guardar una fila por término reconocido en `NOTICIA_TERMINO`, con su número positivo de ocurrencias y su aporte no normalizado `ocurrencias × valor`. El valor y las filas SHALL confirmarse en una misma transacción. El humor SHALL persistirse con tres decimales y cada aporte con dos, usando redondeo a la mitad hacia arriba en valor absoluto. Las noticias sin términos SHALL quedar con `valor_humor = NULL`, `fecha_analisis` informada y sin filas de términos.
+Para cada noticia procesada, el sistema SHALL guardar la fecha de análisis, el humor y una fila por término reconocido con ocurrencias y aporte no normalizado. MUST confirmar el humor y el desglose en una transacción y representar las noticias sin términos con humor nulo y sin filas.
 
 #### Scenario: Guardar una noticia con términos
 - **WHEN** una noticia reconoce términos válidos y completa su análisis
 - **THEN** conserva su valor de humor, fecha de análisis y una fila por término con ocurrencias y aporte
 - **AND** para la fórmula ponderada por defecto, el valor persistido coincide con el promedio reconstruido de esos aportes y ocurrencias tras el redondeo
+
+#### Scenario: Aplicar precisión y redondeo
+- **WHEN** se persiste el humor y los aportes de una noticia analizada
+- **THEN** el humor conserva tres decimales y cada aporte dos, con redondeo a la mitad hacia arriba en valor absoluto
 
 #### Scenario: Guardar una noticia sin términos
 - **WHEN** una noticia no reconoce términos activos de su idioma
@@ -100,11 +112,15 @@ El sistema MUST identificar noticias pendientes exclusivamente por `fecha_analis
 - **THEN** los resultados de noticias ya analizadas permanecen sin recalcular
 
 ### Requirement: Análisis de sentimiento de texto puntual por API
-El sistema SHALL exponer `POST /api/v1/sentiment` para analizar texto libre sin crear ni modificar noticias. La solicitud SHALL incluir `texto` e `idioma`, limitado a `es` o `en`. `texto` MUST contener al menos un carácter no blanco y MUST tener como máximo 10.000 caracteres; el sistema MUST rechazar texto inválido sin truncarlo. Para una solicitud válida, el sistema SHALL usar los términos activos del idioma solicitado y los parámetros vigentes del mismo reconocedor y función de cálculo empleados por el análisis de noticias. SHALL responder `200` con `valor_humor` y `terminos`, cuyo desglose SHALL incluir para cada término canónico reconocido `id_termino`, `palabra`, `valor`, `ocurrencias` y `aporte_humor`. La operación MUST NOT persistir el texto ni el resultado. Si no se reconocen términos, `valor_humor` SHALL ser `null` y `terminos` SHALL ser una lista vacía; un resultado neutral con términos reconocidos SHALL ser `0`. El endpoint y sus esquemas SHALL estar documentados en OpenAPI bajo `/api/v1` y disponibles en `/api/docs`.
+El sistema SHALL exponer `POST /api/v1/sentiment` para analizar texto válido sin persistirlo, usando los términos activos y parámetros vigentes del reconocedor de noticias. La respuesta SHALL incluir el humor y el desglose canónico, y el contrato SHALL estar publicado en OpenAPI.
 
 #### Scenario: Analizar texto con términos reconocidos
 - **WHEN** se envía texto válido en `es` o `en` con al menos un término activo de ese idioma
 - **THEN** el endpoint responde `200` con el valor calculado por el algoritmo vigente y el desglose asociado a los términos canónicos reconocidos
+
+#### Scenario: Publicar el esquema de respuesta
+- **WHEN** una solicitud válida es procesada
+- **THEN** `200` incluye `valor_humor` y `terminos`, y cada término incluye `id_termino`, `palabra`, `valor`, `ocurrencias` y `aporte_humor`
 
 #### Scenario: Distinguir ausencia de términos de neutralidad
 - **WHEN** el texto válido no contiene términos activos del idioma indicado
@@ -125,4 +141,4 @@ El sistema SHALL exponer `POST /api/v1/sentiment` para analizar texto libre sin 
 
 #### Scenario: Publicar el contrato del endpoint
 - **WHEN** un consumidor consulta la documentación OpenAPI de la API
-- **THEN** encuentra `POST /api/v1/sentiment`, sus esquemas de solicitud y respuesta y sus códigos de respuesta aplicables
+- **THEN** encuentra `POST /api/v1/sentiment`, sus esquemas de solicitud y respuesta y sus códigos de respuesta aplicables bajo `/api/v1` y `/api/docs`

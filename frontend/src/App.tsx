@@ -1,12 +1,6 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { AppShell } from './components/AppShell/AppShell';
-
-const InitialPage = () => (
-  <section style={{ padding: '28px' }}>
-    <h1>HumWorld</h1>
-    <p>La pantalla correspondiente se incorporará en una entrega posterior.</p>
-  </section>
-);
+import { DictionaryPage } from './pages/Dictionary/DictionaryPage';
 
 const router = createBrowserRouter([
   {
@@ -19,11 +13,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'dictionary',
-        element: <InitialPage />,
+        element: <DictionaryPage />,
       },
       {
         path: '*',
-        element: <InitialPage />,
+        element: <Navigate to="/dictionary" replace />,
       },
     ],
   },

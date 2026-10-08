@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PatchTermDto, Term } from '../../../types/dictionary';
+import type { PatchTermInput, Term } from '../../../features/dictionary/domain/dictionary';
 import { LangBadge } from './LangBadge';
 import { TermRowEdit } from './TermRowEdit';
 import { ValueBar } from './ValueBar';
@@ -10,7 +10,7 @@ interface TermRowProps {
   maxAbsValue: number;
   highlight?: string;
   isNew?: boolean;
-  onUpdate: (id: number, data: PatchTermDto) => Promise<void>;
+  onUpdate: (id: number, data: PatchTermInput) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
 

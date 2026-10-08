@@ -1,0 +1,102 @@
+.dict-add-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 150px 140px auto;
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .dict-add-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+label.f {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink2);
+}
+
+.inp, .sel {
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  padding: 0 10px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inp:focus, .sel:focus {
+  border-color: var(--ink3);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(40, 95, 159, 0.15);
+}
+
+.inp.err {
+  border-color: var(--neg);
+  box-shadow: 0 0 0 3px rgba(191, 79, 34, 0.15);
+}
+
+.errtxt {
+  font: 12px var(--mono);
+  color: var(--neg);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-weight: 500;
+  white-space: nowrap;
+  font-size: 13.5px;
+  color: var(--ink);
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  border-color: var(--ink3);
+}
+
+.btn.pri {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.btn.pri:hover:not(:disabled) {
+  background: #000;
+}
+
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dict-val-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dict-add-card--shake {
+  animation: dictFormShake 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes dictFormShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(3px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+  40%, 60% { transform: translate3d(5px, 0, 0); }
+}

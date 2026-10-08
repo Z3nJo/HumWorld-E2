@@ -1,4 +1,38 @@
-# React + TypeScript + Vite
+# HumWorld — Frontend
+
+## Arquitectura interna
+
+El frontend sigue [ADR-004](../docs/adr/ADR-004-arquitectura-interna-frontend.md) para funcionalidades nuevas. La organización es por funcionalidad:
+
+```text
+src/
+├── app/          arranque, rutas y proveedores
+├── shared/       utilidades transversales; HTTP en shared/api/httpClient.ts
+└── features/
+    └── <feature>/
+        ├── domain/
+        ├── infrastructure/
+        ├── application/
+        └── presentation/
+```
+
+`domain` no depende de React ni de la red. `infrastructure` conoce DTOs y usa el cliente HTTP compartido. `application` orquesta la funcionalidad y `presentation` renderiza React. No se crean carpetas vacías.
+
+La estructura histórica (`src/api`, `src/types`, `src/pages`) se mantiene durante la migración y no se reescribe como prerrequisito. Las funcionalidades nuevas deben usar `features/`; el diccionario se migrará cuando tenga una modificación sustancial.
+
+### Pruebas
+
+Las funciones puras y mapeadores se prueban con Vitest sin DOM ni red cuando sea posible. Las funcionalidades que cruzan la frontera Frontend ↔ API requieren además una prueba de integración contra el entorno Docker o un backend de prueba.
+
+Comandos locales:
+
+```bash
+npm run lint
+npm run build
+npm run test
+```
+
+## Plantilla Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

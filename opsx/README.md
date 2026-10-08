@@ -20,7 +20,7 @@ El backend aplica las migraciones Alembic antes de iniciar Uvicorn. Swagger qued
 
 ## Contratos OpenSpec
 
-La fuente editable permanece en `openspec/`. Para generar la copia entregable:
+La única fuente editable del repositorio permanece en `openspec/`, incluida la documentación OpenSpec del frontend bajo `openspec/specs/frontend/`. No se deben crear raíces OpenSpec dentro de `frontend/` u otros subdirectorios. Para generar la copia entregable:
 
 ```bash
 python opsx/sync_contracts.py

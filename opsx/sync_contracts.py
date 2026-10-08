@@ -38,6 +38,16 @@ CONTRACTS = {
 }
 
 
+def nested_openspec_roots() -> list[Path]:
+    """Return OpenSpec directories below the canonical repository root."""
+    canonical = (PROJECT_ROOT / "openspec").resolve()
+    return sorted(
+        path.resolve()
+        for path in PROJECT_ROOT.rglob("openspec")
+        if path.is_dir() and path.resolve() != canonical
+    )
+
+
 def is_synchronized() -> bool:
     return all(
         destination.exists() and destination.read_bytes() == source.read_bytes()
@@ -61,6 +71,12 @@ def main() -> int:
         help="Fail when the generated contract differs from OpenSpec.",
     )
     args = parser.parse_args()
+    nested = nested_openspec_roots()
+    if nested:
+        print("Unexpected nested OpenSpec root(s):")
+        for path in nested:
+            print(f"- {path.relative_to(PROJECT_ROOT)}")
+        return 1
     if args.check:
         if is_synchronized():
             print("OpenSpec contracts are synchronized")

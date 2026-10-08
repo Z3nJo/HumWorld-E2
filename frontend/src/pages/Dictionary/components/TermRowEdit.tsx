@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import type { Language, PatchTermDto, Term } from '../../../types/dictionary';
+import type { Language, PatchTermInput, Term } from '../../../features/dictionary/domain/dictionary';
 import { ValueBar } from './ValueBar';
 import './TermRow.css';
 
 interface TermRowEditProps {
   term: Term;
   maxAbsValue: number;
-  onSave: (id: number, data: PatchTermDto) => Promise<void>;
+  onSave: (id: number, data: PatchTermInput) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -33,6 +33,11 @@ export const TermRowEdit = ({
 
     if (isNaN(numericValue)) {
       setError('El valor debe ser un número');
+      return;
+    }
+
+    if (numericValue < -10 || numericValue > 10) {
+      setError('El valor debe estar entre −10 y +10');
       return;
     }
 
@@ -81,6 +86,8 @@ export const TermRowEdit = ({
           <input
             type="number"
             step="any"
+            min="-10"
+            max="10"
             className="inp mono"
             style={{ width: '90px' }}
             value={valueStr}

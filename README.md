@@ -115,6 +115,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/adr/ADR-000`](docs/adr/ADR-000-arquitectura-tres-capas.md) | Arquitectura en tres capas y reglas de dependencia |
 | [`docs/adr/ADR-001`](docs/adr/ADR-001-algoritmo-calculo-humor.md) | Algoritmo de cálculo del humor, rango `[-1, 1]` y agregación regional |
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-stack-tecnologico.md) | Selección del stack tecnológico y justificación del gestor de datos |
+| [`docs/adr/ADR-004`](docs/adr/ADR-004-arquitectura-interna-frontend.md) | Organización interna del frontend por funcionalidad |
 | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) | Modelo E/R preliminar: entidades, relaciones e integridad |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación, cierre y evidencia de validación por sprint e historia |
@@ -123,7 +124,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/sprints/planificacion-sprint-2.md`](docs/sprints/planificacion-sprint-2.md) | Planificación del Sprint 2 (35 puntos) |
 | [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md) | Resultado del Sprint 2, métricas y recalibración de velocidad |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
-| `openspec/` | Fuente editable de propuestas, especificaciones y tareas OpenSpec |
+| `openspec/` | Única fuente editable de propuestas, especificaciones y tareas OpenSpec; incluye las capacidades frontend bajo `openspec/specs/frontend/` |
 | `opsx/contracts/` | Copia entregable generada mediante `python opsx/sync_contracts.py` |
 
 ## 8. Equipo
