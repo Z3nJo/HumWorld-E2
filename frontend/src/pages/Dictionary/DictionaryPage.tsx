@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/useToast';
 import type {
   CreateTermInput,
   Language,
+  LanguageFilterOption,
   PatchTermInput,
   StatusFilterOption,
 } from '../../features/dictionary/domain/dictionary';
@@ -19,7 +20,7 @@ const TERMS_PER_PAGE = 12;
 
 export const DictionaryPage = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilterOption>('active');
-  const [languageFilter, setLanguageFilter] = useState<Language>('es');
+  const [languageFilter, setLanguageFilter] = useState<LanguageFilterOption>('all');
   const {
     visibleTerms,
     maxAbsValue,
