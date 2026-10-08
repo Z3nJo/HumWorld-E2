@@ -58,6 +58,12 @@ describe('LandingPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('labels the background map as illustrative sample data', () => {
+    renderLanding();
+
+    expect(screen.getByText('Mapa de fondo ilustrativo · valores de ejemplo')).toBeInTheDocument();
+  });
+
   it('renders a section for every in-page anchor', () => {
     renderLanding();
 

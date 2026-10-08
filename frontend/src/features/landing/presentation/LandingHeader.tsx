@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
+import { PANEL_PATH } from './paths';
 import './LandingHeader.css';
 
 const SECTIONS = [
@@ -24,7 +25,7 @@ export const LandingHeader = () => (
           </Fragment>
         ))}
       </nav>
-      <Link to="/dashboard" className="lp-btn lp-btn--dark lp-header__cta">Ir al panel →</Link>
+      <Link to={PANEL_PATH} className="lp-btn lp-btn--dark lp-header__cta">Ir al panel →</Link>
     </div>
   </header>
 );

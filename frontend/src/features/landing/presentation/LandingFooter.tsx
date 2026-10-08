@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
+import { PANEL_PATH } from './paths';
 import './LandingFooter.css';
 
 const REPO_URL = 'https://github.com/Z3nJo/HumWorld-E2';
@@ -9,7 +10,7 @@ export const LandingFooter = () => (
     <div className="lp-container lp-footer__inner">
       <div className="lp-footer__cta-row">
         <h2 className="lp-footer__title">Mira cómo amanece hoy el mundo.</h2>
-        <Link to="/dashboard" className="lp-btn lp-btn--light">Ir al panel →</Link>
+        <Link to={PANEL_PATH} className="lp-btn lp-btn--light">Ir al panel →</Link>
       </div>
       <div className="lp-footer__meta">
         <div className="lp-footer__credit">
