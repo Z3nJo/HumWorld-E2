@@ -1,0 +1,80 @@
+:root {
+  --paper: #f5f2eb;
+  --paper2: #ece7dc;
+  --card: #fcfbf7;
+  --ink: #1c1f26;
+  --ink2: #40454f;
+  --ink3: #61656e;
+  --line: #d9d2c3;
+  --line2: #e7e1d5;
+  --neg: #bf4f22;
+  --pos: #285f9f;
+  --neu: #e6e0d2;
+  --ann: #6446c0;
+  --warn: #f3e4c4;
+  --serif: 'Newsreader', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Aliases for semantic compatibility */
+  --positive: var(--pos);
+  --negative: var(--neg);
+  --sidebar-bg: var(--ink);
+  --sidebar-text: #e8e4da;
+  --sidebar-active: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--pos);
+}
+
+a:hover {
+  color: var(--ink);
+}
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pos);
+  outline-offset: 2px;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+p {
+  margin: 0;
+}
+
+code, .mono {
+  font-family: var(--mono);
+}
