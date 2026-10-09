@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { HERO_SAMPLE, HUMOR_STOPS } from '../domain/humorScale';
 import { PANEL_PATH } from './paths';
 import { useHeartbeat } from './useHeartbeat';
-import { WorldMap } from './WorldMap';
+import { MapPulses, WorldMap } from './WorldMap';
 import './Hero.css';
 
 const ramp = (stops: typeof HUMOR_STOPS) =>
@@ -11,22 +11,30 @@ const ramp = (stops: typeof HUMOR_STOPS) =>
 const RAMP_FULL = ramp(HUMOR_STOPS);
 const RAMP_POSITIVE = ramp(HUMOR_STOPS.filter(({ value }) => value >= 0));
 
-// Separate component so each heartbeat re-renders only the map layer.
+// Separate component so each heartbeat re-renders only the map layers.
+// The ripples sit in a twin frame above the veil, so they stay visible over the center.
 const HeroMap = () => {
   const values = useHeartbeat(HERO_SAMPLE);
   return (
-    <div aria-hidden="true" className="lp-hero__map">
-      <div className="lp-hero__map-frame">
-        <WorldMap variant="hero" values={values} />
+    <>
+      <div aria-hidden="true" className="lp-hero__map">
+        <div className="lp-hero__map-frame">
+          <WorldMap variant="hero" values={values} />
+        </div>
       </div>
-    </div>
+      <div aria-hidden="true" className="lp-hero__veil" />
+      <div aria-hidden="true" className="lp-hero__map">
+        <div className="lp-hero__map-frame lp-hero__pulses">
+          <MapPulses values={values} />
+        </div>
+      </div>
+    </>
   );
 };
 
 export const Hero = () => (
   <section id="inicio" aria-labelledby="hero-t" className="lp-hero">
     <HeroMap />
-    <div aria-hidden="true" className="lp-hero__veil" />
     <div className="lp-container lp-hero__inner">
       <div className="lp-eyebrow lp-hero__meta">
         <span>Edición global</span>
@@ -36,7 +44,7 @@ export const Hero = () => (
         <span>ES / EN</span>
       </div>
       <h1 id="hero-t" className="lp-hero__title">
-        ¿De qué humor está el mundo?
+        ¿De qué <span className="lp-hero__hue">humor</span> está el mundo?
       </h1>
       <p className="lp-hero__lead">
         HumWorld lee las noticias que publican medios y fuentes oficiales, mide su tono con un
