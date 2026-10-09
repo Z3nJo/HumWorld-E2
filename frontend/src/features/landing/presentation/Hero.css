@@ -22,6 +22,12 @@
   pointer-events: none;
 }
 
+/* Same box as the map's 2:1 SVG, so percentage-placed ripples land on the continents. */
+.lp-hero__pulses {
+  position: relative;
+  aspect-ratio: 2 / 1;
+}
+
 .lp-hero__map-frame {
   flex: none;
   width: max(980px, 112%);
@@ -44,6 +50,56 @@
   align-items: center;
   text-align: center;
   min-height: min(820px, 88vh);
+}
+
+/*
+ * Soft staggered entrance; `both` keeps each block hidden until its delay starts.
+ * The map fades in slowly behind it, so the first heartbeat ripples are faint.
+ */
+.lp-hero__map {
+  animation: lp-hero-fade 2.4s ease-out both;
+}
+
+.lp-hero__inner > * {
+  animation: lp-hero-rise 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) 0.2s both;
+}
+
+.lp-hero__inner > :nth-child(2) { animation-delay: 0.35s; }
+.lp-hero__inner > :nth-child(3) { animation-delay: 0.5s; }
+.lp-hero__inner > :nth-child(4) { animation-delay: 0.65s; }
+.lp-hero__inner > :nth-child(n + 5) { animation-delay: 0.8s; }
+
+@keyframes lp-hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lp-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Swings between both ends of the scale; the pale neutral would fail contrast on paper. */
+.lp-hero__hue {
+  color: var(--neg);
+  animation: lp-hero-hue 6s ease-in-out infinite alternate;
+}
+
+@keyframes lp-hero-hue {
+  to {
+    color: var(--pos);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero__map,
+  .lp-hero__inner > *,
+  .lp-hero__hue {
+    animation: none;
+  }
 }
 
 .lp-hero__meta {

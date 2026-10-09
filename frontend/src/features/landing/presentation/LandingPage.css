@@ -72,6 +72,25 @@ html:has(.lp) {
   scroll-margin-top: 62px;
 }
 
+/*
+ * Scroll reveal: useReveal adds .lp--reveal to the root, then .lp-in to each block on entry.
+ * Without JS or with reduced motion, blocks are never hidden.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lp--reveal .lp-section > * {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.9s ease-out,
+      transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .lp--reveal .lp-section > .lp-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Lives here, after .lp-section, so the shorthand padding above cannot override it. */
 .lp-section--end {
   padding-bottom: clamp(56px, 8vw, 96px);

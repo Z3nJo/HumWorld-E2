@@ -38,6 +38,17 @@ const withContinent = (features: Features) =>
     },
   }));
 
+// Hand-picked [lon, lat] near each inhabited continent's visual center, projected once.
+const PULSES = (
+  [
+    ['America', [-80, 12]],
+    ['Europa', [15, 50]],
+    ['Africa', [20, 5]],
+    ['Asia', [90, 40]],
+    ['Oceania', [135, -25]],
+  ] as const
+).map(([continent, lonLat]) => ({ continent, at: PROJECTION([...lonLat])! }));
+
 type WorldMapProps = { values: Record<Continent, number>; variant: 'hero' | 'card' };
 
 export const WorldMap = ({ values, variant }: WorldMapProps) => (
@@ -67,3 +78,20 @@ export const WorldMap = ({ values, variant }: WorldMapProps) => (
     </Geographies>
   </ComposableMap>
 );
+
+// HTML ripples for an overlay with the map's 2:1 box. Unlike SVG children, they animate on
+// the compositor instead of repainting every country each frame.
+export const MapPulses = ({ values }: Pick<WorldMapProps, 'values'>) =>
+  PULSES.map(({ continent, at: [x, y] }) => (
+    // Keyed by value: a heartbeat remounts the span, which replays its CSS ripple.
+    <span
+      key={`${continent}:${values[continent]}`}
+      className="lp-map__pulse"
+      style={{
+        left: `${(x / WIDTH) * 100}%`,
+        top: `${(y / HEIGHT) * 100}%`,
+        // Full-strength tone by sign: near-zero scale colors vanish against the paper.
+        borderColor: values[continent] < 0 ? 'var(--neg)' : 'var(--pos)',
+      }}
+    />
+  ));

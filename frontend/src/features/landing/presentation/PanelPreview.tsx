@@ -49,7 +49,12 @@ const NewsPreview = () =>
         <span className="lp-news__track">
           <span
             className="lp-news__fill"
-            style={{ width: `${Math.abs(score) * 50}%`, [score < 0 ? 'right' : 'left']: '50%' }}
+            style={{
+              width: `${Math.abs(score) * 50}%`,
+              [score < 0 ? 'right' : 'left']: '50%',
+              // Anchored at the center, so the grow-in animation starts from there.
+              transformOrigin: score < 0 ? 'right' : 'left',
+            }}
           />
         </span>
       </span>

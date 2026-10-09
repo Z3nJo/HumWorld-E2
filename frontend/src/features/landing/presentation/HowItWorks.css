@@ -35,6 +35,26 @@
   fill: none;
 }
 
+/*
+ * Icons draw themselves once the step list is revealed (see useReveal), left to right.
+ * 120 exceeds every shape's length in the 40px box, so a full dash offset hides it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lp--reveal .lp-steps__icon > * {
+    stroke-dasharray: 120;
+    stroke-dashoffset: 120;
+    transition: stroke-dashoffset 1.4s ease-in-out 0.3s;
+  }
+
+  .lp--reveal .lp-in .lp-steps__icon > * {
+    stroke-dashoffset: 0;
+  }
+
+  .lp--reveal .lp-steps__item:nth-child(2) .lp-steps__icon > * { transition-delay: 0.55s; }
+  .lp--reveal .lp-steps__item:nth-child(3) .lp-steps__icon > * { transition-delay: 0.8s; }
+  .lp--reveal .lp-steps__item:nth-child(4) .lp-steps__icon > * { transition-delay: 1.05s; }
+}
+
 .lp-steps__title {
   margin: 0;
   font: 500 22px / 1.2 var(--serif);
