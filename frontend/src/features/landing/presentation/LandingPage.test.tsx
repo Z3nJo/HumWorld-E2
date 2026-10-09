@@ -57,4 +57,33 @@ describe('LandingPage', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it('renders a section for every in-page anchor', () => {
+    renderLanding();
+
+    const ids = screen.getAllByRole('region').map((region) => region.id);
+
+    expect(ids).toEqual(expect.arrayContaining(['que-es', 'como-funciona', 'alcance']));
+  });
+
+  it('links each how-it-works step to its page', () => {
+    renderLanding();
+
+    const section = screen.getByRole('region', { name: 'De un titular a un color en el mapa' });
+    const hrefs = within(section)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+
+    expect(hrefs).toEqual(['/fuentes', '/dictionary', '/parametros', '/dashboard']);
+  });
+
+  it('lists what the project does and does not do', () => {
+    renderLanding();
+
+    const scope = screen.getByRole('region', { name: 'Transparencia y alcance' });
+
+    expect(within(scope).getByRole('heading', { name: 'Lo que hace' })).toBeInTheDocument();
+    expect(within(scope).getByRole('heading', { name: 'Lo que no hace' })).toBeInTheDocument();
+    expect(within(scope).getAllByRole('listitem')).toHaveLength(8);
+  });
 });
