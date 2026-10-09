@@ -1,0 +1,68 @@
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 95%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-header__bar {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lp-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.lp-header__name {
+  font: 600 22px/1 var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.lp-header__nav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.lp-header__link {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--ink2);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.lp-header__link:hover {
+  background: var(--paper2);
+  color: var(--ink);
+}
+
+.lp-header__sep {
+  color: var(--line);
+}
+
+/* Scoped under .lp-header so it beats the shared .lp-btn size regardless of CSS order. */
+.lp-header .lp-header__cta {
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 7px;
+  font-size: 14px;
+  flex: none;
+}
+
+@media (max-width: 759px) {
+  .lp-header__nav {
+    display: none;
+  }
+}

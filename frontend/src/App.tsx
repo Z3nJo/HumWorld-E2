@@ -1,16 +1,13 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { AppShell } from './components/AppShell/AppShell';
 import { DictionaryPage } from './pages/Dictionary/DictionaryPage';
+import { LandingPage } from './features/landing/presentation/LandingPage';
 
 const router = createBrowserRouter([
+  { path: '/', element: <LandingPage /> },
   {
-    path: '/',
     element: <AppShell />,
     children: [
-      {
-        index: true,
-        element: <Navigate to="/dictionary" replace />,
-      },
       {
         path: 'dictionary',
         element: <DictionaryPage />,
