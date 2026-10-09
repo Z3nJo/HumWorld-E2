@@ -63,7 +63,7 @@ describe('LandingPage', () => {
 
     const ids = screen.getAllByRole('region').map((region) => region.id);
 
-    expect(ids).toEqual(expect.arrayContaining(['que-es', 'como-funciona', 'alcance']));
+    expect(ids).toEqual(expect.arrayContaining(['que-es', 'como-funciona', 'que-veras', 'alcance']));
   });
 
   it('links each how-it-works step to its page', () => {
@@ -75,6 +75,13 @@ describe('LandingPage', () => {
       .map((link) => link.getAttribute('href'));
 
     expect(hrefs).toEqual(['/fuentes', '/dictionary', '/parametros', '/dashboard']);
+  });
+
+  it('formats influential news scores with sign and comma decimal', () => {
+    renderLanding();
+
+    expect(screen.getByText('+0,82')).toBeInTheDocument();
+    expect(screen.getByText('−0,76')).toBeInTheDocument();
   });
 
   it('lists what the project does and does not do', () => {
