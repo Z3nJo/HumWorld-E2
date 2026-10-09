@@ -28,9 +28,34 @@
   transition: fill 2.2s ease-in-out;
 }
 
+/* Plays once per mount; ends invisible, so a stale circle never lingers. */
+.lp-map__pulse {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lp-map-pulse 2.4s ease-out both;
+}
+
+@keyframes lp-map-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp-map--hero .lp-map__country {
     transition: none;
+  }
+
+  .lp-map__pulse {
+    display: none;
   }
 }
 

@@ -36,7 +36,7 @@ export const Hero = () => (
         <span>ES / EN</span>
       </div>
       <h1 id="hero-t" className="lp-hero__title">
-        ¿De qué humor está el mundo?
+        ¿De qué <span className="lp-hero__hue">humor</span> está el mundo?
       </h1>
       <p className="lp-hero__lead">
         HumWorld lee las noticias que publican medios y fuentes oficiales, mide su tono con un

@@ -38,6 +38,17 @@ const withContinent = (features: Features) =>
     },
   }));
 
+// Hand-picked [lon, lat] near each inhabited continent's visual center, projected once.
+const PULSES = (
+  [
+    ['America', [-80, 12]],
+    ['Europa', [15, 50]],
+    ['Africa', [20, 5]],
+    ['Asia', [90, 40]],
+    ['Oceania', [135, -25]],
+  ] as const
+).map(([continent, lonLat]) => ({ continent, at: PROJECTION([...lonLat])! }));
+
 type WorldMapProps = { values: Record<Continent, number>; variant: 'hero' | 'card' };
 
 export const WorldMap = ({ values, variant }: WorldMapProps) => (
@@ -65,5 +76,17 @@ export const WorldMap = ({ values, variant }: WorldMapProps) => (
         ))
       }
     </Geographies>
+    {variant === 'hero' &&
+      PULSES.map(({ continent, at: [cx, cy] }) => (
+        // Keyed by value: a heartbeat remounts the circle, which replays its CSS ripple.
+        <circle
+          key={`${continent}:${values[continent]}`}
+          cx={cx}
+          cy={cy}
+          r={14}
+          className="lp-map__pulse"
+          style={{ stroke: colorOf(values[continent]) }}
+        />
+      ))}
   </ComposableMap>
 );
