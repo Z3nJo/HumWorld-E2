@@ -1,10 +1,11 @@
-import { useEffect, type RefObject } from 'react';
+import { useLayoutEffect, type RefObject } from 'react';
 
 // Adds `lp-in` to each section block the first time it scrolls into view; CSS animates it.
 // The root only gets `lp--reveal` (which hides blocks) once observing works, so without
-// IntersectionObserver the content simply stays visible.
+// IntersectionObserver the content simply stays visible. Layout effect: hide before the
+// first paint, or blocks already on screen would flash visible, vanish, then fade back in.
 export const useReveal = (root: RefObject<HTMLElement | null>) => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = root.current;
     if (!el || typeof IntersectionObserver !== 'function') return;
 
