@@ -1,11 +1,32 @@
 import { Link } from 'react-router-dom';
+import { HERO_SAMPLE, HUMOR_STOPS } from '../domain/humorScale';
+import { PANEL_PATH } from './paths';
+import { useHeartbeat } from './useHeartbeat';
+import { WorldMap } from './WorldMap';
 import './Hero.css';
 
-const RAMP_FULL = 'linear-gradient(90deg, var(--neg), #e2a383, var(--neu), #93b1d6, var(--pos))';
-const RAMP_POSITIVE = 'linear-gradient(90deg, var(--neu), #93b1d6, var(--pos))';
+const ramp = (stops: typeof HUMOR_STOPS) =>
+  `linear-gradient(90deg, ${stops.map(({ color }) => color).join(', ')})`;
+
+const RAMP_FULL = ramp(HUMOR_STOPS);
+const RAMP_POSITIVE = ramp(HUMOR_STOPS.filter(({ value }) => value >= 0));
+
+// Separate component so each heartbeat re-renders only the map layer.
+const HeroMap = () => {
+  const values = useHeartbeat(HERO_SAMPLE);
+  return (
+    <div aria-hidden="true" className="lp-hero__map">
+      <div className="lp-hero__map-frame">
+        <WorldMap variant="hero" values={values} />
+      </div>
+    </div>
+  );
+};
 
 export const Hero = () => (
   <section id="inicio" aria-labelledby="hero-t" className="lp-hero">
+    <HeroMap />
+    <div aria-hidden="true" className="lp-hero__veil" />
     <div className="lp-container lp-hero__inner">
       <div className="lp-eyebrow lp-hero__meta">
         <span>Edición global</span>
@@ -22,7 +43,7 @@ export const Hero = () => (
         diccionario de términos y lo resume en un mapa por continente y país.
       </p>
       <div className="lp-hero__actions">
-        <Link to="/dashboard" className="lp-btn lp-btn--dark">Explorar el humor global →</Link>
+        <Link to={PANEL_PATH} className="lp-btn lp-btn--dark">Explorar el humor global →</Link>
         <a href="#como-funciona" className="lp-btn lp-btn--ghost">Cómo funciona</a>
       </div>
       <div
@@ -45,6 +66,7 @@ export const Hero = () => (
           Positivo <span className="lp-hero__value">+1</span>
         </span>
       </div>
+      <p className="lp-hero__caption">Mapa de fondo ilustrativo · valores de ejemplo</p>
     </div>
   </section>
 );

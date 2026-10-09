@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { PANEL_PATH } from './paths';
 import './HowItWorks.css';
 
 type Step = { icon: ReactNode; title: string; text: string; link: string; to: string };
@@ -41,7 +42,7 @@ const STEPS: Step[] = [
     title: 'Mapa por continente y país',
     text: 'Los valores se promedian por día y región. Con pocas noticias, el resultado se marca como provisional en lugar de ocultarse.',
     link: 'Dashboard de humor ↗',
-    to: '/dashboard',
+    to: PANEL_PATH,
   },
 ];
 

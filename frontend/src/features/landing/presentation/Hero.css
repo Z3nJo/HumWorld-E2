@@ -1,12 +1,42 @@
 .lp-hero {
+  position: relative;
+  overflow: hidden;
   border-bottom: 1px solid var(--line);
+  /* Plain-color fallback for browsers without color-mix(). */
+  background-image:
+    linear-gradient(#d9d2c34d 1px, transparent 1px),
+    linear-gradient(90deg, #d9d2c34d 1px, transparent 1px);
   background-image:
     linear-gradient(color-mix(in srgb, var(--line) 30%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--line) 30%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
+/* Wider than the viewport on purpose: the map bleeds past both edges, centered. */
+.lp-hero__map {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.lp-hero__map-frame {
+  flex: none;
+  width: max(980px, 112%);
+}
+
+/* Fades the map behind the copy so the headline stays readable. */
+.lp-hero__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 48%, #f5f2ebeb 0%, #f5f2eba6 50%, #f5f2eb00 78%);
+}
+
 .lp-hero__inner {
+  position: relative;
   padding-top: clamp(56px, 10vw, 120px);
   padding-bottom: 36px;
   display: flex;
@@ -63,6 +93,12 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 14px;
+}
+
+.lp-hero__caption {
+  margin-top: 8px;
+  font: 11.5px var(--mono);
+  color: var(--ink3);
 }
 
 .lp-hero__stop {

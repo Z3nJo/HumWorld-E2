@@ -2,6 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
+  background: #f5f2ebf2; /* fallback for browsers without color-mix() */
   background: color-mix(in srgb, var(--paper) 95%, transparent);
   border-bottom: 1px solid var(--line);
 }
