@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { CARD_SAMPLE, formatScore } from '../domain/humorScale';
+import { PANEL_PATH } from './paths';
+import { WorldMap } from './WorldMap';
 import './PanelPreview.css';
 
 type Tone = 'pos' | 'neg';
@@ -16,14 +19,11 @@ const NEWS = [
   { headline: 'Central bank holds rates as inflation eases', score: 0.64 },
 ];
 
-// Spanish display: real minus sign and comma decimal, e.g. "−0,76".
-const formatScore = (score: number) =>
-  `${score < 0 ? '−' : '+'}${Math.abs(score).toFixed(2).replace('.', ',')}`;
-
 const MapPreview = () => (
   <>
-    {/* Empty slot: the world map is mounted here by a follow-up change. */}
-    <div className="lp-preview__map" />
+    <div className="lp-preview__map">
+      <WorldMap variant="card" values={CARD_SAMPLE} />
+    </div>
     <div className="lp-preview__scale">
       <span>− negativo</span>
       <span>neutro</span>
@@ -93,7 +93,7 @@ export const PanelPreview = () => (
     </div>
     <div className="lp-panel">
       {CARDS.map(({ kind, preview, title, text, cta }) => (
-        <Link key={kind} to="/dashboard" className="lp-stack lp-panel__card">
+        <Link key={kind} to={PANEL_PATH} className="lp-stack lp-panel__card">
           <div aria-hidden="true" className={`lp-panel__preview lp-panel__preview--${kind}`}>
             {preview}
           </div>

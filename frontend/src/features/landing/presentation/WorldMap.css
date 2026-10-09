@@ -1,0 +1,50 @@
+/* Decorative only: no hover, no clicks; the card link underneath still receives them. */
+.lp-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.lp-map--hero {
+  opacity: 0.55;
+}
+
+.lp-map--hero .lp-map__sphere {
+  fill: none;
+  stroke: #c9c0ad;
+  stroke-width: 0.8;
+}
+
+.lp-map__graticule {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.5;
+}
+
+.lp-map--hero .lp-map__country {
+  stroke: var(--paper);
+  stroke-width: 0.6;
+  transition: fill 2.2s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-map--hero .lp-map__country {
+    transition: none;
+  }
+}
+
+/* Fills the 2:1 preview slot; the viewBox letterboxes if the slot gets shorter. */
+.lp-map--card {
+  height: 100%;
+}
+
+.lp-map--card .lp-map__sphere {
+  fill: var(--card);
+  stroke: var(--line);
+}
+
+.lp-map--card .lp-map__country {
+  stroke: var(--card);
+  stroke-width: 0.4;
+}
