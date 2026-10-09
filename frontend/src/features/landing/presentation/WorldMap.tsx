@@ -76,17 +76,22 @@ export const WorldMap = ({ values, variant }: WorldMapProps) => (
         ))
       }
     </Geographies>
-    {variant === 'hero' &&
-      PULSES.map(({ continent, at: [cx, cy] }) => (
-        // Keyed by value: a heartbeat remounts the circle, which replays its CSS ripple.
-        <circle
-          key={`${continent}:${values[continent]}`}
-          cx={cx}
-          cy={cy}
-          r={14}
-          className="lp-map__pulse"
-          style={{ stroke: colorOf(values[continent]) }}
-        />
-      ))}
   </ComposableMap>
 );
+
+// HTML ripples for an overlay with the map's 2:1 box. Unlike SVG children, they animate on
+// the compositor instead of repainting every country each frame.
+export const MapPulses = ({ values }: Pick<WorldMapProps, 'values'>) =>
+  PULSES.map(({ continent, at: [x, y] }) => (
+    // Keyed by value: a heartbeat remounts the span, which replays its CSS ripple.
+    <span
+      key={`${continent}:${values[continent]}`}
+      className="lp-map__pulse"
+      style={{
+        left: `${(x / WIDTH) * 100}%`,
+        top: `${(y / HEIGHT) * 100}%`,
+        // Full-strength tone by sign: near-zero scale colors vanish against the paper.
+        borderColor: values[continent] < 0 ? 'var(--neg)' : 'var(--pos)',
+      }}
+    />
+  ));
