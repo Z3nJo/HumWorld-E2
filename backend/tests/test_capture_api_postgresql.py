@@ -214,6 +214,41 @@ def test_manual_capture_api_rejects_missing_source_without_partial_news(
     assert feed_client.urls == []
 
 
+def test_manual_capture_skips_source_when_its_channel_is_inactive(
+    capture_client,
+    engine,
+) -> None:
+    with Session(engine, expire_on_commit=False) as session:
+        source = RssSource(
+            canal=Channel(
+                nombre="Canal detenido",
+                continente="America",
+                activo=False,
+            ),
+            nombre="Feed detenido",
+            url_feed="https://example.com/stopped.xml",
+            categoria_iptc="politics",
+            idioma="es",
+            activa=True,
+        )
+        session.add(source)
+        session.commit()
+    client, feed_client = capture_client
+
+    selected = client.post(
+        "/api/v1/sources/capture",
+        json={"source_ids": [source.id_fuente]},
+    )
+    automatic = client.post("/api/v1/sources/capture")
+
+    assert selected.status_code == 200
+    assert selected.json()["sources"] == []
+    assert selected.json()["skipped_source_ids"] == [source.id_fuente]
+    assert automatic.status_code == 200
+    assert automatic.json()["sources"] == []
+    assert feed_client.urls == []
+
+
 def test_manual_capture_without_recognized_terms_is_still_analyzed(
     capture_client, engine
 ) -> None:
