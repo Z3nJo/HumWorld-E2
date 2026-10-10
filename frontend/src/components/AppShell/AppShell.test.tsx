@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 
 describe('AppShell', () => {
-  it('renders the HumWorld branding and dictionary navigation link', () => {
+  it('renders the HumWorld branding and navigation links', () => {
     render(
       <MemoryRouter initialEntries={['/dictionary']}>
         <AppShell />
@@ -14,6 +14,10 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: /Diccionario/i })).toHaveAttribute(
       'href',
       '/dictionary',
+    );
+    expect(screen.getByRole('link', { name: /Fuentes y canales/i })).toHaveAttribute(
+      'href',
+      '/fuentes',
     );
   });
 });
