@@ -1,0 +1,188 @@
+.lp-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  /* Plain-color fallback for browsers without color-mix(). */
+  background-image:
+    linear-gradient(#d9d2c34d 1px, transparent 1px),
+    linear-gradient(90deg, #d9d2c34d 1px, transparent 1px);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--line) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 30%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Wider than the viewport on purpose: the map bleeds past both edges, centered. */
+.lp-hero__map {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Same box as the map's 2:1 SVG, so percentage-placed ripples land on the continents. */
+.lp-hero__pulses {
+  position: relative;
+  aspect-ratio: 2 / 1;
+}
+
+.lp-hero__map-frame {
+  flex: none;
+  width: max(980px, 112%);
+}
+
+/* Fades the map behind the copy so the headline stays readable. */
+.lp-hero__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 48%, #f5f2ebeb 0%, #f5f2eba6 50%, #f5f2eb00 78%);
+}
+
+.lp-hero__inner {
+  position: relative;
+  padding-top: clamp(56px, 10vw, 120px);
+  padding-bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: min(820px, 88vh);
+}
+
+/*
+ * Soft staggered entrance; `both` keeps each block hidden until its delay starts.
+ * The map fades in slowly behind it, so the first heartbeat ripples are faint.
+ */
+.lp-hero__map {
+  animation: lp-hero-fade 2.4s ease-out both;
+}
+
+.lp-hero__inner > * {
+  animation: lp-hero-rise 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) 0.2s both;
+}
+
+.lp-hero__inner > :nth-child(2) { animation-delay: 0.35s; }
+.lp-hero__inner > :nth-child(3) { animation-delay: 0.5s; }
+.lp-hero__inner > :nth-child(4) { animation-delay: 0.65s; }
+.lp-hero__inner > :nth-child(n + 5) { animation-delay: 0.8s; }
+
+@keyframes lp-hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lp-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Swings between both ends of the scale; the pale neutral would fail contrast on paper. */
+.lp-hero__hue {
+  color: var(--neg);
+  animation: lp-hero-hue 6s ease-in-out infinite alternate;
+}
+
+@keyframes lp-hero-hue {
+  to {
+    color: var(--pos);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero__map,
+  .lp-hero__inner > *,
+  .lp-hero__hue {
+    animation: none;
+  }
+}
+
+.lp-hero__meta {
+  display: flex;
+  gap: 10px 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 9px 4px;
+}
+
+.lp-hero__title {
+  margin: 32px 0 0;
+  font: 500 clamp(46px, 8.4vw, 112px) / 0.98 var(--serif);
+  letter-spacing: -0.03em;
+  max-width: 12ch;
+  text-wrap: balance;
+}
+
+.lp-hero__lead {
+  margin-top: 24px;
+  max-width: 56ch;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.55;
+  color: var(--ink2);
+  text-wrap: pretty;
+}
+
+/* The bottom margin keeps at least 56px above the legend, which is pushed to the bottom. */
+.lp-hero__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 32px 0 56px;
+}
+
+.lp-hero__legend {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.lp-hero__caption {
+  margin-top: 8px;
+  font: 11.5px var(--mono);
+  color: var(--ink3);
+}
+
+.lp-hero__stop {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink2);
+}
+
+.lp-hero__value {
+  font: 12px var(--mono);
+  color: var(--ink3);
+}
+
+.lp-hero__swatch {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.lp-hero__swatch--neu {
+  border: 1px solid var(--line);
+}
+
+.lp-hero__ramp {
+  width: 90px;
+  height: 8px;
+  border-radius: 2px;
+}

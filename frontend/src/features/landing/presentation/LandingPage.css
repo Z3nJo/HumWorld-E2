@@ -1,0 +1,132 @@
+html:has(.lp) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.lp) {
+    scroll-behavior: auto;
+  }
+}
+
+.lp-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: clamp(16px, 4vw, 40px);
+}
+
+.lp-eyebrow {
+  font: 500 11.5px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 22px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Global a:hover sets --ink, so only the dark variant needs to restate its text color. */
+.lp-btn--dark {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.lp-btn--dark:hover {
+  background: #000;
+  color: var(--paper);
+}
+
+.lp-btn--light {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lp-btn--light:hover {
+  background: #fff;
+}
+
+.lp-btn--ghost {
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.lp-btn--ghost:hover {
+  border-color: var(--ink3);
+}
+
+/* Shared section shell: offset anchors below the 62px sticky header. */
+.lp-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(56px, 8vw, 96px) clamp(16px, 4vw, 40px) 0;
+  scroll-margin-top: 62px;
+}
+
+/*
+ * Scroll reveal: useReveal adds .lp--reveal to the root, then .lp-in to each block on entry.
+ * Without JS or with reduced motion, blocks are never hidden.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lp--reveal .lp-section > * {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.9s ease-out,
+      transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .lp--reveal .lp-section > .lp-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Lives here, after .lp-section, so the shorthand padding above cannot override it. */
+.lp-section--end {
+  padding-bottom: clamp(56px, 8vw, 96px);
+}
+
+.lp-section__title {
+  margin: 12px 0 0;
+  font: 500 clamp(30px, 4vw, 44px) / 1.08 var(--serif);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.lp-section__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 14px;
+}
+
+.lp-section__note {
+  font: 12px var(--mono);
+  color: var(--ink3);
+}
+
+.lp-tone-pos {
+  color: var(--pos);
+}
+
+.lp-tone-neg {
+  color: var(--neg);
+}
+
+.lp-stack {
+  display: flex;
+  flex-direction: column;
+}
