@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import type { ChannelGroup, Source } from '../domain/source';
+import type { ChannelGroup } from '../domain/source';
 import { CONTINENT_LABELS } from '../domain/source';
 
 interface SourceTableProps {
@@ -7,8 +7,7 @@ interface SourceTableProps {
   openChannelIds: Set<number>;
   onToggleChannelOpen: (channelId: number) => void;
   onToggleSourceActive: (sourceId: number) => void;
-  onEditSource: (source: Source) => void;
-  onDeleteSource: (source: Source) => void;
+  onToggleGroupActive: (groupId: number) => void;
 }
 
 export const SourceTable = ({
@@ -16,8 +15,7 @@ export const SourceTable = ({
   openChannelIds,
   onToggleChannelOpen,
   onToggleSourceActive,
-  onEditSource,
-  onDeleteSource,
+  onToggleGroupActive,
 }: SourceTableProps) => {
   if (channelGroups.length === 0) {
     return (
@@ -55,7 +53,7 @@ export const SourceTable = ({
                       className="btn ghost sm"
                       onClick={() => onToggleChannelOpen(group.id)}
                       aria-expanded={isOpen}
-                      aria-label={`Ver feeds de ${group.name}`}
+                      aria-label={`Ver canales de ${group.name}`}
                     >
                       {isOpen ? '▾' : '▸'}
                     </button>
@@ -63,7 +61,7 @@ export const SourceTable = ({
                   <td>
                     <div style={{ fontWeight: 600 }}>{group.name}</div>
                     <div className="meta">
-                      URL del sitio <span className="backend-badge">REQUIERE BACK</span>
+                      — <span className="backend-badge">REQUIERE BACK</span>
                     </div>
                   </td>
                   <td>
@@ -73,13 +71,11 @@ export const SourceTable = ({
                   <td className="num">{group.sources.length}</td>
                   <td>
                     <button
-                      className="sw disabled"
-                      disabled
+                      className={`sw ${group.isActive ? 'on' : ''}`}
+                      onClick={() => onToggleGroupActive(group.id)}
                       role="switch"
-                      aria-checked="false"
-                      aria-disabled="true"
-                      aria-label={`Estado del canal ${group.name}: REQUIERE BACK`}
-                      title="REQUIERE BACK"
+                      aria-checked={group.isActive}
+                      aria-label={`Activar o desactivar todos los canales de ${group.name}`}
                     />
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -116,11 +112,10 @@ export const SourceTable = ({
                       >
                         <thead>
                           <tr>
-                            <th>URL del feed RSS</th>
+                            <th>URL del canal RSS</th>
                             <th>Categoría IPTC</th>
                             <th>País</th>
                             <th>Activo</th>
-                            <th />
                           </tr>
                         </thead>
                         <tbody>
@@ -153,21 +148,6 @@ export const SourceTable = ({
                                   aria-checked={feed.active}
                                   aria-label={`Activar o desactivar ${feed.name}`}
                                 />
-                              </td>
-                              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                <button
-                                  className="btn ghost sm"
-                                  onClick={() => onEditSource(feed)}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="btn ghost sm"
-                                  style={{ color: 'var(--neg)' }}
-                                  onClick={() => onDeleteSource(feed)}
-                                >
-                                  Eliminar
-                                </button>
                               </td>
                             </tr>
                           ))}

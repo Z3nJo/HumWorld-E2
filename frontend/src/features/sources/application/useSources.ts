@@ -30,10 +30,6 @@ export function useSources(
     try {
       const data = await fetchSources();
       setSources(data);
-      // Open the first channel by default if available
-      if (data.length > 0) {
-        setOpenChannelIds((prev) => (prev.size === 0 ? new Set([data[0].channelId]) : prev));
-      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar las fuentes';
       setError(msg);
@@ -103,6 +99,27 @@ export function useSources(
     }
   }, [sources]);
 
+  const toggleGroupActive = useCallback(
+    async (groupId: number) => {
+      const group = channelGroups.find((g) => g.id === groupId);
+      if (!group || group.sources.length === 0) return;
+
+      const targetActive = !group.isActive;
+
+      try {
+        for (const feed of group.sources) {
+          await patchSource(feed.id, { active: targetActive });
+        }
+        await load();
+        return { groupName: group.name, active: targetActive };
+      } catch (err) {
+        await load();
+        throw err;
+      }
+    },
+    [channelGroups, load],
+  );
+
   const addSourcesBatch = useCallback(async (input: CreateSourceBatchInput) => {
     const res = await createSources(input);
     setSources((prev) => [...res.sources, ...prev]);
@@ -130,6 +147,7 @@ export function useSources(
     error,
     toggleChannelOpen,
     toggleSourceActive,
+    toggleGroupActive,
     addSourcesBatch,
     updateSourceItem,
     removeSourceItem,

@@ -74,7 +74,7 @@ describe('useSources and groupSourcesByChannel', () => {
 
       expect(result.current.sources).toHaveLength(3);
       expect(result.current.channelGroups).toHaveLength(2);
-      expect(result.current.openChannelIds.has(10)).toBe(true);
+      expect(result.current.openChannelIds.size).toBe(0);
     });
 
     it('filters sources by continent and status', async () => {
@@ -110,6 +110,54 @@ describe('useSources and groupSourcesByChannel', () => {
       expect(sourcesApi.patchSource).toHaveBeenCalledWith(1, { active: false });
       const updated = result.current.sources.find((s) => s.id === 1);
       expect(updated?.active).toBe(false);
+    });
+
+    it('toggles group active state sequentially for all feeds and reloads', async () => {
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
+      vi.mocked(sourcesApi.patchSource).mockResolvedValue({
+        ...sampleSources[0],
+        active: false,
+      });
+
+      const { result } = renderHook(() => useSources());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      // El País (id 10) has 2 feeds (ids 1 and 2), and isActive is true because feed 1 is active
+      const elPaisGroup = result.current.channelGroups.find((g) => g.id === 10);
+      expect(elPaisGroup?.isActive).toBe(true);
+
+      await act(async () => {
+        const res = await result.current.toggleGroupActive(10);
+        expect(res).toEqual({ groupName: 'El País', active: false });
+      });
+
+      // Called for both feeds sequentially with active: false
+      expect(sourcesApi.patchSource).toHaveBeenCalledTimes(2);
+      expect(sourcesApi.patchSource).toHaveBeenNthCalledWith(1, 1, { active: false });
+      expect(sourcesApi.patchSource).toHaveBeenNthCalledWith(2, 2, { active: false });
+    });
+
+    it('reloads and throws when toggleGroupActive encounters an error', async () => {
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
+      vi.mocked(sourcesApi.patchSource).mockRejectedValueOnce(new Error('Network error'));
+
+      const { result } = renderHook(() => useSources());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      await expect(
+        act(async () => {
+          await result.current.toggleGroupActive(10);
+        }),
+      ).rejects.toThrow('Network error');
+
+      // Verifies that fetchSources was called again on error recovery
+      expect(sourcesApi.fetchSources).toHaveBeenCalledTimes(2);
     });
 
     it('removes a source successfully', async () => {

@@ -12,12 +12,14 @@ export function groupSourcesByChannel(sources: Source[]): ChannelGroup[] {
         continent: src.channel.continent,
         sources: [],
         activeCount: 0,
+        isActive: false,
       };
       channelMap.set(src.channelId, group);
     }
     group.sources.push(src);
     if (src.active) {
       group.activeCount += 1;
+      group.isActive = true;
     }
   }
 

@@ -88,6 +88,7 @@ export interface ChannelGroup {
   continent: Continent;
   sources: Source[];
   activeCount: number;
+  isActive: boolean;
 }
 
 export type SourceStatusFilter = 'all' | 'active' | 'inactive';

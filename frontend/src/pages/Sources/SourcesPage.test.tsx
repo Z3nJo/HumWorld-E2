@@ -45,7 +45,7 @@ describe('SourcesPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders channels and feeds successfully', async () => {
+  it('renders channels and feeds successfully upon expansion', async () => {
     vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
 
     render(<SourcesPage />);
@@ -57,9 +57,16 @@ describe('SourcesPage', () => {
       expect(screen.getByText('NPR')).toBeInTheDocument();
     });
 
-    // The first channel feeds are open by default
+    // Channels are collapsed by default
+    expect(screen.queryByText('https://elpais.com/rss/portada.xml')).not.toBeInTheDocument();
+
+    // Expand El País
+    fireEvent.click(screen.getByLabelText('Ver canales de El País'));
     expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
     expect(screen.getByText('https://elpais.com/rss/economia.xml')).toBeInTheDocument();
+
+    // Verify sub-table does NOT render edit or delete buttons for the feeds
+    expect(screen.queryByRole('button', { name: 'Editar feed' })).not.toBeInTheDocument();
   });
 
   it('filters by continent and status', async () => {
@@ -99,6 +106,13 @@ describe('SourcesPage', () => {
     render(<SourcesPage />);
 
     await waitFor(() => {
+      expect(screen.getByLabelText('Ver canales de El País')).toBeInTheDocument();
+    });
+
+    // Expand El País to reveal individual switch
+    fireEvent.click(screen.getByLabelText('Ver canales de El País'));
+
+    await waitFor(() => {
       expect(screen.getByLabelText('Activar o desactivar Portada')).toBeInTheDocument();
     });
 
@@ -132,40 +146,26 @@ describe('SourcesPage', () => {
     expect(screen.queryByText('Registrar medio y canales RSS')).not.toBeInTheDocument();
   });
 
-  it('keeps unsupported channel controls visible but disabled', async () => {
+  it('renders functional group toggle and keeps unsupported channel controls disabled', async () => {
     vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
 
     render(<SourcesPage />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Estado del canal El País: REQUIERE BACK')).toBeInTheDocument();
+      expect(
+        screen.getByLabelText('Activar o desactivar todos los canales de El País'),
+      ).toBeInTheDocument();
     });
 
-    expect(screen.getByLabelText('Estado del canal El País: REQUIERE BACK')).toBeDisabled();
+    const groupToggle = screen.getByLabelText('Activar o desactivar todos los canales de El País');
+    expect(groupToggle).not.toBeDisabled();
+    expect(groupToggle).toHaveAttribute('aria-checked', 'true');
+
+    // Unsupported channel controls remain disabled with REQUIERE BACK
+    const editChannelBtns = screen.getAllByLabelText('Editar canal: REQUIERE BACK');
+    expect(editChannelBtns[0]).toBeDisabled();
+    const deleteChannelBtns = screen.getAllByLabelText('Eliminar canal: REQUIERE BACK');
+    expect(deleteChannelBtns[0]).toBeDisabled();
     expect(screen.getAllByText('REQUIERE BACK').length).toBeGreaterThan(0);
-  });
-
-  it('opens delete modal and confirms deletion of a source', async () => {
-    const user = userEvent.setup();
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
-    vi.mocked(sourcesApi.deleteSource).mockResolvedValueOnce(undefined);
-
-    render(<SourcesPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
-    });
-
-    const deleteButtons = screen.getAllByRole('button', { name: 'Eliminar' });
-    await user.click(deleteButtons[0]);
-
-    expect(screen.getByText(/¿Eliminar «Portada»\?/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Eliminar fuente' }));
-
-    await waitFor(() => {
-      expect(sourcesApi.deleteSource).toHaveBeenCalledWith(1);
-      expect(screen.getByText(/Fuente «Portada» eliminada/i)).toBeInTheDocument();
-    });
   });
 });

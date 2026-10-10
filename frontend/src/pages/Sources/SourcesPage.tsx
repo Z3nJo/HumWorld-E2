@@ -27,6 +27,7 @@ export const SourcesPage = () => {
     error,
     toggleChannelOpen,
     toggleSourceActive,
+    toggleGroupActive,
     addSourcesBatch,
     updateSourceItem,
     removeSourceItem,
@@ -73,11 +74,26 @@ export const SourcesPage = () => {
     }
   };
 
+  const handleToggleGroupActive = async (groupId: number) => {
+    try {
+      const result = await toggleGroupActive(groupId);
+      if (result) {
+        addToast(
+          `Canal «${result.groupName}» ${result.active ? 'activado' : 'desactivado'}`,
+          'success',
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar estado del canal';
+      addToast(msg, 'error');
+    }
+  };
+
   const handleCreateBatch = async (input: CreateSourceBatchInput) => {
     try {
       const res = await addSourcesBatch(input);
       addToast(
-        `Canal «${res.channel.name}» creado con ${res.sources.length} feed(s) RSS`,
+        `Canal «${res.channel.name}» creado con ${res.sources.length} canal(es) RSS`,
         'success',
       );
     } catch (err) {
@@ -197,8 +213,7 @@ export const SourcesPage = () => {
             openChannelIds={openChannelIds}
             onToggleChannelOpen={toggleChannelOpen}
             onToggleSourceActive={handleToggleActive}
-            onEditSource={handleOpenEditDrawer}
-            onDeleteSource={(s) => setDeletingSource(s)}
+            onToggleGroupActive={handleToggleGroupActive}
           />
         )}
       </div>

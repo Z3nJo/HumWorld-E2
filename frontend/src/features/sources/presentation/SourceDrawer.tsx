@@ -149,8 +149,20 @@ const DrawerForm = ({
               />
             </label>
 
+            <label className="f locked-control">
+              URL del sitio
+              <input
+                className="inp mono"
+                disabled
+                placeholder="https://ejemplo.com"
+                aria-label="URL del sitio: REQUIERE BACK"
+                style={{ background: 'var(--paper2)' }}
+              />
+              <span className="backend-help">REQUIERE BACK · El backend aún no expone la URL del sitio.</span>
+            </label>
+
             <label className="f">
-              Nombre del feed
+              Nombre del canal
               <input
                 className={`inp ${errors.sources?.[0]?.name ? 'err' : ''}`}
                 value={editName}
@@ -163,7 +175,7 @@ const DrawerForm = ({
             </label>
 
             <label className="f">
-              URL del feed RSS
+              URL del canal RSS
               <input
                 className={`inp mono ${errors.sources?.[0]?.feedUrl ? 'err' : ''}`}
                 value={editFeedUrl}
@@ -213,7 +225,7 @@ const DrawerForm = ({
                   onClick={() => setEditActive((prev) => !prev)}
                   role="switch"
                   aria-checked={editActive}
-                  aria-label="Estado activo del feed"
+                  aria-label="Estado activo del canal"
                 />
                 <span className="help">{editActive ? 'Activo (se captura)' : 'Inactivo'}</span>
               </span>
@@ -231,6 +243,18 @@ const DrawerForm = ({
                 placeholder="p. ej. El País, BBC News, Clarín"
               />
               {errors.channelName && <span className="errtxt">{errors.channelName}</span>}
+            </label>
+
+            <label className="f locked-control">
+              URL del sitio
+              <input
+                className="inp mono"
+                disabled
+                placeholder="https://ejemplo.com"
+                aria-label="URL del sitio: REQUIERE BACK"
+                style={{ background: 'var(--paper2)' }}
+              />
+              <span className="backend-help">REQUIERE BACK · El backend aún no expone la URL del sitio.</span>
             </label>
 
             <label className="f">
@@ -257,9 +281,9 @@ const DrawerForm = ({
                 paddingTop: '12px',
               }}
             >
-              <b style={{ font: '500 17px var(--serif)' }}>Feeds RSS asociados</b>
+              <b style={{ font: '500 17px var(--serif)' }}>Canales RSS</b>
               <button type="button" className="btn sm" onClick={handleAddFeedRow}>
-                + Añadir feed
+                + Añadir canal
               </button>
             </div>
             <p className="help" style={{ marginTop: '-6px' }}>
@@ -281,7 +305,7 @@ const DrawerForm = ({
                   }}
                 >
                   <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <span className="meta">Feed #{idx + 1}</span>
+                    <span className="meta">Canal {idx + 1}</span>
                     {batchFeeds.length > 1 && (
                       <button
                         type="button"
@@ -295,7 +319,7 @@ const DrawerForm = ({
                   </div>
 
                   <label className="f">
-                    Nombre del feed
+                    Nombre del canal
                     <input
                       className={`inp ${feedErr?.name ? 'err' : ''}`}
                       value={feed.name}
@@ -355,7 +379,7 @@ const DrawerForm = ({
 
                     <label className="f locked-control">
                       País
-                      <select disabled aria-label={`País del feed ${idx + 1}`}>
+                      <select disabled aria-label={`País del canal ${idx + 1}`}>
                         <option>— Sin país —</option>
                       </select>
                       <span className="backend-help">REQUIERE BACK · El backend aún no expone país.</span>
@@ -430,7 +454,7 @@ export const SourceDrawer = ({
             </div>
             <h3>
               {editingSource
-                ? `Editar feed de ${editingSource.channel.name}`
+                ? `Editar canal de ${editingSource.channel.name}`
                 : 'Registrar medio y canales RSS'}
             </h3>
           </div>
