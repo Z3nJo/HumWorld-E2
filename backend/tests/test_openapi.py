@@ -86,6 +86,45 @@ def test_openapi_documents_sentiment_endpoint_and_schemas() -> None:
     }
 
 
+def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
+    schema = app.openapi()
+    schemas = schema["components"]["schemas"]
+    operations = [
+        schema["paths"]["/api/v1/dashboards"]["get"],
+        schema["paths"]["/api/v1/dashboards/nube-palabras"]["get"],
+    ]
+
+    for operation in operations:
+        assert {item["name"] for item in operation["parameters"]} == {
+            "fecha_desde",
+            "fecha_hasta",
+            "continente",
+            "pais",
+        }
+        assert operation["responses"].keys() >= {"200", "400", "500"}
+        assert "422" not in operation["responses"]
+
+    assert schemas.keys() >= {
+        "DashboardAggregateResponse",
+        "DashboardResponse",
+        "InfluentialTermResponse",
+        "InfluentialTermsResponse",
+    }
+    assert set(schemas["DashboardAggregateResponse"]["properties"]) == {
+        "continente",
+        "pais",
+        "humor",
+        "noticias",
+        "suficiente",
+    }
+    assert set(schemas["InfluentialTermResponse"]["properties"]) == {
+        "id_termino",
+        "termino",
+        "idioma",
+        "peso",
+        "aporte_total",
+        "frecuencia",
+    }
 def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/dictionary"]
