@@ -3,9 +3,9 @@ from datetime import datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models import Configuration, News, NewsTerm, RssSource, Term
+from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
 from app.services.sentiment_engine import SentimentResult
 
 
@@ -16,7 +16,9 @@ class NewsCaptureRepository:
     def list_active_sources(self) -> list[RssSource]:
         statement = (
             select(RssSource)
-            .where(RssSource.activa.is_(True))
+            .join(RssSource.canal)
+            .options(joinedload(RssSource.canal))
+            .where(RssSource.activa.is_(True), Channel.activo.is_(True))
             .order_by(RssSource.id_fuente)
         )
         return self._detached_sources(statement)
@@ -24,6 +26,7 @@ class NewsCaptureRepository:
     def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]:
         statement = (
             select(RssSource)
+            .options(joinedload(RssSource.canal))
             .where(RssSource.id_fuente.in_(source_ids))
             .order_by(RssSource.id_fuente)
         )
@@ -31,8 +34,7 @@ class NewsCaptureRepository:
 
     def _detached_sources(self, statement) -> list[RssSource]:
         sources = list(self._session.scalars(statement).all())
-        for source in sources:
-            self._session.expunge(source)
+        self._session.expunge_all()
         self._session.rollback()
         return sources
 

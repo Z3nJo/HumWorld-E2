@@ -66,7 +66,6 @@ class SourceRepository:
         country: str | None = None,
     ) -> list[RssSource]:
         statement = select(RssSource).options(joinedload(RssSource.canal))
-
         if continent is not None or country is not None:
             statement = statement.join(RssSource.canal)
         if continent is not None:

@@ -84,6 +84,9 @@ def create_sources(
         ChannelCreateData(
             nombre=payload.channel.nombre,
             continente=payload.channel.continente,
+            pais=payload.channel.pais,
+            url_sitio=(str(payload.channel.url_sitio) if payload.channel.url_sitio else None),
+            activo=payload.channel.activo,
         )
         if payload.channel
         else None
