@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Self
 
@@ -191,3 +191,36 @@ class SentimentTermResponse(BaseModel):
 class SentimentResponse(BaseModel):
     valor_humor: Decimal | None
     terminos: list[SentimentTermResponse]
+
+
+class DashboardAggregateResponse(BaseModel):
+    continente: Continent
+    pais: str | None
+    humor: Decimal | None
+    noticias: int = Field(ge=0)
+    suficiente: bool
+
+
+class DashboardResponse(BaseModel):
+    fecha_desde: date
+    fecha_hasta: date
+    continente: Continent | None
+    pais: str | None
+    agregados: list[DashboardAggregateResponse]
+
+
+class InfluentialTermResponse(BaseModel):
+    id_termino: int
+    termino: str
+    idioma: Language
+    peso: Decimal
+    aporte_total: Decimal
+    frecuencia: int = Field(gt=0)
+
+
+class InfluentialTermsResponse(BaseModel):
+    fecha_desde: date
+    fecha_hasta: date
+    continente: Continent | None
+    pais: str | None
+    terminos: list[InfluentialTermResponse]
