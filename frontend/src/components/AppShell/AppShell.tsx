@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { Logo } from '../../features/landing/presentation/Logo';
 import './AppShell.css';
 
 export const AppShell = () => {
@@ -6,10 +7,7 @@ export const AppShell = () => {
     <div className="app">
       <aside className="nav">
         <div className="brand">
-          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-            <path d="M13 1a12 12 0 0 0 0 24z" fill="#d86a3c" />
-            <path d="M13 1a12 12 0 0 1 0 24z" fill="#5d8fd0" />
-          </svg>
+          <Logo size={26} />
           <div>
             <b>HumWorld</b>
             <small>humor de las noticias</small>
