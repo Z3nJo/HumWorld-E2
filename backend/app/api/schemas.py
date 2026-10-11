@@ -12,14 +12,36 @@ from pydantic import (
 )
 
 from app.models.domains import Continent, IptcCategory, Language
+from app.validation import normalize_country, normalize_site_url
 
 
 class ChannelCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str = Field(min_length=1, max_length=150, examples=["BBC Mundo"])
     continente: Continent = Field(examples=[Continent.EUROPE])
+    pais: str | None = Field(default=None, examples=["CL"])
+    url_sitio: HttpUrl | None = Field(
+        default=None,
+        max_length=500,
+        examples=["https://example.com"],
+    )
+    activo: bool = Field(default=True)
+
+    @field_validator("pais", mode="before")
+    @classmethod
+    def validate_country(cls, value: object) -> object:
+        return normalize_country(value)
+
+    @field_validator("url_sitio", mode="before")
+    @classmethod
+    def validate_site_url(cls, value: object) -> object:
+        return normalize_site_url(value)
 
 
 class SourceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str = Field(min_length=1, max_length=150, examples=["Portada"])
     url_feed: HttpUrl = Field(
         max_length=500,
@@ -31,6 +53,8 @@ class SourceCreate(BaseModel):
 
 
 class SourceBatchCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     channel: ChannelCreate | None = None
     channel_id: int | None = Field(default=None, gt=0)
     sources: list[SourceCreate] = Field(min_length=1)
@@ -43,6 +67,8 @@ class SourceBatchCreate(BaseModel):
 
 
 class SourceReplace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str = Field(min_length=1, max_length=150)
     url_feed: HttpUrl = Field(max_length=500)
     categoria_iptc: IptcCategory
@@ -51,6 +77,8 @@ class SourceReplace(BaseModel):
 
 
 class SourcePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str | None = Field(default=None, min_length=1, max_length=150)
     url_feed: HttpUrl | None = Field(default=None, max_length=500)
     categoria_iptc: IptcCategory | None = None
@@ -64,12 +92,68 @@ class SourcePatch(BaseModel):
         return self
 
 
-class ChannelSummary(BaseModel):
+class ChannelResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id_canal: int
     nombre: str
     continente: Continent
+    pais: str | None
+    url_sitio: str | None
+    activo: bool
+    fecha_alta: datetime
+
+
+class ChannelReplace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: str = Field(min_length=1, max_length=150)
+    continente: Continent
+    pais: str | None
+    url_sitio: HttpUrl | None = Field(max_length=500)
+    activo: bool
+
+    @field_validator("pais", mode="before")
+    @classmethod
+    def validate_country(cls, value: object) -> object:
+        return normalize_country(value)
+
+    @field_validator("url_sitio", mode="before")
+    @classmethod
+    def validate_site_url(cls, value: object) -> object:
+        return normalize_site_url(value)
+
+
+class ChannelPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: str | None = Field(default=None, min_length=1, max_length=150)
+    continente: Continent | None = None
+    pais: str | None = None
+    url_sitio: HttpUrl | None = Field(default=None, max_length=500)
+    activo: bool | None = None
+
+    @field_validator("pais", mode="before")
+    @classmethod
+    def validate_country(cls, value: object) -> object:
+        return normalize_country(value)
+
+    @field_validator("url_sitio", mode="before")
+    @classmethod
+    def validate_site_url(cls, value: object) -> object:
+        return normalize_site_url(value)
+
+    @model_validator(mode="after")
+    def validate_patch_fields(self) -> Self:
+        if not self.model_fields_set:
+            raise ValueError("Debe indicar al menos un campo editable")
+        required_fields = {"nombre", "continente", "activo"}
+        if any(
+            field in self.model_fields_set and getattr(self, field) is None
+            for field in required_fields
+        ):
+            raise ValueError("nombre, continente y activo no aceptan null")
+        return self
 
 
 class SourceResponse(BaseModel):
@@ -82,11 +166,13 @@ class SourceResponse(BaseModel):
     categoria_iptc: IptcCategory
     idioma: Language
     activa: bool
-    canal: ChannelSummary
+    fecha_ultima_captura: datetime | None
+    fecha_alta: datetime
+    canal: ChannelResponse
 
 
 class SourceBatchResponse(BaseModel):
-    channel: ChannelSummary
+    channel: ChannelResponse
     sources: list[SourceResponse]
 
 
