@@ -92,11 +92,11 @@ La pantalla SHALL permitir eliminar un término directamente desde la fila. La a
 
 ### Requirement: Barra visual de valor
 
-La tabla SHALL mostrar una barra visual proporcional al valor de cada término, coloreada en azul para valores positivos y rojo para valores negativos. El formulario de creación y la fila de edición MUST mostrar una vista previa actualizada en tiempo real.
+La tabla SHALL mostrar una barra visual proporcional al valor de cada término, coloreada en verde para valores positivos y rojo para valores negativos. El formulario de creación y la fila de edición MUST mostrar una vista previa actualizada en tiempo real.
 
 #### Scenario: Renderizar la barra de un valor positivo
 - **WHEN** un término tiene valor positivo
-- **THEN** la barra aparece en tono azul proporcional al valor
+- **THEN** la barra aparece en tono verde proporcional al valor
 
 #### Scenario: Renderizar la barra de un valor negativo
 - **WHEN** un término tiene valor negativo

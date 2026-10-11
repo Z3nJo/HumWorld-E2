@@ -75,7 +75,7 @@ const CARDS: Card[] = [
     kind: 'cloud',
     preview: <CloudPreview />,
     title: 'Nube de términos',
-    text: 'Los términos que más pesaron en el resultado. Azul suma, naranja resta; el tamaño indica su influencia.',
+    text: 'Los términos que más pesaron en el resultado. Verde suma, naranja resta; el tamaño indica su influencia.',
     cta: 'Ver la nube →',
   },
   {
