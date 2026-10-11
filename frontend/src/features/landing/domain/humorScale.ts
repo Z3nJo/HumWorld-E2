@@ -7,8 +7,8 @@ export const HUMOR_STOPS: { value: number; color: string }[] = [
   { value: -1, color: '#bf4f22' },
   { value: -0.5, color: '#e2a383' },
   { value: 0, color: '#e6e0d2' },
-  { value: 0.5, color: '#93b1d6' },
-  { value: 1, color: '#285f9f' },
+  { value: 0.5, color: '#9cc4a8' },
+  { value: 1, color: '#357050' },
 ];
 
 // Spanish display: real minus sign and comma decimal, e.g. "−0,76". Values that round to zero
