@@ -9,6 +9,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.api import (
+    channels_router,
     configuration_router,
     dashboard_router,
     dictionary_router,
@@ -21,6 +22,7 @@ from app.repositories import ConfigurationRepository
 from app.scheduler import CaptureScheduler, read_capture_periodicity
 from app.seeds.sentiment import seed_sentiment_configuration, seed_sentiment_terms
 from app.services.configuration import ConfigurationValidationError, NullCaptureSchedule
+from app.services.channels import ChannelValidationError
 from app.services.sentiment_configuration import (
     SentimentConfigurationService,
     warn_if_scale_differs_from_dictionary,
@@ -65,6 +67,7 @@ app = FastAPI(
 )
 
 app.include_router(configuration_router, prefix="/api/v1")
+app.include_router(channels_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(dictionary_router, prefix="/api/v1")
 app.include_router(sentiment_router, prefix="/api/v1")
@@ -110,6 +113,17 @@ async def request_validation_error_handler(
 async def source_validation_error_handler(
     request: Request,
     error: SourceValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(error)},
+    )
+
+
+@app.exception_handler(ChannelValidationError)
+async def channel_validation_error_handler(
+    request: Request,
+    error: ChannelValidationError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
