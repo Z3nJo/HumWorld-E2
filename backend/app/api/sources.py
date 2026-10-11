@@ -119,10 +119,17 @@ def list_sources(
     service: Annotated[SourceService, Depends(get_source_service)],
     continent: Annotated[Continent | None, Query()] = None,
     active: Annotated[bool | None, Query()] = None,
+    channel_id: Annotated[int | None, Query(gt=0)] = None,
+    country: Annotated[str | None, Query()] = None,
 ) -> list[SourceResponse]:
     return [
         SourceResponse.model_validate(source)
-        for source in service.list_sources(continent=continent, active=active)
+        for source in service.list_sources(
+            continent=continent,
+            active=active,
+            channel_id=channel_id,
+            country=country,
+        )
     ]
 
 
