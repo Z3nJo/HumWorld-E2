@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 
-from app.models import News, RssSource
+from app.models import Channel, News, RssSource
 from app.services.capture import FeedEntry, NewsCaptureService
 
 
@@ -30,7 +30,11 @@ class FakeCaptureRepository:
         self._next_news_id = 1
 
     def list_active_sources(self) -> list[RssSource]:
-        return [source for source in self.sources if source.activa]
+        return [
+            source
+            for source in self.sources
+            if source.activa and source.canal.activo
+        ]
 
     def list_sources_by_ids(self, source_ids: Sequence[int]) -> list[RssSource]:
         return [source for source in self.sources if source.id_fuente in source_ids]
@@ -70,10 +74,21 @@ class FakeCaptureRepository:
         self._pending_rows = []
 
 
-def source(source_id: int, *, active: bool = True, language: str = "es") -> RssSource:
+def source(
+    source_id: int,
+    *,
+    active: bool = True,
+    channel_active: bool = True,
+    language: str = "es",
+) -> RssSource:
     return RssSource(
         id_fuente=source_id,
-        id_canal=1,
+        canal=Channel(
+            id_canal=source_id,
+            nombre=f"Canal {source_id}",
+            continente="America",
+            activo=channel_active,
+        ),
         nombre=f"Fuente {source_id}",
         url_feed=f"https://example.com/{source_id}.xml",
         categoria_iptc="politics",
@@ -178,15 +193,34 @@ def test_rejects_values_that_exceed_mod_01_lengths() -> None:
 def test_captures_selected_sources_and_skips_inactive() -> None:
     active = source(1)
     inactive = source(2, active=False)
-    repository = FakeCaptureRepository([active, inactive])
+    inactive_channel = source(3, channel_active=False)
+    repository = FakeCaptureRepository([active, inactive, inactive_channel])
     report = NewsCaptureService(
         repository,
         FakeFeedClient({active.url_feed: [entry("one", "https://example.com/one")]}),
         clock=lambda: CAPTURED_AT,
-    ).capture_sources([1, 2])
+    ).capture_sources([1, 2, 3])
     assert report.inserted == 1
-    assert report.skipped_source_ids == (2,)
+    assert report.skipped_source_ids == (2, 3)
     assert [item.source_id for item in report.sources] == [1]
+
+
+def test_full_capture_requires_both_source_and_channel_active() -> None:
+    eligible = source(1)
+    inactive_source = source(2, active=False)
+    inactive_channel = source(3, channel_active=False)
+    both_inactive = source(4, active=False, channel_active=False)
+    repository = FakeCaptureRepository(
+        [eligible, inactive_source, inactive_channel, both_inactive]
+    )
+    client = FakeFeedClient(
+        {eligible.url_feed: [entry("one", "https://example.com/one")]}
+    )
+
+    report = NewsCaptureService(repository, client).capture_active_sources()
+
+    assert [item.source_id for item in report.sources] == [eligible.id_fuente]
+    assert client.requested == [eligible.url_feed]
 
 
 def test_rejects_unknown_selected_source() -> None:

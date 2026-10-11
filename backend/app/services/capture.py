@@ -182,8 +182,16 @@ class NewsCaptureService:
                 raise CaptureSourceNotFoundError(
                     f"Fuentes RSS no encontradas: {', '.join(map(str, missing))}"
                 )
-            skipped = tuple(source.id_fuente for source in selected if not source.activa)
-            sources = [source for source in selected if source.activa]
+            skipped = tuple(
+                source.id_fuente
+                for source in selected
+                if not source.activa or not source.canal.activo
+            )
+            sources = [
+                source
+                for source in selected
+                if source.activa and source.canal.activo
+            ]
         reports = [self._capture_source(source) for source in sources]
         return CaptureRunReport(tuple(reports), skipped_source_ids=skipped)
 

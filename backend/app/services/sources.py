@@ -4,7 +4,7 @@ from typing import Protocol
 from app.models import Channel, RssSource
 from app.models.domains import Continent, IptcCategory, Language
 from app.repositories.sources import DuplicateRecordError
-from app.validation import normalize_country
+from app.validation import normalize_country, normalize_site_url
 
 
 class SourceValidationError(Exception):
@@ -19,6 +19,9 @@ class ResourceNotFoundError(Exception):
 class ChannelCreateData:
     nombre: str
     continente: Continent
+    pais: str | None = None
+    url_sitio: str | None = None
+    activo: bool = True
 
 
 @dataclass(frozen=True)
@@ -102,10 +105,18 @@ class SourceService:
             if channel is not None:
                 if self._repository.get_channel_by_name(channel.nombre) is not None:
                     raise SourceValidationError("El nombre del canal ya existe")
+                try:
+                    country = normalize_country(channel.pais)
+                    site_url = normalize_site_url(channel.url_sitio)
+                except ValueError as error:
+                    raise SourceValidationError(str(error)) from error
                 return self._repository.create_channel_with_sources(
                     {
                         "nombre": channel.nombre,
                         "continente": channel.continente.value,
+                        "pais": country,
+                        "url_sitio": site_url,
+                        "activo": channel.activo,
                     },
                     source_rows,
                 )

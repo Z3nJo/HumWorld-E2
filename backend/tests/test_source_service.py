@@ -123,7 +123,13 @@ def source_data(url: str = "https://example.com/feed.xml") -> SourceCreateData:
 
 
 def channel_data() -> ChannelCreateData:
-    return ChannelCreateData(nombre="Medio", continente=Continent.AMERICA)
+    return ChannelCreateData(
+        nombre="Medio",
+        continente=Continent.AMERICA,
+        pais="cl",
+        url_sitio="https://example.com",
+        activo=False,
+    )
 
 
 def test_creates_new_channel_with_multiple_sources(
@@ -135,6 +141,9 @@ def test_creates_new_channel_with_multiple_sources(
         sources=[source_data(), source_data("https://example.com/sport.xml")],
     )
     assert channel.nombre == "Medio"
+    assert channel.pais == "CL"
+    assert channel.url_sitio == "https://example.com"
+    assert channel.activo is False
     assert len(sources) == 2
     assert {item.id_canal for item in sources} == {channel.id_canal}
     assert all(item.activa for item in sources)
