@@ -4,6 +4,7 @@ from typing import Protocol
 from app.models import Channel, RssSource
 from app.models.domains import Continent, IptcCategory, Language
 from app.repositories.sources import DuplicateRecordError
+from app.validation import normalize_country
 
 
 class SourceValidationError(Exception):
@@ -56,7 +57,12 @@ class SourceRepositoryProtocol(Protocol):
     ) -> list[RssSource]: ...
 
     def list_sources(
-        self, *, continent: str | None = None, active: bool | None = None
+        self,
+        *,
+        continent: str | None = None,
+        active: bool | None = None,
+        channel_id: int | None = None,
+        country: str | None = None,
     ) -> list[RssSource]: ...
 
     def update_source(
@@ -118,10 +124,19 @@ class SourceService:
         *,
         continent: Continent | None = None,
         active: bool | None = None,
+        channel_id: int | None = None,
+        country: str | None = None,
     ) -> list[RssSource]:
+        try:
+            normalized_country = normalize_country(country)
+        except ValueError as error:
+            raise SourceValidationError(str(error)) from error
+
         return self._repository.list_sources(
             continent=continent.value if continent else None,
             active=active,
+            channel_id=channel_id,
+            country=normalized_country,
         )
 
     def get_source(self, source_id: int) -> RssSource:
