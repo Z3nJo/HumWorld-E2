@@ -44,6 +44,47 @@ def test_openapi_documents_required_source_operations_and_errors() -> None:
             assert "422" not in operation["responses"]
 
 
+def test_openapi_documents_channel_operations_source_fields_and_filters() -> None:
+    schema = app.openapi()
+    collection = schema["paths"]["/api/v1/channels"]
+    item = schema["paths"]["/api/v1/channels/{channel_id}"]
+    source_collection = schema["paths"]["/api/v1/sources"]["get"]
+    schemas = schema["components"]["schemas"]
+
+    assert collection.keys() >= {"get"}
+    assert item.keys() >= {"get", "put", "patch", "delete"}
+    assert collection["get"]["responses"].keys() >= {"200", "400", "404", "500"}
+    assert item["delete"]["responses"].keys() >= {"204", "400", "404", "500"}
+    assert {parameter["name"] for parameter in collection["get"]["parameters"]} == {
+        "continent",
+        "country",
+        "active",
+    }
+    assert {parameter["name"] for parameter in source_collection["parameters"]} >= {
+        "continent",
+        "active",
+        "channel_id",
+        "country",
+    }
+    assert set(schemas["ChannelResponse"]["properties"]) == {
+        "id_canal",
+        "nombre",
+        "continente",
+        "pais",
+        "url_sitio",
+        "activo",
+        "fecha_alta",
+    }
+    assert set(schemas["SourceResponse"]["properties"]) >= {
+        "fecha_alta",
+        "fecha_ultima_captura",
+        "canal",
+    }
+    for path_item in (collection, item):
+        for operation in path_item.values():
+            assert "422" not in operation["responses"]
+
+
 def test_openapi_documents_config_operations_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/config"]
@@ -86,6 +127,45 @@ def test_openapi_documents_sentiment_endpoint_and_schemas() -> None:
     }
 
 
+def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
+    schema = app.openapi()
+    schemas = schema["components"]["schemas"]
+    operations = [
+        schema["paths"]["/api/v1/dashboards"]["get"],
+        schema["paths"]["/api/v1/dashboards/nube-palabras"]["get"],
+    ]
+
+    for operation in operations:
+        assert {item["name"] for item in operation["parameters"]} == {
+            "fecha_desde",
+            "fecha_hasta",
+            "continente",
+            "pais",
+        }
+        assert operation["responses"].keys() >= {"200", "400", "500"}
+        assert "422" not in operation["responses"]
+
+    assert schemas.keys() >= {
+        "DashboardAggregateResponse",
+        "DashboardResponse",
+        "InfluentialTermResponse",
+        "InfluentialTermsResponse",
+    }
+    assert set(schemas["DashboardAggregateResponse"]["properties"]) == {
+        "continente",
+        "pais",
+        "humor",
+        "noticias",
+        "suficiente",
+    }
+    assert set(schemas["InfluentialTermResponse"]["properties"]) == {
+        "id_termino",
+        "termino",
+        "idioma",
+        "peso",
+        "aporte_total",
+        "frecuencia",
+    }
 def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/dictionary"]

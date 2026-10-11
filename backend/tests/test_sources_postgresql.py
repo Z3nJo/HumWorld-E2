@@ -55,7 +55,13 @@ def client(engine):
 
 def new_channel_payload() -> dict[str, object]:
     return {
-        "channel": {"nombre": "Agencia Mundo", "continente": "America"},
+        "channel": {
+            "nombre": "Agencia Mundo",
+            "continente": "America",
+            "pais": "cl",
+            "url_sitio": "https://example.com",
+            "activo": True,
+        },
         "sources": [
             {
                 "nombre": "Portada",
@@ -82,6 +88,13 @@ def test_full_crud_filters_existing_channel_and_persistence(client, engine) -> N
     first_id = body["sources"][0]["id_fuente"]
     original_channel_id = body["sources"][0]["id_canal"]
     assert len(body["sources"]) == 2
+    assert body["channel"]["pais"] == "CL"
+    assert body["channel"]["url_sitio"] == "https://example.com/"
+    assert body["channel"]["activo"] is True
+    assert body["channel"]["fecha_alta"]
+    assert body["sources"][0]["fecha_alta"]
+    assert body["sources"][0]["fecha_ultima_captura"] is None
+    assert body["sources"][0]["canal"] == body["channel"]
 
     added = client.post(
         "/api/v1/sources",
@@ -103,6 +116,19 @@ def test_full_crud_filters_existing_channel_and_persistence(client, engine) -> N
     listing = client.get("/api/v1/sources", params={"continent": "America", "active": True})
     assert listing.status_code == 200
     assert len(listing.json()) == 2
+
+    by_channel_and_country = client.get(
+        "/api/v1/sources",
+        params={"channel_id": channel_id, "country": "cl", "active": True},
+    )
+    assert by_channel_and_country.status_code == 200
+    assert len(by_channel_and_country.json()) == 2
+    assert [item["id_fuente"] for item in by_channel_and_country.json()] == sorted(
+        item["id_fuente"] for item in by_channel_and_country.json()
+    )
+    assert client.get(
+        "/api/v1/sources", params={"channel_id": 999, "country": "CL"}
+    ).json() == []
 
     detail = client.get(f"/api/v1/sources/{first_id}")
     assert detail.status_code == 200

@@ -19,7 +19,9 @@ class FakeSourceRepository:
     def __init__(self) -> None:
         self.channels: dict[int, Channel] = {}
         self.sources: dict[int, RssSource] = {}
-        self.last_filters: tuple[str | None, bool | None] | None = None
+        self.last_filters: (
+            tuple[str | None, bool | None, int | None, str | None] | None
+        ) = None
         self.raise_duplicate = False
 
     def get_channel(self, channel_id: int) -> Channel | None:
@@ -60,8 +62,10 @@ class FakeSourceRepository:
         *,
         continent: str | None = None,
         active: bool | None = None,
+        channel_id: int | None = None,
+        country: str | None = None,
     ) -> list[RssSource]:
-        self.last_filters = continent, active
+        self.last_filters = continent, active, channel_id, country
         return list(self.sources.values())
 
     def update_source(
@@ -119,7 +123,13 @@ def source_data(url: str = "https://example.com/feed.xml") -> SourceCreateData:
 
 
 def channel_data() -> ChannelCreateData:
-    return ChannelCreateData(nombre="Medio", continente=Continent.AMERICA)
+    return ChannelCreateData(
+        nombre="Medio",
+        continente=Continent.AMERICA,
+        pais="cl",
+        url_sitio="https://example.com",
+        activo=False,
+    )
 
 
 def test_creates_new_channel_with_multiple_sources(
@@ -131,6 +141,9 @@ def test_creates_new_channel_with_multiple_sources(
         sources=[source_data(), source_data("https://example.com/sport.xml")],
     )
     assert channel.nombre == "Medio"
+    assert channel.pais == "CL"
+    assert channel.url_sitio == "https://example.com"
+    assert channel.activo is False
     assert len(sources) == 2
     assert {item.id_canal for item in sources} == {channel.id_canal}
     assert all(item.activa for item in sources)
@@ -198,12 +211,22 @@ def test_missing_existing_channel_returns_not_found(service: SourceService) -> N
         service.create_sources(channel_id=999, sources=[source_data()])
 
 
-def test_list_passes_minimum_filters(
+def test_list_normalizes_and_passes_all_filters(
     service: SourceService,
     repository: FakeSourceRepository,
 ) -> None:
-    service.list_sources(continent=Continent.ASIA, active=False)
-    assert repository.last_filters == ("Asia", False)
+    service.list_sources(
+        continent=Continent.ASIA,
+        active=False,
+        channel_id=7,
+        country=" cl ",
+    )
+    assert repository.last_filters == ("Asia", False, 7, "CL")
+
+
+def test_list_rejects_invalid_country(service: SourceService) -> None:
+    with pytest.raises(SourceValidationError, match="dos letras ASCII"):
+        service.list_sources(country="Chile")
 
 
 def test_get_update_patch_and_delete_preserve_channel(

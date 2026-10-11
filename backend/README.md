@@ -59,7 +59,7 @@ Base: `/api/v1` · Swagger: `/api/docs` · OpenAPI JSON: `/api/openapi.json`.
 | Metodo | Ruta | Proposito |
 |---|---|---|
 | `POST` | `/sources` | Crear un canal con una o mas fuentes, o agregarlas a un canal existente |
-| `GET` | `/sources` | Listar y filtrar por `continent` y `active` |
+| `GET` | `/sources` | Listar y filtrar por `continent`, `active`, `channel_id` y `country` |
 | `GET` | `/sources/{source_id}` | Consultar una fuente |
 | `PUT` | `/sources/{source_id}` | Reemplazar los campos editables |
 | `PATCH` | `/sources/{source_id}` | Actualizar parcialmente los campos editables |
@@ -71,7 +71,10 @@ Ejemplo de alta:
 {
   "channel": {
     "nombre": "Agencia Mundo",
-    "continente": "America"
+    "continente": "America",
+    "pais": "CL",
+    "url_sitio": "https://example.com",
+    "activo": true
   },
   "sources": [
     {
@@ -84,7 +87,58 @@ Ejemplo de alta:
 }
 ```
 
-Para un canal existente, sustituya `channel` por `"channel_id": 1`. `PUT` y `PATCH` no permiten modificar `id_canal`.
+Para un canal existente, sustituya `channel` por `"channel_id": 1`. `PUT` y
+`PATCH` de fuentes no permiten modificar `id_canal`. Las respuestas de fuentes
+incluyen el canal completo, `fecha_alta` y `fecha_ultima_captura`.
+
+Los filtros se combinan de forma acumulativa. Por ejemplo, para consultar las
+fuentes activas de un canal en Chile:
+
+```bash
+curl "http://localhost:3000/api/v1/sources?channel_id=1&country=cl&active=true"
+```
+
+El pais se recibe como dos letras ASCII, se eliminan los espacios exteriores y
+se devuelve en mayusculas. No se valida contra un catalogo ISO.
+
+## API de canales
+
+Los canales representan el medio padre compartido por una o mas fuentes RSS.
+Su creacion se mantiene dentro de `POST /api/v1/sources` para conservar el alta
+atomica del canal y sus fuentes.
+
+| Metodo | Ruta | Proposito |
+|---|---|---|
+| `GET` | `/channels` | Listar y filtrar por `continent`, `country` y `active` |
+| `GET` | `/channels/{channel_id}` | Consultar un canal |
+| `PUT` | `/channels/{channel_id}` | Reemplazar todos los campos editables |
+| `PATCH` | `/channels/{channel_id}` | Actualizar uno o mas campos editables |
+| `DELETE` | `/channels/{channel_id}` | Desactivar logicamente el canal |
+
+`PUT` exige `nombre`, `continente`, `pais`, `url_sitio` y `activo`; los dos
+campos opcionales pueden ser `null`. `PATCH` permite limpiar `pais` o
+`url_sitio` enviando `null`, pero no acepta `null` para los otros campos.
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/channels/1 \
+  -H "Content-Type: application/json" \
+  -d '{"pais":"CL","url_sitio":"https://example.com","activo":true}'
+```
+
+La eliminacion es logica e idempotente: responde `204`, conserva el canal, sus
+fuentes y las noticias, y no cambia el estado individual `activa` de cada
+fuente. Para reactivar el canal:
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/channels/1 \
+  -H "Content-Type: application/json" \
+  -d '{"activo":true}'
+```
+
+Una fuente solo participa en la captura cuando tanto ella como su canal estan
+activos. Ademas, cambiar `continente` o `pais` reclasifica las noticias
+historicas en las consultas geograficas, porque esas propiedades se resuelven
+mediante la relacion entre noticia, fuente y canal.
 
 ## API de diccionario
 

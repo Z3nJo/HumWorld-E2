@@ -46,12 +46,22 @@ def clean_database(engine):
         )
 
 
-def create_source(session: Session, *, active: bool = True) -> RssSource:
-    channel = Channel(nombre="Canal captura", continente="America")
+def create_source(
+    session: Session,
+    *,
+    active: bool = True,
+    channel_active: bool = True,
+    suffix: str = "",
+) -> RssSource:
+    channel = Channel(
+        nombre=f"Canal captura{suffix}",
+        continente="America",
+        activo=channel_active,
+    )
     source = RssSource(
         canal=channel,
         nombre="Feed captura",
-        url_feed="https://example.com/capture.xml",
+        url_feed=f"https://example.com/capture{suffix}.xml",
         categoria_iptc="politics",
         idioma="es",
         activa=active,
@@ -88,12 +98,26 @@ def test_lists_only_active_sources_and_persists_idempotently(engine) -> None:
             activa=False,
         )
         session.add(inactive)
+        inactive_channel = create_source(
+            session,
+            channel_active=False,
+            suffix="-inactive-channel",
+        )
         session.commit()
         repository = NewsCaptureRepository(session)
 
         assert [item.id_fuente for item in repository.list_active_sources()] == [
             active.id_fuente
         ]
+        selected = repository.list_sources_by_ids(
+            [active.id_fuente, inactive.id_fuente, inactive_channel.id_fuente]
+        )
+        assert [item.id_fuente for item in selected] == [
+            active.id_fuente,
+            inactive.id_fuente,
+            inactive_channel.id_fuente,
+        ]
+        assert selected[-1].canal.activo is False
         assert len(repository.insert_news([news_values(active.id_fuente)])) == 1
         repository.update_source_capture(active.id_fuente, captured_at)
         repository.commit()

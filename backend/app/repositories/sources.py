@@ -62,16 +62,23 @@ class SourceRepository:
         *,
         continent: str | None = None,
         active: bool | None = None,
+        channel_id: int | None = None,
+        country: str | None = None,
     ) -> list[RssSource]:
         statement = select(RssSource).options(joinedload(RssSource.canal))
+        if continent is not None or country is not None:
+            statement = statement.join(RssSource.canal)
         if continent is not None:
-            statement = statement.join(RssSource.canal).where(
-                Channel.continente == continent
-            )
+            statement = statement.where(Channel.continente == continent)
+        if country is not None:
+            statement = statement.where(Channel.pais == country)
+        if channel_id is not None:
+            statement = statement.where(RssSource.id_canal == channel_id)
         if active is not None:
             statement = statement.where(RssSource.activa.is_(active))
-        statement = statement.order_by(RssSource.id_fuente)
-        return list(self._session.scalars(statement).all())
+        return list(
+            self._session.scalars(statement.order_by(RssSource.id_fuente)).all()
+        )
 
     def update_source(
         self,
