@@ -72,12 +72,13 @@ class SourceRepository:
             statement = statement.where(Channel.continente == continent)
         if country is not None:
             statement = statement.where(Channel.pais == country)
-        if active is not None:
-            statement = statement.where(RssSource.activa.is_(active))
         if channel_id is not None:
             statement = statement.where(RssSource.id_canal == channel_id)
-        statement = statement.order_by(RssSource.id_fuente)
-        return list(self._session.scalars(statement).all())
+        if active is not None:
+            statement = statement.where(RssSource.activa.is_(active))
+        return list(
+            self._session.scalars(statement.order_by(RssSource.id_fuente)).all()
+        )
 
     def update_source(
         self,

@@ -142,6 +142,7 @@ class SourceService:
             normalized_country = normalize_country(country)
         except ValueError as error:
             raise SourceValidationError(str(error)) from error
+
         return self._repository.list_sources(
             continent=continent.value if continent else None,
             active=active,

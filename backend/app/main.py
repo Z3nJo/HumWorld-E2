@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app.api import (
     channels_router,
     configuration_router,
+    dashboard_router,
     dictionary_router,
     sentiment_router,
     sources_router,
@@ -27,6 +28,7 @@ from app.services.sentiment_configuration import (
     warn_if_scale_differs_from_dictionary,
 )
 from app.services.dictionary import DictionaryValidationError, TermNotFoundError
+from app.services.dashboards import DashboardValidationError
 from app.services.sources import ResourceNotFoundError, SourceValidationError
 from app.services.capture import CaptureSourceNotFoundError
 
@@ -66,6 +68,7 @@ app = FastAPI(
 
 app.include_router(configuration_router, prefix="/api/v1")
 app.include_router(channels_router, prefix="/api/v1")
+app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(dictionary_router, prefix="/api/v1")
 app.include_router(sentiment_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
@@ -143,6 +146,17 @@ async def configuration_validation_error_handler(
 async def dictionary_validation_error_handler(
     request: Request,
     error: DictionaryValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(error)},
+    )
+
+
+@app.exception_handler(DashboardValidationError)
+async def dashboard_validation_error_handler(
+    request: Request,
+    error: DashboardValidationError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,

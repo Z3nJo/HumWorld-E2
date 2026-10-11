@@ -19,9 +19,9 @@ class FakeSourceRepository:
     def __init__(self) -> None:
         self.channels: dict[int, Channel] = {}
         self.sources: dict[int, RssSource] = {}
-        self.last_filters: tuple[
-            str | None, bool | None, int | None, str | None
-        ] | None = None
+        self.last_filters: (
+            tuple[str | None, bool | None, int | None, str | None] | None
+        ) = None
         self.raise_duplicate = False
 
     def get_channel(self, channel_id: int) -> Channel | None:
@@ -211,7 +211,7 @@ def test_missing_existing_channel_returns_not_found(service: SourceService) -> N
         service.create_sources(channel_id=999, sources=[source_data()])
 
 
-def test_list_passes_minimum_filters(
+def test_list_normalizes_and_passes_all_filters(
     service: SourceService,
     repository: FakeSourceRepository,
 ) -> None:
