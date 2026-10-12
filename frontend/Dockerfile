@@ -2,4 +2,10 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-CMD ["sh", "-c", "echo Frontend container running && tail -f /dev/null"]
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
