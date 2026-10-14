@@ -9,7 +9,8 @@ export const ParametersPage = () => {
     draftConfig,
     loading,
     saving,
-    error,
+    loadError,
+    saveError,
     formErrors,
     isDirty,
     isValid,
@@ -35,34 +36,43 @@ export const ParametersPage = () => {
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
-      <header className="top">
+      <header className="params-top">
         <div>
           <h1>Parámetros generales</h1>
           <p>Periodicidad de captura y caducidad de noticias.</p>
         </div>
       </header>
 
-      <div className="view">
+      <div className="params-view">
         {loading && (
           <div className="card" style={{ padding: '24px' }}>
             <div className="sk" style={{ height: '140px' }} />
           </div>
         )}
 
-        {error && !loading && (
+        {loadError && !loading && (
           <div className="errbox" role="alert">
             <b>No se pudieron cargar los parámetros</b>
             <span className="mono" style={{ fontSize: '12px' }}>
-              {error}
+              {loadError}
             </span>
-            <button className="btn sm" onClick={reload}>
+            <button className="params-btn params-btn-sm" onClick={reload}>
               Reintentar
             </button>
           </div>
         )}
 
-        {!loading && !error && draftConfig && (
+        {!loading && !loadError && draftConfig && (
           <>
+            {saveError && (
+              <div className="errbox" role="alert">
+                <b>No se pudieron guardar los parámetros</b>
+                <span className="mono" style={{ fontSize: '12px' }}>
+                  {saveError}
+                </span>
+              </div>
+            )}
+
             <ConfigCards
               captureMinutes={draftConfig.capturePeriodicityMinutes}
               expirationDays={draftConfig.newsExpirationDays}
@@ -75,10 +85,10 @@ export const ParametersPage = () => {
 
             <div className="row actions" style={{ justifyContent: 'flex-end', gap: '10px' }}>
               <span className="meta">{isDirty ? 'Cambios sin guardar' : 'Sin cambios'}</span>
-              <button className="btn" onClick={discardChanges} disabled={!isDirty || saving}>
+              <button className="params-btn" onClick={discardChanges} disabled={!isDirty || saving}>
                 Descartar
               </button>
-              <button className="btn pri" onClick={handleSave} disabled={!isDirty || !isValid || saving}>
+              <button className="params-btn params-btn-pri" onClick={handleSave} disabled={!isDirty || !isValid || saving}>
                 {saving ? 'Guardando...' : 'Guardar parámetros'}
               </button>
             </div>

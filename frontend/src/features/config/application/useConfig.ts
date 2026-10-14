@@ -8,18 +8,19 @@ export function useConfig() {
   const [draftConfig, setDraftConfig] = useState<RuntimeConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
       const data = await fetchConfig();
       setServerConfig(data);
       setDraftConfig(data);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar los parámetros';
-      setError(msg);
+      setLoadError(msg);
     } finally {
       setLoading(false);
     }
@@ -60,15 +61,16 @@ export function useConfig() {
   const saveConfig = useCallback(async (): Promise<RuntimeConfig> => {
     if (!draftConfig || !isValid) throw new Error('Parámetros no válidos');
     setSaving(true);
-    setError(null);
+    setSaveError(null);
     try {
       const updated = await updateConfig(draftConfig);
       setServerConfig(updated);
       setDraftConfig(updated);
+      setSaveError(null);
       return updated;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar los parámetros';
-      setError(msg);
+      setSaveError(msg);
       throw err;
     } finally {
       setSaving(false);
@@ -80,7 +82,9 @@ export function useConfig() {
     draftConfig,
     loading,
     saving,
-    error,
+    loadError,
+    saveError,
+    error: loadError ?? saveError,
     formErrors,
     isDirty,
     isValid,

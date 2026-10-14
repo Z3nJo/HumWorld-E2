@@ -98,7 +98,7 @@ describe('ParametersPage', () => {
     expect(screen.getByText('Sin cambios')).toBeInTheDocument();
   });
 
-  it('displays error box when fetch fails and allows retry', async () => {
+  it('displays load-error box when fetch fails and allows retry', async () => {
     vi.mocked(configApi.fetchConfig)
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValueOnce(initialConfig);
@@ -108,12 +108,65 @@ describe('ParametersPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
       expect(screen.getByText('Network error')).toBeInTheDocument();
+      expect(screen.getByText('No se pudieron cargar los parámetros')).toBeInTheDocument();
     });
+
+    // El formulario NO debe aparecer mientras hay error de carga
+    expect(screen.queryByLabelText(/Periodicidad de captura/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Periodicidad de captura/i)).toHaveValue(60);
     });
+  });
+
+  it('shows save-error inline but keeps the form and draft on PUT failure', async () => {
+    const user = userEvent.setup();
+    vi.mocked(configApi.fetchConfig).mockResolvedValueOnce(initialConfig);
+    vi.mocked(configApi.updateConfig).mockRejectedValueOnce(new Error('500 Internal Server Error'));
+
+    render(<ParametersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Periodicidad de captura/i)).toHaveValue(60);
+    });
+
+    const periodicityInput = screen.getByLabelText(/Periodicidad de captura/i);
+    await user.clear(periodicityInput);
+    await user.type(periodicityInput, '45');
+    await user.click(screen.getByRole('button', { name: 'Guardar parámetros' }));
+
+    await waitFor(() => {
+      // El banner de error de guardado aparece
+      expect(screen.getByText('No se pudieron guardar los parámetros')).toBeInTheDocument();
+      expect(screen.getAllByText('500 Internal Server Error').length).toBeGreaterThan(0);
+    });
+
+    // El formulario debe seguir visible con el borrador (45)
+    expect(screen.getByLabelText(/Periodicidad de captura/i)).toHaveValue(45);
+    // El botón Guardar debe seguir habilitado para reintentar
+    expect(screen.getByRole('button', { name: 'Guardar parámetros' })).toBeEnabled();
+    // El botón Reintentar NO debe aparecer (no es un error de carga)
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
+  it('rejects decimal input and shows validation error', async () => {
+    const user = userEvent.setup();
+    vi.mocked(configApi.fetchConfig).mockResolvedValueOnce(initialConfig);
+
+    render(<ParametersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Periodicidad de captura/i)).toHaveValue(60);
+    });
+
+    const periodicityInput = screen.getByLabelText(/Periodicidad de captura/i);
+    await user.clear(periodicityInput);
+    await user.type(periodicityInput, '1.5');
+
+    // valueAsNumber de 1.5 es 1.5, no entero → falla validación
+    expect(screen.getByRole('button', { name: 'Guardar parámetros' })).toBeDisabled();
+    expect(screen.getByText('Debe ser un entero mayor o igual a 1')).toBeInTheDocument();
   });
 });

@@ -30,13 +30,13 @@ export const ConfigCards = ({
           Periodicidad de captura
           <span className="row" style={{ gap: '8px', flexWrap: 'nowrap' }}>
             <input
-              className={`inp mono ${errors.capturePeriodicityMinutes ? 'err' : ''}`}
+              className={`params-inp mono ${errors.capturePeriodicityMinutes ? 'err' : ''}`}
               style={{ width: '120px' }}
               type="number"
               min="1"
               step="1"
               value={Number.isNaN(captureMinutes) ? '' : captureMinutes}
-              onChange={(event) => onChangeCaptureMinutes(parseInt(event.target.value, 10))}
+              onChange={(event) => onChangeCaptureMinutes(event.target.valueAsNumber)}
               disabled={disabled}
               aria-label="Periodicidad de captura en minutos"
             />
@@ -53,13 +53,13 @@ export const ConfigCards = ({
           Caducidad de noticias
           <span className="row" style={{ gap: '8px', flexWrap: 'nowrap' }}>
             <input
-              className={`inp mono ${errors.newsExpirationDays ? 'err' : ''}`}
+              className={`params-inp mono ${errors.newsExpirationDays ? 'err' : ''}`}
               style={{ width: '120px' }}
               type="number"
               min="1"
               step="1"
               value={Number.isNaN(expirationDays) ? '' : expirationDays}
-              onChange={(event) => onChangeExpirationDays(parseInt(event.target.value, 10))}
+              onChange={(event) => onChangeExpirationDays(event.target.valueAsNumber)}
               disabled={disabled}
               aria-label="Caducidad de noticias en días"
             />
@@ -88,7 +88,7 @@ export const ConfigCards = ({
           Mínimo de noticias por región
           <span className="row" style={{ gap: '8px', flexWrap: 'nowrap' }}>
             <input
-              className="inp mono"
+              className="params-inp mono"
               style={{ width: '120px' }}
               type="number"
               value={humorMinimumNewsAggregation ?? 3}
