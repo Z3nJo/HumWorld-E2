@@ -23,6 +23,9 @@ export function mapChannelSummaryFromDto(dto: ChannelSummaryDto): ChannelSummary
     id: dto.id_canal,
     name: dto.nombre,
     continent: dto.continente as Continent,
+    country: dto.pais ?? null,
+    siteUrl: dto.url_sitio ?? null,
+    active: dto.activo ?? true,
   };
 }
 
@@ -45,6 +48,9 @@ export function mapBatchCreateToDto(input: CreateSourceBatchInput): SourceBatchC
       ? {
           nombre: input.channel.name.trim(),
           continente: input.channel.continent,
+          pais: input.channel.country ? input.channel.country.trim().toUpperCase() : null,
+          url_sitio: input.channel.siteUrl ? input.channel.siteUrl.trim() : null,
+          activo: input.channel.active ?? true,
         }
       : undefined,
     channel_id: input.channelId,
@@ -123,3 +129,22 @@ export async function patchSource(
 export async function deleteSource(id: number): Promise<void> {
   await http.delete(`/api/v1/sources/${id}`);
 }
+
+export async function patchChannel(
+  id: number,
+  changes: {
+    nombre?: string;
+    continente?: Continent;
+    pais?: string | null;
+    url_sitio?: string | null;
+    activo?: boolean;
+  },
+): Promise<ChannelSummary> {
+  const dto = await http.patch<ChannelSummaryDto>(`/api/v1/channels/${id}`, changes);
+  return mapChannelSummaryFromDto(dto);
+}
+
+export async function deleteChannel(id: number): Promise<void> {
+  await http.delete(`/api/v1/channels/${id}`);
+}
+

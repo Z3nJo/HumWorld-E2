@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import type { Source } from '../domain/source';
+import type { ChannelGroup, Source } from '../domain/source';
 
 interface DeleteSourceModalProps {
   source: Source | null;
+  channelGroup?: ChannelGroup | null;
   onClose: () => void;
   onConfirm: () => void;
   loading?: boolean;
@@ -10,6 +11,7 @@ interface DeleteSourceModalProps {
 
 export const DeleteSourceModal = ({
   source,
+  channelGroup,
   onClose,
   onConfirm,
   loading = false,
@@ -24,18 +26,18 @@ export const DeleteSourceModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  if (!source) return null;
+  if (!source && !channelGroup) return null;
+
+  const titleName = channelGroup ? channelGroup.name : source?.name;
+  const description = channelGroup
+    ? `Se eliminará la fuente junto con sus ${channelGroup.sources.length} canales RSS. Esta acción no se puede deshacer. Si solo quieres dejar de capturarla, desactívala.`
+    : `Se eliminará permanentemente la fuente RSS con URL ${source?.feedUrl} del medio ${source?.channel.name}. Esta acción no se puede deshacer. Si solo quieres dejar de capturarla, desactívala.`;
 
   return (
     <div className="ov on" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="alertdialog" aria-modal="true">
-        <h3>¿Eliminar «{source.name}»?</h3>
-        <p>
-          Se eliminará permanentemente la fuente RSS con URL{' '}
-          <code className="mono">{source.feedUrl}</code> del medio{' '}
-          <strong>{source.channel.name}</strong>. Esta acción no se puede deshacer. Si solo
-          quieres dejar de capturarla, desactívala.
-        </p>
+        <h3>¿Eliminar «{titleName}»?</h3>
+        <p>{description}</p>
         <div className="row" style={{ justifyContent: 'flex-end', gap: '8px' }}>
           <button className="btn" onClick={onClose} disabled={loading}>
             Cancelar

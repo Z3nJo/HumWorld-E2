@@ -17,7 +17,7 @@ describe('useSources and groupSourcesByChannel', () => {
       iptcCategory: 'politics',
       language: 'es',
       active: true,
-      channel: { id: 10, name: 'El País', continent: 'Europa' },
+      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
     },
     {
       id: 2,
@@ -27,7 +27,7 @@ describe('useSources and groupSourcesByChannel', () => {
       iptcCategory: 'sport',
       language: 'es',
       active: false,
-      channel: { id: 10, name: 'El País', continent: 'Europa' },
+      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
     },
     {
       id: 3,
@@ -112,10 +112,14 @@ describe('useSources and groupSourcesByChannel', () => {
       expect(updated?.active).toBe(false);
     });
 
-    it('toggles group active state sequentially for all feeds and reloads', async () => {
+    it('toggles group active state via patchChannel and reloads', async () => {
       vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
-      vi.mocked(sourcesApi.patchSource).mockResolvedValue({
-        ...sampleSources[0],
+      vi.mocked(sourcesApi.patchChannel).mockResolvedValueOnce({
+        id: 10,
+        name: 'El País',
+        continent: 'Europa',
+        country: null,
+        siteUrl: null,
         active: false,
       });
 
@@ -134,15 +138,17 @@ describe('useSources and groupSourcesByChannel', () => {
         expect(res).toEqual({ groupName: 'El País', active: false });
       });
 
-      // Called for both feeds sequentially with active: false
-      expect(sourcesApi.patchSource).toHaveBeenCalledTimes(2);
-      expect(sourcesApi.patchSource).toHaveBeenNthCalledWith(1, 1, { active: false });
-      expect(sourcesApi.patchSource).toHaveBeenNthCalledWith(2, 2, { active: false });
+      // Primary path: patchChannel is called once with the new state
+      expect(sourcesApi.patchChannel).toHaveBeenCalledWith(10, { activo: false });
+      // fetchSources reloads to sync state
+      expect(sourcesApi.fetchSources).toHaveBeenCalledTimes(2);
     });
 
-    it('reloads and throws when toggleGroupActive encounters an error', async () => {
+    it('reloads and throws when toggleGroupActive patchChannel encounters an error', async () => {
       vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
-      vi.mocked(sourcesApi.patchSource).mockRejectedValueOnce(new Error('Network error'));
+      vi.mocked(sourcesApi.patchChannel).mockRejectedValueOnce(new Error('Network error'));
+      // Also mock patchSource to reject so the inner fallback also fails
+      vi.mocked(sourcesApi.patchSource).mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useSources());
 

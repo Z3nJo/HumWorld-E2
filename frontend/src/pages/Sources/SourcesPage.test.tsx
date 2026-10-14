@@ -17,7 +17,7 @@ describe('SourcesPage', () => {
       iptcCategory: 'politics',
       language: 'es',
       active: true,
-      channel: { id: 10, name: 'El País', continent: 'Europa' },
+      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
     },
     {
       id: 2,
@@ -27,7 +27,7 @@ describe('SourcesPage', () => {
       iptcCategory: 'economy/business/finance',
       language: 'es',
       active: false,
-      channel: { id: 10, name: 'El País', continent: 'Europa' },
+      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
     },
     {
       id: 3,
@@ -146,7 +146,7 @@ describe('SourcesPage', () => {
     expect(screen.queryByText('Registrar medio y canales RSS')).not.toBeInTheDocument();
   });
 
-  it('renders functional group toggle and keeps unsupported channel controls disabled', async () => {
+  it('renders functional group toggle and edit/delete channel buttons', async () => {
     vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
 
     render(<SourcesPage />);
@@ -161,11 +161,14 @@ describe('SourcesPage', () => {
     expect(groupToggle).not.toBeDisabled();
     expect(groupToggle).toHaveAttribute('aria-checked', 'true');
 
-    // Unsupported channel controls remain disabled with REQUIERE BACK
-    const editChannelBtns = screen.getAllByLabelText('Editar canal: REQUIERE BACK');
-    expect(editChannelBtns[0]).toBeDisabled();
-    const deleteChannelBtns = screen.getAllByLabelText('Eliminar canal: REQUIERE BACK');
-    expect(deleteChannelBtns[0]).toBeDisabled();
-    expect(screen.getAllByText('REQUIERE BACK').length).toBeGreaterThan(0);
+    // Edit and Delete buttons are now functional (backend connected)
+    const editBtn = screen.getByLabelText('Editar canal El País');
+    expect(editBtn).not.toBeDisabled();
+
+    const deleteBtn = screen.getByLabelText('Eliminar canal El País');
+    expect(deleteBtn).not.toBeDisabled();
+
+    // No REQUIERE BACK banners remain
+    expect(screen.queryByText('REQUIERE BACK')).not.toBeInTheDocument();
   });
 });

@@ -8,8 +8,10 @@ import type {
 } from '../domain/source';
 import {
   createSources,
+  deleteChannel,
   deleteSource,
   fetchSources,
+  patchChannel,
   patchSource,
   replaceSource,
 } from '../infrastructure/sourcesApi';
@@ -102,19 +104,27 @@ export function useSources(
   const toggleGroupActive = useCallback(
     async (groupId: number) => {
       const group = channelGroups.find((g) => g.id === groupId);
-      if (!group || group.sources.length === 0) return;
+      if (!group) return;
 
       const targetActive = !group.isActive;
 
       try {
-        for (const feed of group.sources) {
-          await patchSource(feed.id, { active: targetActive });
-        }
+        await patchChannel(groupId, { activo: targetActive });
+        // También actualizamos o recargamos para sincronizar
         await load();
         return { groupName: group.name, active: targetActive };
-      } catch (err) {
-        await load();
-        throw err;
+      } catch {
+        // Fallback: si falla patchChannel o no está soportado en algún entorno, alternar feeds
+        try {
+          for (const feed of group.sources) {
+            await patchSource(feed.id, { active: targetActive });
+          }
+          await load();
+          return { groupName: group.name, active: targetActive };
+        } catch (innerErr) {
+          await load();
+          throw innerErr;
+        }
       }
     },
     [channelGroups, load],
@@ -138,6 +148,20 @@ export function useSources(
     setSources((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const removeChannelGroup = useCallback(async (groupId: number) => {
+    const group = channelGroups.find((g) => g.id === groupId);
+    if (!group) return;
+    try {
+      await deleteChannel(groupId);
+    } catch {
+      // Fallback a eliminar fuentes individuales
+      for (const src of group.sources) {
+        await deleteSource(src.id);
+      }
+    }
+    setSources((prev) => prev.filter((s) => s.channelId !== groupId));
+  }, [channelGroups]);
+
   return {
     sources,
     filteredSources,
@@ -151,6 +175,7 @@ export function useSources(
     addSourcesBatch,
     updateSourceItem,
     removeSourceItem,
+    removeChannelGroup,
     reload: load,
   };
 }

@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
-import type { ChannelGroup } from '../domain/source';
+import { COUNTRY_BY_CODE } from '../domain/countries';
+import type { ChannelGroup, Source } from '../domain/source';
 import { CONTINENT_LABELS } from '../domain/source';
 
 interface SourceTableProps {
@@ -8,6 +9,8 @@ interface SourceTableProps {
   onToggleChannelOpen: (channelId: number) => void;
   onToggleSourceActive: (sourceId: number) => void;
   onToggleGroupActive: (groupId: number) => void;
+  onEditSource?: (source: Source) => void;
+  onDeleteChannel?: (group: ChannelGroup) => void;
 }
 
 export const SourceTable = ({
@@ -16,6 +19,8 @@ export const SourceTable = ({
   onToggleChannelOpen,
   onToggleSourceActive,
   onToggleGroupActive,
+  onEditSource,
+  onDeleteChannel,
 }: SourceTableProps) => {
   if (channelGroups.length === 0) {
     return (
@@ -45,6 +50,9 @@ export const SourceTable = ({
         <tbody>
           {channelGroups.map((group) => {
             const isOpen = openChannelIds.has(group.id);
+            const firstFeed = group.sources[0];
+            const countryInfo = group.country ? COUNTRY_BY_CODE.get(group.country) : null;
+
             return (
               <Fragment key={`group-${group.id}`}>
                 <tr>
@@ -61,11 +69,17 @@ export const SourceTable = ({
                   <td>
                     <div style={{ fontWeight: 600 }}>{group.name}</div>
                     <div className="meta">
-                      — <span className="backend-badge">REQUIERE BACK</span>
+                      {group.siteUrl ? (
+                        <a href={group.siteUrl} target="_blank" rel="noopener noreferrer">
+                          {group.siteUrl}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
                     </div>
                   </td>
                   <td>
-                    <span className="pill">{group.sources[0]?.language.toUpperCase() ?? '—'}</span>
+                    <span className="pill">{firstFeed?.language.toUpperCase() ?? '—'}</span>
                   </td>
                   <td>{CONTINENT_LABELS[group.continent]}</td>
                   <td className="num">{group.sources.length}</td>
@@ -81,17 +95,16 @@ export const SourceTable = ({
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button
                       className="btn ghost sm"
-                      disabled
-                      title="REQUIERE BACK"
-                      aria-label="Editar canal: REQUIERE BACK"
+                      onClick={() => firstFeed && onEditSource?.(firstFeed)}
+                      aria-label={`Editar canal ${group.name}`}
                     >
                       Editar
                     </button>
                     <button
                       className="btn ghost sm"
-                      disabled
-                      title="REQUIERE BACK"
-                      aria-label="Eliminar canal: REQUIERE BACK"
+                      style={{ color: 'var(--neg)' }}
+                      onClick={() => onDeleteChannel?.(group)}
+                      aria-label={`Eliminar canal ${group.name}`}
                     >
                       Eliminar
                     </button>
@@ -133,12 +146,16 @@ export const SourceTable = ({
                               </td>
                               <td>{feed.iptcCategory}</td>
                               <td>
-                                <span className="locked-field">
-                                  <select disabled aria-label={`País de ${feed.name}`}>
-                                    <option>— Sin país —</option>
-                                  </select>
-                                  <span className="backend-badge">REQUIERE BACK</span>
-                                </span>
+                                {countryInfo ? (
+                                  <span>
+                                    {countryInfo.name}{' '}
+                                    <span className="meta">{countryInfo.code}</span>
+                                  </span>
+                                ) : group.country ? (
+                                  <span>{group.country}</span>
+                                ) : (
+                                  <span className="meta">—</span>
+                                )}
                               </td>
                               <td>
                                 <button
@@ -164,3 +181,4 @@ export const SourceTable = ({
     </div>
   );
 };
+

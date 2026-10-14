@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { COUNTRIES } from '../domain/countries';
 import type {
   Continent,
   CreateSourceBatchInput,
@@ -34,7 +35,9 @@ const DrawerForm = ({
 }: DrawerFormProps) => {
   // Batch creation state
   const [channelName, setChannelName] = useState('');
-  const [channelContinent, setChannelContinent] = useState<Continent>('Europa');
+  const [channelSiteUrl, setChannelSiteUrl] = useState('');
+  const [channelCountry, setChannelCountry] = useState('');
+  const [channelContinent, setChannelContinent] = useState<Continent>('America');
   const [batchFeeds, setBatchFeeds] = useState<
     Array<{
       name: string;
@@ -108,6 +111,9 @@ const DrawerForm = ({
           channel: {
             name: channelName,
             continent: channelContinent,
+            country: channelCountry || null,
+            siteUrl: channelSiteUrl.trim() || null,
+            active: true,
           },
           sources: batchFeeds.map((f) => ({
             name: f.name,
@@ -149,20 +155,20 @@ const DrawerForm = ({
               />
             </label>
 
-            <label className="f locked-control">
-              URL del sitio
-              <input
-                className="inp mono"
-                disabled
-                placeholder="https://ejemplo.com"
-                aria-label="URL del sitio: REQUIERE BACK"
-                style={{ background: 'var(--paper2)' }}
-              />
-              <span className="backend-help">REQUIERE BACK · El backend aún no expone la URL del sitio.</span>
-            </label>
+            {editingSource.channel.siteUrl && (
+              <label className="f">
+                URL del sitio
+                <input
+                  className="inp mono"
+                  value={editingSource.channel.siteUrl}
+                  disabled
+                  style={{ background: 'var(--paper2)' }}
+                />
+              </label>
+            )}
 
             <label className="f">
-              Nombre del canal
+              Nombre del canal RSS
               <input
                 className={`inp ${errors.sources?.[0]?.name ? 'err' : ''}`}
                 value={editName}
@@ -245,32 +251,53 @@ const DrawerForm = ({
               {errors.channelName && <span className="errtxt">{errors.channelName}</span>}
             </label>
 
-            <label className="f locked-control">
+            <label className="f">
               URL del sitio
               <input
-                className="inp mono"
-                disabled
+                className={`inp mono ${errors.channelSiteUrl ? 'err' : ''}`}
+                value={channelSiteUrl}
+                onChange={(e) => setChannelSiteUrl(e.target.value)}
                 placeholder="https://ejemplo.com"
-                aria-label="URL del sitio: REQUIERE BACK"
-                style={{ background: 'var(--paper2)' }}
+                aria-label="URL del sitio"
               />
-              <span className="backend-help">REQUIERE BACK · El backend aún no expone la URL del sitio.</span>
+              {errors.channelSiteUrl && (
+                <span className="errtxt">{errors.channelSiteUrl}</span>
+              )}
             </label>
 
-            <label className="f">
-              Continente
-              <select
-                className="sel"
-                value={channelContinent}
-                onChange={(e) => setChannelContinent(e.target.value as Continent)}
-              >
-                {CONTINENTS.map((c) => (
-                  <option key={c} value={c}>
-                    {CONTINENT_LABELS[c]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <label className="f">
+                Continente
+                <select
+                  className="sel"
+                  value={channelContinent}
+                  onChange={(e) => setChannelContinent(e.target.value as Continent)}
+                >
+                  {CONTINENTS.map((c) => (
+                    <option key={c} value={c}>
+                      {CONTINENT_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="f">
+                País
+                <select
+                  className="sel"
+                  value={channelCountry}
+                  onChange={(e) => setChannelCountry(e.target.value)}
+                  aria-label="País del medio"
+                >
+                  <option value="">— Sin país —</option>
+                  {COUNTRIES.filter((c) => c.continent === channelContinent).map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             <div
               className="row"
@@ -375,14 +402,6 @@ const DrawerForm = ({
                           </option>
                         ))}
                       </select>
-                    </label>
-
-                    <label className="f locked-control">
-                      País
-                      <select disabled aria-label={`País del canal ${idx + 1}`}>
-                        <option>— Sin país —</option>
-                      </select>
-                      <span className="backend-help">REQUIERE BACK · El backend aún no expone país.</span>
                     </label>
 
                     <label className="f">

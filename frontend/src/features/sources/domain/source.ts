@@ -69,6 +69,9 @@ export interface ChannelSummary {
   id: number;
   name: string;
   continent: Continent;
+  country?: string | null;
+  siteUrl?: string | null;
+  active?: boolean;
 }
 
 export interface Source {
@@ -86,6 +89,8 @@ export interface ChannelGroup {
   id: number;
   name: string;
   continent: Continent;
+  country?: string | null;
+  siteUrl?: string | null;
   sources: Source[];
   activeCount: number;
   isActive: boolean;
@@ -98,6 +103,7 @@ export interface CreateSourceFeedInput {
   feedUrl: string;
   iptcCategory: IptcCategory;
   language: Language;
+  country?: string | null;
   active?: boolean;
 }
 
@@ -105,6 +111,9 @@ export interface CreateSourceBatchInput {
   channel?: {
     name: string;
     continent: Continent;
+    country?: string | null;
+    siteUrl?: string | null;
+    active?: boolean;
   };
   channelId?: number;
   sources: CreateSourceFeedInput[];

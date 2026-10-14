@@ -34,6 +34,41 @@
   min-width: 0;
 }
 
+/* Error box — shown when the API call fails */
+.errbox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 22px;
+  border: 1px dashed var(--neg);
+  border-radius: 8px;
+  background: #fbefe9;
+}
+
+.errbox b {
+  font: 500 16px var(--serif);
+}
+
+/* Skeleton / shimmer loader */
+.sk {
+  background: linear-gradient(
+    90deg,
+    var(--paper2) 0,
+    #f4f0e7 50%,
+    var(--paper2) 100%
+  );
+  background-size: 200% 100%;
+  animation: sk-shine 1.2s infinite linear;
+  border-radius: 6px;
+}
+
+@keyframes sk-shine {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+
 .backend-note {
   display: flex;
   align-items: flex-start;

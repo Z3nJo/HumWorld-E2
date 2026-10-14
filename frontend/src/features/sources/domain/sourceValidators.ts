@@ -2,6 +2,7 @@ import type { CreateSourceBatchInput, ReplaceSourceInput } from './source';
 
 export interface SourceValidationErrors {
   channelName?: string;
+  channelSiteUrl?: string;
   channelContinent?: string;
   sources?: Array<{
     name?: string;
@@ -26,6 +27,9 @@ export function validateCreateBatch(input: CreateSourceBatchInput): SourceValida
   if (!input.channelId) {
     if (!input.channel?.name || !input.channel.name.trim()) {
       errors.channelName = 'El nombre del medio/canal es obligatorio';
+    }
+    if (input.channel?.siteUrl && input.channel.siteUrl.trim() && !isValidHttpUrl(input.channel.siteUrl.trim())) {
+      errors.channelSiteUrl = 'URL del sitio no válida (debe comenzar con http:// o https://)';
     }
     if (!input.channel?.continent) {
       errors.channelContinent = 'El continente es obligatorio';

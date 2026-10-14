@@ -2,6 +2,9 @@ export interface ChannelSummaryDto {
   id_canal: number;
   nombre: string;
   continente: string;
+  pais?: string | null;
+  url_sitio?: string | null;
+  activo?: boolean;
 }
 
 export interface SourceResponseDto {
@@ -19,6 +22,9 @@ export interface SourceBatchCreateDto {
   channel?: {
     nombre: string;
     continente: string;
+    pais?: string | null;
+    url_sitio?: string | null;
+    activo?: boolean;
   };
   channel_id?: number;
   sources: Array<{
