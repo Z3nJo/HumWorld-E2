@@ -24,6 +24,27 @@ describe('httpClient', () => {
     fetchMock.mockRestore();
   });
 
+  it('joins msg fields when detail is an array of validation errors', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: [
+            { loc: ['body', 'nombre'], msg: 'El nombre es obligatorio', type: 'value_error' },
+            { loc: ['body', 'continente'], msg: 'Continente no válido', type: 'value_error' },
+          ],
+        }),
+        { status: 400 },
+      ),
+    );
+
+    await expect(http.post('/api/v1/channels', {})).rejects.toMatchObject({
+      name: 'HttpError',
+      status: 400,
+      message: 'El nombre es obligatorio, Continente no válido',
+    });
+    fetchMock.mockRestore();
+  });
+
   it('returns undefined for a 204 response', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
 
