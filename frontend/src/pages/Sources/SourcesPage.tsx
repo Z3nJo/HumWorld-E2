@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useSources } from '../../features/sources/application/useSources';
 import type {
-  ChannelGroup,
+  ChannelWithSources,
   Continent,
   CreateSourceBatchInput,
-  ReplaceSourceInput,
-  Source,
   SourceStatusFilter,
 } from '../../features/sources/domain/source';
 import { CONTINENT_LABELS, CONTINENTS } from '../../features/sources/domain/source';
@@ -21,18 +19,16 @@ export const SourcesPage = () => {
   const [statusFilter, setStatusFilter] = useState<SourceStatusFilter>('all');
 
   const {
-    filteredSources,
     channelGroups,
     openChannelIds,
     loading,
     error,
     toggleChannelOpen,
     toggleSourceActive,
-    toggleGroupActive,
+    toggleChannelActive,
     addSourcesBatch,
-    updateSourceItem,
-    removeSourceItem,
-    removeChannelGroup,
+    editSourceBatch,
+    deactivateChannelGroup,
     reload,
   } = useSources(continentFilter, statusFilter);
 
@@ -40,51 +36,38 @@ export const SourcesPage = () => {
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingSource, setEditingSource] = useState<Source | null>(null);
+  const [editingChannel, setEditingChannel] = useState<ChannelWithSources | null>(null);
 
-  // Delete modal state — individual source or whole channel group
-  const [deletingSource, setDeletingSource] = useState<Source | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<ChannelGroup | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  // Deactivate modal state
+  const [deactivatingChannel, setDeactivatingChannel] = useState<ChannelWithSources | null>(
+    null,
+  );
+  const [deactivating, setDeactivating] = useState(false);
+
+  // Count channels and feeds for visible groups
+  const totalFeeds = channelGroups.reduce((acc, g) => acc + g.sources.length, 0);
 
   const handleOpenCreateDrawer = () => {
-    setEditingSource(null);
+    setEditingChannel(null);
     setDrawerOpen(true);
   };
 
-  const handleOpenEditDrawer = (source: Source) => {
-    setEditingSource(source);
+  const handleOpenEditDrawer = (channel: ChannelWithSources) => {
+    setEditingChannel(channel);
     setDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    setEditingSource(null);
+    setEditingChannel(null);
   };
 
-  const handleToggleActive = async (sourceId: number) => {
+  // Toggle feed switch
+  const handleToggleSourceActive = async (sourceId: number) => {
     try {
-      const updated = await toggleSourceActive(sourceId);
-      if (updated) {
-        addToast(
-          `Fuente «${updated.name}» ${updated.active ? 'activada' : 'desactivada'}`,
-          'success',
-        );
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al cambiar estado';
-      addToast(msg, 'error');
-    }
-  };
-
-  const handleToggleGroupActive = async (groupId: number) => {
-    try {
-      const result = await toggleGroupActive(groupId);
-      if (result) {
-        addToast(
-          `Canal «${result.groupName}» ${result.active ? 'activado' : 'desactivado'}`,
-          'success',
-        );
+      const res = await toggleSourceActive(sourceId);
+      if (res) {
+        addToast(`Canal ${res.active ? 'activado' : 'desactivado'}`, 'success');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cambiar estado del canal';
@@ -92,11 +75,28 @@ export const SourcesPage = () => {
     }
   };
 
+  // Toggle channel (medio) switch
+  const handleToggleChannelActive = async (channelId: number) => {
+    try {
+      const res = await toggleChannelActive(channelId);
+      if (res) {
+        addToast(
+          `«${res.name}» ${res.active ? 'activada' : 'desactivada'}`,
+          'success',
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar estado de la fuente';
+      addToast(msg, 'error');
+    }
+  };
+
+  // Create new batch
   const handleCreateBatch = async (input: CreateSourceBatchInput) => {
     try {
       const res = await addSourcesBatch(input);
       addToast(
-        `Canal «${res.channel.name}» creado con ${res.sources.length} canal(es) RSS`,
+        `Fuente creada con ${res.sources.length} canal(es)`,
         'success',
       );
     } catch (err) {
@@ -106,10 +106,14 @@ export const SourcesPage = () => {
     }
   };
 
-  const handleUpdateSource = async (id: number, input: ReplaceSourceInput) => {
+  // Edit batch
+  const handleEditBatch = async (
+    input: Parameters<typeof editSourceBatch>[0],
+    existing: ChannelWithSources,
+  ) => {
     try {
-      const updated = await updateSourceItem(id, input);
-      addToast(`Fuente «${updated.name}» actualizada`, 'success');
+      await editSourceBatch(input, existing);
+      addToast(`Fuente «${input.nombre}» actualizada`, 'success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al actualizar la fuente';
       addToast(msg, 'error');
@@ -117,33 +121,19 @@ export const SourcesPage = () => {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deletingSource) return;
-    setDeleting(true);
+  // Confirm deactivate channel
+  const handleConfirmDeactivate = async () => {
+    if (!deactivatingChannel) return;
+    setDeactivating(true);
     try {
-      await removeSourceItem(deletingSource.id);
-      addToast(`Fuente «${deletingSource.name}» eliminada`, 'success');
-      setDeletingSource(null);
+      await deactivateChannelGroup(deactivatingChannel.id);
+      addToast(`Fuente «${deactivatingChannel.name}» desactivada`, 'success');
+      setDeactivatingChannel(null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al eliminar la fuente';
+      const msg = err instanceof Error ? err.message : 'Error al desactivar la fuente';
       addToast(msg, 'error');
     } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleConfirmDeleteGroup = async () => {
-    if (!deletingGroup) return;
-    setDeleting(true);
-    try {
-      await removeChannelGroup(deletingGroup.id);
-      addToast(`Canal «${deletingGroup.name}» y sus fuentes eliminados`, 'success');
-      setDeletingGroup(null);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al eliminar el canal';
-      addToast(msg, 'error');
-    } finally {
-      setDeleting(false);
+      setDeactivating(false);
     }
   };
 
@@ -167,17 +157,17 @@ export const SourcesPage = () => {
               className="sel"
               value={continentFilter}
               onChange={(e) => setContinentFilter(e.target.value as Continent | '')}
-              aria-label="Filtrar por continente"
+              aria-label="Continente"
             >
               <option value="">Todos los continentes</option>
-              {CONTINENTS.map((c) => (
-                <option key={c} value={c}>
-                  {CONTINENT_LABELS[c]}
+              {CONTINENTS.map((k) => (
+                <option key={k} value={k}>
+                  {CONTINENT_LABELS[k]}
                 </option>
               ))}
             </select>
 
-            <div className="seg" role="group" aria-label="Filtrar por estado">
+            <div className="seg" role="group" aria-label="Estado">
               {(['all', 'active', 'inactive'] as const).map((v) => (
                 <button
                   key={v}
@@ -190,7 +180,7 @@ export const SourcesPage = () => {
             </div>
 
             <span className="meta">
-              {channelGroups.length} fuente(s) · {filteredSources.length} canal(es)
+              {channelGroups.length} fuentes · {totalFeeds} canales
             </span>
           </div>
 
@@ -199,11 +189,11 @@ export const SourcesPage = () => {
           </button>
         </div>
 
-
-
         {loading && (
-          <div className="card" style={{ padding: '24px' }}>
-            <div className="sk" style={{ height: '180px' }} />
+          <div className="card">
+            <div className="empty">
+              <b>Cargando fuentes…</b>
+            </div>
           </div>
         )}
 
@@ -224,36 +214,28 @@ export const SourcesPage = () => {
             channelGroups={channelGroups}
             openChannelIds={openChannelIds}
             onToggleChannelOpen={toggleChannelOpen}
-            onToggleSourceActive={handleToggleActive}
-            onToggleGroupActive={handleToggleGroupActive}
-            onEditSource={handleOpenEditDrawer}
-            onDeleteChannel={(group) => setDeletingGroup(group)}
+            onToggleSourceActive={handleToggleSourceActive}
+            onToggleGroupActive={handleToggleChannelActive}
+            onEditChannel={handleOpenEditDrawer}
+            onDeleteChannel={(channel) => setDeactivatingChannel(channel)}
           />
         )}
       </div>
 
       <SourceDrawer
         isOpen={drawerOpen}
-        editingSource={editingSource}
+        editingChannel={editingChannel}
         onClose={handleCloseDrawer}
         onCreateBatch={handleCreateBatch}
-        onUpdateSource={handleUpdateSource}
+        onEditBatch={handleEditBatch}
+        onShowErrorToast={(msg) => addToast(msg, 'error')}
       />
 
       <DeleteSourceModal
-        source={deletingSource}
-        onClose={() => setDeletingSource(null)}
-        onConfirm={handleConfirmDelete}
-        loading={deleting}
-      />
-
-      {/* Modal: eliminar canal completo (fuente + todos sus feeds) */}
-      <DeleteSourceModal
-        source={null}
-        channelGroup={deletingGroup}
-        onClose={() => setDeletingGroup(null)}
-        onConfirm={handleConfirmDeleteGroup}
-        loading={deleting}
+        channel={deactivatingChannel}
+        onClose={() => setDeactivatingChannel(null)}
+        onConfirm={handleConfirmDeactivate}
+        loading={deactivating}
       />
     </>
   );

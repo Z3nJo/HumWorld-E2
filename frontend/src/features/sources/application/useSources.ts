@@ -1,37 +1,68 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type {
-  Continent,
-  CreateSourceBatchInput,
-  ReplaceSourceInput,
-  Source,
-  SourceStatusFilter,
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  IPTC_CATEGORY_LABELS,
+  type Channel,
+  type ChannelWithSources,
+  type Continent,
+  type CreateSourceBatchInput,
+  type IptcCategory,
+  type Language,
+  type RssSource,
+  type SourceStatusFilter,
 } from '../domain/source';
 import {
   createSources,
   deleteChannel,
   deleteSource,
+  fetchChannels,
   fetchSources,
   patchChannel,
   patchSource,
-  replaceSource,
 } from '../infrastructure/sourcesApi';
 import { groupSourcesByChannel } from './groupSourcesByChannel';
+
+export interface EditSourceDrawerInput {
+  channelId: number;
+  nombre: string;
+  url_sitio: string;
+  continente: Continent;
+  pais: string | null;
+  idioma: 'es' | 'en' | 'mixed';
+  canales: Array<{
+    id?: number;
+    url_feed: string;
+    categoria_iptc: IptcCategory;
+  }>;
+}
 
 export function useSources(
   continentFilter: Continent | '' = '',
   statusFilter: SourceStatusFilter = 'all',
 ) {
-  const [sources, setSources] = useState<Source[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [sources, setSources] = useState<RssSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openChannelIds, setOpenChannelIds] = useState<Set<number>>(new Set());
+  const initializedOpenRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchSources();
-      setSources(data);
+      const [channelsData, sourcesData] = await Promise.all([
+        fetchChannels(),
+        fetchSources(),
+      ]);
+      setChannels(channelsData);
+      setSources(sourcesData);
+
+      // Expand the first channel upon initial load
+      if (!initializedOpenRef.current && channelsData.length > 0) {
+        const sorted = [...channelsData].sort((a, b) => a.id - b.id);
+        setOpenChannelIds(new Set([sorted[0].id]));
+        initializedOpenRef.current = true;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar las fuentes';
       setError(msg);
@@ -45,24 +76,26 @@ export function useSources(
     void load();
   }, [load]);
 
-  const filteredSources = useMemo(() => {
-    return sources.filter((s) => {
-      if (continentFilter && s.channel.continent !== continentFilter) {
+  // Group all channels and sources
+  const allGroups = useMemo(() => {
+    return groupSourcesByChannel(channels, sources);
+  }, [channels, sources]);
+
+  // Apply filters locally over allGroups
+  const channelGroups: ChannelWithSources[] = useMemo(() => {
+    return allGroups.filter((g) => {
+      if (continentFilter && g.continent !== continentFilter) {
         return false;
       }
-      if (statusFilter === 'active' && !s.active) {
+      if (statusFilter === 'active' && !g.active) {
         return false;
       }
-      if (statusFilter === 'inactive' && s.active) {
+      if (statusFilter === 'inactive' && g.active) {
         return false;
       }
       return true;
     });
-  }, [sources, continentFilter, statusFilter]);
-
-  const channelGroups = useMemo(() => {
-    return groupSourcesByChannel(filteredSources);
-  }, [filteredSources]);
+  }, [allGroups, continentFilter, statusFilter]);
 
   const toggleChannelOpen = useCallback((channelId: number) => {
     setOpenChannelIds((prev) => {
@@ -76,106 +109,174 @@ export function useSources(
     });
   }, []);
 
-  const toggleSourceActive = useCallback(async (sourceId: number) => {
-    const target = sources.find((s) => s.id === sourceId);
-    if (!target) return;
-    const newActive = !target.active;
+  // Toggle channel (medio) activo switch with optimistic update & rollback
+  const toggleChannelActive = useCallback(
+    async (channelId: number) => {
+      const target = channels.find((c) => c.id === channelId);
+      if (!target) return;
+      const newActive = !target.active;
 
-    // Optimistic update
-    setSources((prev) =>
-      prev.map((s) => (s.id === sourceId ? { ...s, active: newActive } : s)),
-    );
-
-    try {
-      const updated = await patchSource(sourceId, { active: newActive });
-      setSources((prev) =>
-        prev.map((s) => (s.id === sourceId ? updated : s)),
+      // Optimistic update
+      setChannels((prev) =>
+        prev.map((c) => (c.id === channelId ? { ...c, active: newActive } : c)),
       );
-      return updated;
-    } catch (err) {
-      // Revert optimistic update
-      setSources((prev) =>
-        prev.map((s) => (s.id === sourceId ? { ...s, active: !newActive } : s)),
-      );
-      throw err;
-    }
-  }, [sources]);
-
-  const toggleGroupActive = useCallback(
-    async (groupId: number) => {
-      const group = channelGroups.find((g) => g.id === groupId);
-      if (!group) return;
-
-      const targetActive = !group.isActive;
 
       try {
-        await patchChannel(groupId, { activo: targetActive });
-        // También actualizamos o recargamos para sincronizar
-        await load();
-        return { groupName: group.name, active: targetActive };
-      } catch {
-        // Fallback: si falla patchChannel o no está soportado en algún entorno, alternar feeds
-        try {
-          for (const feed of group.sources) {
-            await patchSource(feed.id, { active: targetActive });
-          }
-          await load();
-          return { groupName: group.name, active: targetActive };
-        } catch (innerErr) {
-          await load();
-          throw innerErr;
-        }
+        await patchChannel(channelId, { activo: newActive });
+        return { name: target.name, active: newActive };
+      } catch (err) {
+        // Rollback
+        setChannels((prev) =>
+          prev.map((c) => (c.id === channelId ? { ...c, active: !newActive } : c)),
+        );
+        throw err;
       }
     },
-    [channelGroups, load],
+    [channels],
   );
 
-  const addSourcesBatch = useCallback(async (input: CreateSourceBatchInput) => {
-    const res = await createSources(input);
-    setSources((prev) => [...res.sources, ...prev]);
-    setOpenChannelIds((prev) => new Set(prev).add(res.channel.id));
-    return res;
-  }, []);
+  // Toggle feed activo switch with optimistic update & rollback
+  const toggleSourceActive = useCallback(
+    async (sourceId: number) => {
+      const target = sources.find((s) => s.id === sourceId);
+      if (!target) return;
+      const newActive = !target.active;
 
-  const updateSourceItem = useCallback(async (id: number, input: ReplaceSourceInput) => {
-    const updated = await replaceSource(id, input);
-    setSources((prev) => prev.map((s) => (s.id === id ? updated : s)));
-    return updated;
-  }, []);
+      // Optimistic update
+      setSources((prev) =>
+        prev.map((s) => (s.id === sourceId ? { ...s, active: newActive } : s)),
+      );
 
-  const removeSourceItem = useCallback(async (id: number) => {
-    await deleteSource(id);
-    setSources((prev) => prev.filter((s) => s.id !== id));
-  }, []);
-
-  const removeChannelGroup = useCallback(async (groupId: number) => {
-    const group = channelGroups.find((g) => g.id === groupId);
-    if (!group) return;
-    try {
-      await deleteChannel(groupId);
-    } catch {
-      // Fallback a eliminar fuentes individuales
-      for (const src of group.sources) {
-        await deleteSource(src.id);
+      try {
+        await patchSource(sourceId, { active: newActive });
+        return { name: target.name, active: newActive };
+      } catch (err) {
+        // Rollback
+        setSources((prev) =>
+          prev.map((s) => (s.id === sourceId ? { ...s, active: !newActive } : s)),
+        );
+        throw err;
       }
-    }
-    setSources((prev) => prev.filter((s) => s.channelId !== groupId));
-  }, [channelGroups]);
+    },
+    [sources],
+  );
+
+  // Create new source batch (POST /sources)
+  const addSourcesBatch = useCallback(
+    async (input: CreateSourceBatchInput) => {
+      const res = await createSources(input);
+      await load();
+      setOpenChannelIds((prev) => new Set(prev).add(res.channel.id));
+      return res;
+    },
+    [load],
+  );
+
+  // Edit existing source by sequential diff
+  const editSourceBatch = useCallback(
+    async (input: EditSourceDrawerInput, existingGroup: ChannelWithSources) => {
+      // 1. Diff channel
+      const channelChanged =
+        input.nombre.trim() !== existingGroup.name ||
+        (input.url_sitio.trim() || null) !== existingGroup.siteUrl ||
+        input.continente !== existingGroup.continent ||
+        input.pais !== existingGroup.country;
+
+      if (channelChanged) {
+        await patchChannel(existingGroup.id, {
+          nombre: input.nombre.trim(),
+          continente: input.continente,
+          pais: input.pais,
+          url_sitio: input.url_sitio.trim() || null,
+        });
+      }
+
+      // 2. Diff feeds
+      const currentFeeds = existingGroup.sources;
+      const updatedFeedIds = new Set(
+        input.canales.filter((c) => c.id !== undefined).map((c) => c.id as number),
+      );
+
+      // 2a. PATCH modified existing feeds
+      for (const canal of input.canales) {
+        if (canal.id !== undefined) {
+          const original = currentFeeds.find((f) => f.id === canal.id);
+          if (original) {
+            const feedUrlChanged = canal.url_feed.trim() !== original.feedUrl;
+            const categoryChanged = canal.categoria_iptc !== original.category;
+            const languageChanged =
+              input.idioma !== 'mixed' && input.idioma !== original.language;
+
+            if (feedUrlChanged || categoryChanged || languageChanged) {
+              const patchPayload: {
+                name?: string;
+                feedUrl?: string;
+                iptcCategory?: IptcCategory;
+                language?: Language;
+              } = {};
+              if (categoryChanged || input.nombre.trim() !== existingGroup.name) {
+                const label = IPTC_CATEGORY_LABELS[canal.categoria_iptc] || canal.categoria_iptc;
+                patchPayload.name = `${input.nombre.trim()} · ${label}`.slice(0, 150);
+              }
+              if (feedUrlChanged) patchPayload.feedUrl = canal.url_feed.trim();
+              if (categoryChanged) patchPayload.iptcCategory = canal.categoria_iptc;
+              if (languageChanged) patchPayload.language = input.idioma as Language;
+
+              await patchSource(canal.id, patchPayload);
+            }
+          }
+        }
+      }
+
+      // 2b. POST newly added feeds
+      const newFeeds = input.canales.filter((c) => c.id === undefined);
+      if (newFeeds.length > 0) {
+        await createSources({
+          channelId: existingGroup.id,
+          sources: newFeeds.map((f) => ({
+            name: `${input.nombre.trim()} · ${f.categoria_iptc}`.slice(0, 150),
+            feedUrl: f.url_feed.trim(),
+            iptcCategory: f.categoria_iptc,
+            language: input.idioma === 'mixed' ? 'es' : input.idioma,
+            active: true,
+          })),
+        });
+      }
+
+      // 2c. DELETE removed feeds
+      const removedFeeds = currentFeeds.filter((f) => !updatedFeedIds.has(f.id));
+      for (const removed of removedFeeds) {
+        await deleteSource(removed.id);
+      }
+
+      await load();
+    },
+    [load],
+  );
+
+  // Deactivate channel (DELETE /channels/{id})
+  const deactivateChannelGroup = useCallback(
+    async (channelId: number) => {
+      await deleteChannel(channelId);
+      await load();
+    },
+    [load],
+  );
 
   return {
+    channels,
     sources,
-    filteredSources,
     channelGroups,
     openChannelIds,
     loading,
     error,
     toggleChannelOpen,
     toggleSourceActive,
-    toggleGroupActive,
+    toggleGroupActive: toggleChannelActive,
+    toggleChannelActive,
     addSourcesBatch,
-    updateSourceItem,
-    removeSourceItem,
-    removeChannelGroup,
+    editSourceBatch,
+    deactivateChannelGroup,
     reload: load,
   };
 }

@@ -1,5 +1,6 @@
 import { http } from '../../../shared/api/httpClient';
 import type {
+  Channel,
   ChannelSummary,
   Continent,
   CreateSourceBatchInput,
@@ -7,10 +8,12 @@ import type {
   Language,
   PatchSourceInput,
   ReplaceSourceInput,
+  RssSource,
   Source,
 } from '../domain/source';
 import type {
-  ChannelSummaryDto,
+  ChannelDto,
+  ChannelPatchDto,
   SourceBatchCreateDto,
   SourceBatchResponseDto,
   SourcePatchDto,
@@ -18,7 +21,7 @@ import type {
   SourceResponseDto,
 } from './sourcesDto';
 
-export function mapChannelSummaryFromDto(dto: ChannelSummaryDto): ChannelSummary {
+export function mapChannelFromDto(dto: ChannelDto): Channel {
   return {
     id: dto.id_canal,
     name: dto.nombre,
@@ -26,19 +29,41 @@ export function mapChannelSummaryFromDto(dto: ChannelSummaryDto): ChannelSummary
     country: dto.pais ?? null,
     siteUrl: dto.url_sitio ?? null,
     active: dto.activo ?? true,
+    createdAt: dto.fecha_alta,
   };
 }
 
-export function mapSourceFromDto(dto: SourceResponseDto): Source {
+export const mapChannelSummaryFromDto = mapChannelFromDto;
+
+export function mapRssSourceFromDto(dto: SourceResponseDto): RssSource {
   return {
     id: dto.id_fuente,
     channelId: dto.id_canal,
     name: dto.nombre,
     feedUrl: dto.url_feed,
-    iptcCategory: dto.categoria_iptc as IptcCategory,
+    category: dto.categoria_iptc as IptcCategory,
     language: dto.idioma as Language,
     active: dto.activa,
-    channel: mapChannelSummaryFromDto(dto.canal),
+    lastCaptureAt: dto.fecha_ultima_captura ?? null,
+    createdAt: dto.fecha_alta,
+  };
+}
+
+export function mapSourceFromDto(dto: SourceResponseDto): Source {
+  const rss = mapRssSourceFromDto(dto);
+  return {
+    ...rss,
+    iptcCategory: rss.category,
+    channel: dto.canal
+      ? mapChannelFromDto(dto.canal)
+      : {
+          id: dto.id_canal,
+          name: '',
+          continent: 'America',
+          country: null,
+          siteUrl: null,
+          active: true,
+        },
   };
 }
 
@@ -82,6 +107,11 @@ export function mapPatchToDto(input: PatchSourceInput): SourcePatchDto {
   if (input.language !== undefined) dto.idioma = input.language;
   if (input.active !== undefined) dto.activa = input.active;
   return dto;
+}
+
+export async function fetchChannels(): Promise<Channel[]> {
+  const rows = await http.get<ChannelDto[]>('/api/v1/channels');
+  return rows.map(mapChannelFromDto);
 }
 
 export async function fetchSources(
@@ -132,16 +162,10 @@ export async function deleteSource(id: number): Promise<void> {
 
 export async function patchChannel(
   id: number,
-  changes: {
-    nombre?: string;
-    continente?: Continent;
-    pais?: string | null;
-    url_sitio?: string | null;
-    activo?: boolean;
-  },
-): Promise<ChannelSummary> {
-  const dto = await http.patch<ChannelSummaryDto>(`/api/v1/channels/${id}`, changes);
-  return mapChannelSummaryFromDto(dto);
+  changes: ChannelPatchDto,
+): Promise<Channel> {
+  const dto = await http.patch<ChannelDto>(`/api/v1/channels/${id}`, changes);
+  return mapChannelFromDto(dto);
 }
 
 export async function deleteChannel(id: number): Promise<void> {

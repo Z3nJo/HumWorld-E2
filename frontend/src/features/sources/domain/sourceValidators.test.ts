@@ -32,7 +32,7 @@ describe('sourceValidators', () => {
           },
         ],
       });
-      expect(errors.channelName).toBe('El nombre del medio/canal es obligatorio');
+      expect(errors.channelName).toBe('Campo obligatorio');
     });
 
     it('returns errors when feeds list is empty or feeds have invalid URLs', () => {

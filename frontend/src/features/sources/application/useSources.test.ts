@@ -1,43 +1,76 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Source } from '../domain/source';
+import type { Channel, Source } from '../domain/source';
 import * as sourcesApi from '../infrastructure/sourcesApi';
-import { groupSourcesByChannel } from './groupSourcesByChannel';
+import {
+  deriveChannelLanguages,
+  groupSourcesByChannel,
+} from './groupSourcesByChannel';
 import { useSources } from './useSources';
 
 vi.mock('../infrastructure/sourcesApi');
 
 describe('useSources and groupSourcesByChannel', () => {
+  const sampleChannels: Channel[] = [
+    {
+      id: 10,
+      name: 'El País',
+      continent: 'Europa',
+      country: 'ES',
+      siteUrl: 'https://elpais.com',
+      active: true,
+    },
+    {
+      id: 20,
+      name: 'BBC',
+      continent: 'Europa',
+      country: 'GB',
+      siteUrl: 'https://bbc.com',
+      active: false,
+    },
+    {
+      id: 30,
+      name: 'Sin Feeds',
+      continent: 'America',
+      country: null,
+      siteUrl: null,
+      active: true,
+    },
+  ];
+
   const sampleSources: Source[] = [
     {
       id: 1,
       channelId: 10,
-      name: 'Portada',
+      name: 'El País · Portada',
       feedUrl: 'https://elpais.com/rss/portada.xml',
+      category: 'politics',
       iptcCategory: 'politics',
       language: 'es',
       active: true,
-      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
+      channel: sampleChannels[0],
     },
     {
       id: 2,
       channelId: 10,
-      name: 'Deportes',
+      name: 'El País · Deportes',
       feedUrl: 'https://elpais.com/rss/deportes.xml',
+      category: 'sport',
       iptcCategory: 'sport',
-      language: 'es',
+      language: 'en',
       active: false,
-      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
+      channel: sampleChannels[0],
     },
     {
       id: 3,
       channelId: 20,
-      name: 'World News',
+      name: 'BBC · Mundo',
       feedUrl: 'https://bbc.com/rss/world.xml',
+      category: 'conflict/war/peace',
       iptcCategory: 'conflict/war/peace',
       language: 'en',
       active: true,
-      channel: { id: 20, name: 'BBC', continent: 'Europa' },
+      channel: sampleChannels[1],
     },
   ];
 
@@ -45,23 +78,40 @@ describe('useSources and groupSourcesByChannel', () => {
     vi.clearAllMocks();
   });
 
-  describe('groupSourcesByChannel', () => {
-    it('groups sources under their channels correctly and counts actives', () => {
-      const groups = groupSourcesByChannel(sampleSources);
-      expect(groups).toHaveLength(2);
-      // Sorted alphabetically: BBC then El País
-      expect(groups[0].name).toBe('BBC');
-      expect(groups[0].sources).toHaveLength(1);
-      expect(groups[0].activeCount).toBe(1);
+  describe('deriveChannelLanguages', () => {
+    it('returns empty array when no sources exist', () => {
+      expect(deriveChannelLanguages([])).toEqual([]);
+    });
 
-      expect(groups[1].name).toBe('El País');
-      expect(groups[1].sources).toHaveLength(2);
-      expect(groups[1].activeCount).toBe(1);
+    it('returns sorted unique languages', () => {
+      expect(deriveChannelLanguages(sampleSources.slice(0, 2))).toEqual(['en', 'es']);
+    });
+  });
+
+  describe('groupSourcesByChannel', () => {
+    it('groups sources under their channels correctly and sorts by id_canal ascending', () => {
+      const groups = groupSourcesByChannel(sampleChannels, sampleSources);
+      expect(groups).toHaveLength(3);
+      // id 10, 20, 30
+      expect(groups[0].id).toBe(10);
+      expect(groups[0].name).toBe('El País');
+      expect(groups[0].sources).toHaveLength(2);
+      expect(groups[0].languages).toEqual(['en', 'es']);
+
+      expect(groups[1].id).toBe(20);
+      expect(groups[1].name).toBe('BBC');
+      expect(groups[1].sources).toHaveLength(1);
+
+      expect(groups[2].id).toBe(30);
+      expect(groups[2].name).toBe('Sin Feeds');
+      expect(groups[2].sources).toHaveLength(0);
+      expect(groups[2].languages).toEqual([]);
     });
   });
 
   describe('useSources hook', () => {
-    it('loads sources and provides channel groups', async () => {
+    it('loads channels and sources in parallel and auto-expands the first channel', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValueOnce(sampleChannels);
       vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
 
       const { result } = renderHook(() => useSources());
@@ -72,13 +122,17 @@ describe('useSources and groupSourcesByChannel', () => {
         expect(result.current.loading).toBe(false);
       });
 
+      expect(sourcesApi.fetchChannels).toHaveBeenCalledTimes(1);
+      expect(sourcesApi.fetchSources).toHaveBeenCalledTimes(1);
+      expect(result.current.channels).toHaveLength(3);
       expect(result.current.sources).toHaveLength(3);
-      expect(result.current.channelGroups).toHaveLength(2);
-      expect(result.current.openChannelIds.size).toBe(0);
+      expect(result.current.channelGroups).toHaveLength(3);
+      expect(result.current.openChannelIds.has(10)).toBe(true);
     });
 
-    it('filters sources by continent and status', async () => {
-      vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
+    it('filters channelGroups by continent and status', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(sampleChannels);
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
 
       const { result } = renderHook(() => useSources('Europa', 'active'));
 
@@ -86,69 +140,15 @@ describe('useSources and groupSourcesByChannel', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.filteredSources).toHaveLength(2);
-      expect(result.current.filteredSources.every((s) => s.active)).toBe(true);
+      // El País is active in Europa, BBC is inactive in Europa, Sin Feeds is in America
+      expect(result.current.channelGroups).toHaveLength(1);
+      expect(result.current.channelGroups[0].name).toBe('El País');
     });
 
-    it('toggles source active state with optimistic update and patch call', async () => {
-      vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
-      vi.mocked(sourcesApi.patchSource).mockResolvedValueOnce({
-        ...sampleSources[0],
-        active: false,
-      });
-
-      const { result } = renderHook(() => useSources());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      await act(async () => {
-        await result.current.toggleSourceActive(1);
-      });
-
-      expect(sourcesApi.patchSource).toHaveBeenCalledWith(1, { active: false });
-      const updated = result.current.sources.find((s) => s.id === 1);
-      expect(updated?.active).toBe(false);
-    });
-
-    it('toggles group active state via patchChannel and reloads', async () => {
+    it('toggles source active state with optimistic update and rollback on failure', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(sampleChannels);
       vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
-      vi.mocked(sourcesApi.patchChannel).mockResolvedValueOnce({
-        id: 10,
-        name: 'El País',
-        continent: 'Europa',
-        country: null,
-        siteUrl: null,
-        active: false,
-      });
-
-      const { result } = renderHook(() => useSources());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // El País (id 10) has 2 feeds (ids 1 and 2), and isActive is true because feed 1 is active
-      const elPaisGroup = result.current.channelGroups.find((g) => g.id === 10);
-      expect(elPaisGroup?.isActive).toBe(true);
-
-      await act(async () => {
-        const res = await result.current.toggleGroupActive(10);
-        expect(res).toEqual({ groupName: 'El País', active: false });
-      });
-
-      // Primary path: patchChannel is called once with the new state
-      expect(sourcesApi.patchChannel).toHaveBeenCalledWith(10, { activo: false });
-      // fetchSources reloads to sync state
-      expect(sourcesApi.fetchSources).toHaveBeenCalledTimes(2);
-    });
-
-    it('reloads and throws when toggleGroupActive patchChannel encounters an error', async () => {
-      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
-      vi.mocked(sourcesApi.patchChannel).mockRejectedValueOnce(new Error('Network error'));
-      // Also mock patchSource to reject so the inner fallback also fails
-      vi.mocked(sourcesApi.patchSource).mockRejectedValue(new Error('Network error'));
+      vi.mocked(sourcesApi.patchSource).mockRejectedValueOnce(new Error('Failed to patch'));
 
       const { result } = renderHook(() => useSources());
 
@@ -158,17 +158,22 @@ describe('useSources and groupSourcesByChannel', () => {
 
       await expect(
         act(async () => {
-          await result.current.toggleGroupActive(10);
+          await result.current.toggleSourceActive(1);
         }),
-      ).rejects.toThrow('Network error');
+      ).rejects.toThrow('Failed to patch');
 
-      // Verifies that fetchSources was called again on error recovery
-      expect(sourcesApi.fetchSources).toHaveBeenCalledTimes(2);
+      // State is rolled back to true
+      const source = result.current.sources.find((s) => s.id === 1);
+      expect(source?.active).toBe(true);
     });
 
-    it('removes a source successfully', async () => {
-      vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
-      vi.mocked(sourcesApi.deleteSource).mockResolvedValueOnce(undefined);
+    it('toggles channel active state via patchChannel with optimistic update', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(sampleChannels);
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
+      vi.mocked(sourcesApi.patchChannel).mockResolvedValueOnce({
+        ...sampleChannels[0],
+        active: false,
+      });
 
       const { result } = renderHook(() => useSources());
 
@@ -177,11 +182,89 @@ describe('useSources and groupSourcesByChannel', () => {
       });
 
       await act(async () => {
-        await result.current.removeSourceItem(1);
+        const res = await result.current.toggleChannelActive(10);
+        expect(res).toEqual({ name: 'El País', active: false });
       });
 
-      expect(sourcesApi.deleteSource).toHaveBeenCalledWith(1);
-      expect(result.current.sources).toHaveLength(2);
+      expect(sourcesApi.patchChannel).toHaveBeenCalledWith(10, { activo: false });
+      const elPais = result.current.channels.find((c) => c.id === 10);
+      expect(elPais?.active).toBe(false);
+    });
+
+    it('performs sequential diff when calling editSourceBatch', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(sampleChannels);
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
+      vi.mocked(sourcesApi.patchChannel).mockResolvedValueOnce({
+        ...sampleChannels[0],
+        name: 'El País Renombrado',
+      });
+      vi.mocked(sourcesApi.patchSource).mockResolvedValue(sampleSources[0]);
+      vi.mocked(sourcesApi.createSources).mockResolvedValue({
+        channel: sampleChannels[0],
+        sources: [sampleSources[0]],
+      });
+      vi.mocked(sourcesApi.deleteSource).mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useSources());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      const existingGroup = result.current.channelGroups[0];
+
+      await act(async () => {
+        await result.current.editSourceBatch(
+          {
+            channelId: 10,
+            nombre: 'El País Renombrado',
+            url_sitio: 'https://elpais.com',
+            continente: 'Europa',
+            pais: 'ES',
+            idioma: 'en',
+            canales: [
+              // modified feed #1
+              {
+                id: 1,
+                url_feed: 'https://elpais.com/rss/portada_v2.xml',
+                categoria_iptc: 'politics',
+              },
+              // new feed
+              {
+                url_feed: 'https://elpais.com/rss/nueva.xml',
+                categoria_iptc: 'health',
+              },
+              // feed #2 omitted -> deleted
+            ],
+          },
+          existingGroup,
+        );
+      });
+
+      expect(sourcesApi.patchChannel).toHaveBeenCalledWith(10, {
+        nombre: 'El País Renombrado',
+        continente: 'Europa',
+        pais: 'ES',
+        url_sitio: 'https://elpais.com',
+      });
+
+      expect(sourcesApi.patchSource).toHaveBeenCalledWith(1, expect.objectContaining({
+        feedUrl: 'https://elpais.com/rss/portada_v2.xml',
+        language: 'en',
+      }));
+
+      expect(sourcesApi.createSources).toHaveBeenCalledWith({
+        channelId: 10,
+        sources: [
+          expect.objectContaining({
+            feedUrl: 'https://elpais.com/rss/nueva.xml',
+            iptcCategory: 'health',
+            language: 'en',
+          }),
+        ],
+      });
+
+      expect(sourcesApi.deleteSource).toHaveBeenCalledWith(2);
     });
   });
 });

@@ -2,10 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { http } from '../../../shared/api/httpClient';
 import {
   createSources,
+  deleteChannel,
   deleteSource,
+  fetchChannels,
   fetchSources,
   mapBatchCreateToDto,
   mapSourceFromDto,
+  patchChannel,
   patchSource,
   replaceSource,
 } from './sourcesApi';
@@ -126,5 +129,36 @@ describe('sourcesApi', () => {
     await deleteSource(10);
 
     expect(http.delete).toHaveBeenCalledWith('/api/v1/sources/10');
+  });
+
+  it('calls http.get on fetchChannels', async () => {
+    vi.mocked(http.get).mockResolvedValueOnce([
+      { id_canal: 1, nombre: 'El País', continente: 'Europa', activo: true },
+    ]);
+
+    const res = await fetchChannels();
+    expect(http.get).toHaveBeenCalledWith('/api/v1/channels');
+    expect(res).toHaveLength(1);
+    expect(res[0].name).toBe('El País');
+  });
+
+  it('calls http.patch on patchChannel', async () => {
+    vi.mocked(http.patch).mockResolvedValueOnce({
+      id_canal: 1,
+      nombre: 'El País',
+      continente: 'Europa',
+      activo: false,
+    });
+
+    const res = await patchChannel(1, { activo: false });
+    expect(http.patch).toHaveBeenCalledWith('/api/v1/channels/1', { activo: false });
+    expect(res.active).toBe(false);
+  });
+
+  it('calls http.delete on deleteChannel', async () => {
+    vi.mocked(http.delete).mockResolvedValueOnce(undefined);
+
+    await deleteChannel(1);
+    expect(http.delete).toHaveBeenCalledWith('/api/v1/channels/1');
   });
 });

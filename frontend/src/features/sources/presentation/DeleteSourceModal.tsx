@@ -1,17 +1,15 @@
 import { useEffect } from 'react';
-import type { ChannelGroup, Source } from '../domain/source';
+import type { ChannelWithSources } from '../domain/source';
 
 interface DeleteSourceModalProps {
-  source: Source | null;
-  channelGroup?: ChannelGroup | null;
+  channel: ChannelWithSources | null;
   onClose: () => void;
   onConfirm: () => void;
   loading?: boolean;
 }
 
 export const DeleteSourceModal = ({
-  source,
-  channelGroup,
+  channel,
   onClose,
   onConfirm,
   loading = false,
@@ -26,24 +24,26 @@ export const DeleteSourceModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  if (!source && !channelGroup) return null;
-
-  const titleName = channelGroup ? channelGroup.name : source?.name;
-  const description = channelGroup
-    ? `Se eliminará la fuente junto con sus ${channelGroup.sources.length} canales RSS. Esta acción no se puede deshacer. Si solo quieres dejar de capturarla, desactívala.`
-    : `Se eliminará permanentemente la fuente RSS con URL ${source?.feedUrl} del medio ${source?.channel.name}. Esta acción no se puede deshacer. Si solo quieres dejar de capturarla, desactívala.`;
+  if (!channel) return null;
 
   return (
-    <div className="ov on" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      id="ov"
+      className="on"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="modal" role="alertdialog" aria-modal="true">
-        <h3>¿Eliminar «{titleName}»?</h3>
-        <p>{description}</p>
+        <h3>¿Eliminar «{channel.name}»?</h3>
+        <p>
+          Se desactivará la fuente «{channel.name}». Se conservan sus canales RSS y
+          sus noticias; podrás reactivarla con el interruptor.
+        </p>
         <div className="row" style={{ justifyContent: 'flex-end', gap: '8px' }}>
           <button className="btn" onClick={onClose} disabled={loading}>
             Cancelar
           </button>
           <button className="btn dan" onClick={onConfirm} disabled={loading}>
-            {loading ? 'Eliminando...' : 'Eliminar fuente'}
+            {loading ? 'Desactivando...' : 'Desactivar fuente'}
           </button>
         </div>
       </div>

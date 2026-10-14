@@ -1,77 +1,106 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Source } from '../../features/sources/domain/source';
+import type { Channel, Source } from '../../features/sources/domain/source';
 import * as sourcesApi from '../../features/sources/infrastructure/sourcesApi';
 import { SourcesPage } from './SourcesPage';
 
 vi.mock('../../features/sources/infrastructure/sourcesApi');
 
 describe('SourcesPage', () => {
-  const sampleSources: Source[] = [
+  const sampleChannels: Channel[] = [
     {
       id: 1,
-      channelId: 10,
-      name: 'Portada',
-      feedUrl: 'https://elpais.com/rss/portada.xml',
-      iptcCategory: 'politics',
-      language: 'es',
+      name: 'El País',
+      continent: 'Europa',
+      country: 'ES',
+      siteUrl: 'https://elpais.com',
       active: true,
-      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
     },
     {
       id: 2,
-      channelId: 10,
-      name: 'Economía',
+      name: 'NPR',
+      continent: 'America',
+      country: 'US',
+      siteUrl: 'https://npr.org',
+      active: false,
+    },
+  ];
+
+  const sampleSources: Source[] = [
+    {
+      id: 101,
+      channelId: 1,
+      name: 'El País · Portada',
+      feedUrl: 'https://elpais.com/rss/portada.xml',
+      category: 'politics',
+      iptcCategory: 'politics',
+      language: 'es',
+      active: true,
+      channel: sampleChannels[0],
+    },
+    {
+      id: 102,
+      channelId: 1,
+      name: 'El País · Economía',
       feedUrl: 'https://elpais.com/rss/economia.xml',
+      category: 'economy/business/finance',
       iptcCategory: 'economy/business/finance',
       language: 'es',
       active: false,
-      channel: { id: 10, name: 'El País', continent: 'Europa', active: true },
+      channel: sampleChannels[0],
     },
     {
-      id: 3,
-      channelId: 20,
-      name: 'NPR News',
+      id: 201,
+      channelId: 2,
+      name: 'NPR · News',
       feedUrl: 'https://npr.org/rss/news.xml',
+      category: 'politics',
       iptcCategory: 'politics',
       language: 'en',
       active: true,
-      channel: { id: 20, name: 'NPR', continent: 'America' },
+      channel: sampleChannels[1],
     },
   ];
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(sampleChannels);
+    vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
   });
 
-  it('renders channels and feeds successfully upon expansion', async () => {
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
-
+  it('renders header, counter, and expands first channel automatically', async () => {
     render(<SourcesPage />);
 
     expect(screen.getByText('Fuentes y canales RSS')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Fuentes de noticias y sus canales RSS. Solo se capturan canales activos de fuentes activas.',
+      ),
+    ).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('El País')).toBeInTheDocument();
       expect(screen.getByText('NPR')).toBeInTheDocument();
     });
 
-    // Channels are collapsed by default
-    expect(screen.queryByText('https://elpais.com/rss/portada.xml')).not.toBeInTheDocument();
+    // Counter: 2 fuentes · 3 canales
+    expect(screen.getByText('2 fuentes · 3 canales')).toBeInTheDocument();
 
-    // Expand El País
-    fireEvent.click(screen.getByLabelText('Ver canales de El País'));
+    // First channel (El País, id 1) is expanded automatically on initial load
     expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
-    expect(screen.getByText('https://elpais.com/rss/economia.xml')).toBeInTheDocument();
+    expect(screen.getByText('Política')).toBeInTheDocument();
+    expect(screen.getByText('Economía')).toBeInTheDocument();
 
-    // Verify sub-table does NOT render edit or delete buttons for the feeds
-    expect(screen.queryByRole('button', { name: 'Editar feed' })).not.toBeInTheDocument();
+    // NPR (id 2) is collapsed
+    expect(screen.queryByText('https://npr.org/rss/news.xml')).not.toBeInTheDocument();
+
+    // Language pills: El País has 'es'
+    const esElements = screen.getAllByText('ES');
+    expect(esElements.some((el) => el.classList.contains('pill'))).toBe(true);
   });
 
-  it('filters by continent and status', async () => {
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
-
+  it('filters by continent and status locally over all loaded items', async () => {
     render(<SourcesPage />);
 
     await waitFor(() => {
@@ -79,25 +108,95 @@ describe('SourcesPage', () => {
     });
 
     // Filter by America
-    fireEvent.change(screen.getByLabelText(/Filtrar por continente/i), {
+    fireEvent.change(screen.getByLabelText('Continente'), {
       target: { value: 'America' },
     });
 
     expect(screen.queryByText('El País')).not.toBeInTheDocument();
     expect(screen.getByText('NPR')).toBeInTheDocument();
+    expect(screen.getByText('1 fuentes · 1 canales')).toBeInTheDocument();
 
-    // Reset continent filter, filter by Inactivas
-    fireEvent.change(screen.getByLabelText(/Filtrar por continente/i), {
+    // Reset continent, filter by Inactivas (NPR is inactive)
+    fireEvent.change(screen.getByLabelText('Continente'), {
       target: { value: '' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Inactivas' }));
 
+    expect(screen.queryByText('El País')).not.toBeInTheDocument();
+    expect(screen.getByText('NPR')).toBeInTheDocument();
+
+    // Filter by Activas (El País is active)
+    fireEvent.click(screen.getByRole('button', { name: 'Activas' }));
     expect(screen.getByText('El País')).toBeInTheDocument();
-    expect(screen.queryByText('NPR')).not.toBeInTheDocument(); // NPR was active
+    expect(screen.queryByText('NPR')).not.toBeInTheDocument();
   });
 
-  it('toggles a feed active switch', async () => {
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
+  it('allows manual collapse and expansion with ghost button', async () => {
+    render(<SourcesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('El País')).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.getAllByLabelText('Ver canales');
+    const elPaisExpandBtn = expandButtons[0];
+    expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'true');
+
+    // Collapse El País
+    fireEvent.click(elPaisExpandBtn);
+    expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('https://elpais.com/rss/portada.xml')).not.toBeInTheDocument();
+
+    // Re-expand El País
+    fireEvent.click(elPaisExpandBtn);
+    expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
+  });
+
+  it('toggles channel switch with patchChannel and shows toast with name', async () => {
+    vi.mocked(sourcesApi.patchChannel).mockResolvedValueOnce({
+      ...sampleChannels[0],
+      active: false,
+    });
+
+    render(<SourcesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Activar El País')).toBeInTheDocument();
+    });
+
+    const sw = screen.getByLabelText('Activar El País');
+    expect(sw).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(sw);
+
+    await waitFor(() => {
+      expect(sourcesApi.patchChannel).toHaveBeenCalledWith(1, { activo: false });
+      expect(screen.getByText(/«El País» desactivada/i)).toBeInTheDocument();
+    });
+  });
+
+  it('rolls back channel switch if patchChannel fails', async () => {
+    vi.mocked(sourcesApi.patchChannel).mockRejectedValueOnce(
+      new Error('Error de red al actualizar'),
+    );
+
+    render(<SourcesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Activar El País')).toBeInTheDocument();
+    });
+
+    const sw = screen.getByLabelText('Activar El País');
+    fireEvent.click(sw);
+
+    await waitFor(() => {
+      expect(screen.getByText('Error de red al actualizar')).toBeInTheDocument();
+      expect(sw).toHaveAttribute('aria-checked', 'true');
+    });
+  });
+
+  it('toggles feed switch with patchSource and shows Canal activado/desactivado toast', async () => {
     vi.mocked(sourcesApi.patchSource).mockResolvedValueOnce({
       ...sampleSources[0],
       active: false,
@@ -106,30 +205,53 @@ describe('SourcesPage', () => {
     render(<SourcesPage />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Ver canales de El País')).toBeInTheDocument();
+      expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
     });
 
-    // Expand El País to reveal individual switch
-    fireEvent.click(screen.getByLabelText('Ver canales de El País'));
+    const feedSwitches = screen.getAllByLabelText('Activar canal');
+    const portadaSw = feedSwitches[0];
+    expect(portadaSw).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(portadaSw);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Activar o desactivar Portada')).toBeInTheDocument();
-    });
-
-    const switchBtn = screen.getByLabelText('Activar o desactivar Portada');
-    expect(switchBtn).toHaveAttribute('aria-checked', 'true');
-
-    fireEvent.click(switchBtn);
-
-    await waitFor(() => {
-      expect(sourcesApi.patchSource).toHaveBeenCalledWith(1, { active: false });
-      expect(screen.getByText(/desactivada/i)).toBeInTheDocument();
+      expect(sourcesApi.patchSource).toHaveBeenCalledWith(101, { active: false });
+      expect(screen.getByText('Canal desactivado')).toBeInTheDocument();
     });
   });
 
-  it('opens and closes drawer for new source', async () => {
+  it('opens create drawer, validates fields, and creates a source with POST /sources', async () => {
     const user = userEvent.setup();
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
+    vi.mocked(sourcesApi.createSources).mockResolvedValueOnce({
+      channel: {
+        id: 3,
+        name: 'Clarín',
+        continent: 'America',
+        country: 'AR',
+        siteUrl: 'https://clarin.com',
+        active: true,
+      },
+      sources: [
+        {
+          id: 301,
+          channelId: 3,
+          name: 'Clarín · Política',
+          feedUrl: 'https://clarin.com/rss.xml',
+          category: 'politics',
+          iptcCategory: 'politics',
+          language: 'es',
+          active: true,
+          channel: {
+            id: 3,
+            name: 'Clarín',
+            continent: 'America',
+            country: 'AR',
+            siteUrl: 'https://clarin.com',
+            active: true,
+          },
+        },
+      ],
+    });
 
     render(<SourcesPage />);
 
@@ -139,36 +261,106 @@ describe('SourcesPage', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Nueva fuente' }));
 
-    expect(screen.getByText('Registrar medio y canales RSS')).toBeInTheDocument();
+    expect(screen.getByText('Nueva fuente')).toBeInTheDocument();
+    expect(screen.getByText('Registrar fuente RSS')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    // Trigger validation error by submitting empty
+    await user.click(screen.getByRole('button', { name: 'Crear fuente' }));
+    expect(screen.getByText('Revisa los campos marcados')).toBeInTheDocument();
+    expect(screen.getByText('Campo obligatorio')).toBeInTheDocument();
 
-    expect(screen.queryByText('Registrar medio y canales RSS')).not.toBeInTheDocument();
+    // Fill valid data
+    const nameInput = screen.getByLabelText('Nombre');
+    const urlInput = screen.getByLabelText('URL del sitio');
+    const feedInputs = screen.getAllByLabelText('URL RSS');
+
+    await user.type(nameInput, 'Clarín');
+    await user.type(urlInput, 'https://clarin.com');
+    await user.type(feedInputs[0], 'https://clarin.com/rss.xml');
+
+    await user.click(screen.getByRole('button', { name: 'Crear fuente' }));
+
+    await waitFor(() => {
+      expect(sourcesApi.createSources).toHaveBeenCalledWith({
+        channel: {
+          name: 'Clarín',
+          siteUrl: 'https://clarin.com',
+          continent: 'America',
+          country: null,
+          active: true,
+        },
+        sources: [
+          {
+            name: 'Clarín · Política',
+            feedUrl: 'https://clarin.com/rss.xml',
+            iptcCategory: 'politics',
+            language: 'es',
+            active: true,
+          },
+        ],
+      });
+      expect(screen.getByText('Fuente creada con 1 canal(es)')).toBeInTheDocument();
+    });
   });
 
-  it('renders functional group toggle and edit/delete channel buttons', async () => {
-    vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
+  it('opens delete modal and deactivates channel with DELETE /channels/{id}', async () => {
+    const user = userEvent.setup();
+    vi.mocked(sourcesApi.deleteChannel).mockResolvedValueOnce(undefined);
 
     render(<SourcesPage />);
 
     await waitFor(() => {
-      expect(
-        screen.getByLabelText('Activar o desactivar todos los canales de El País'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('El País')).toBeInTheDocument();
     });
 
-    const groupToggle = screen.getByLabelText('Activar o desactivar todos los canales de El País');
-    expect(groupToggle).not.toBeDisabled();
-    expect(groupToggle).toHaveAttribute('aria-checked', 'true');
+    const deleteButtons = screen.getAllByRole('button', { name: 'Eliminar' });
+    await user.click(deleteButtons[0]);
 
-    // Edit and Delete buttons are now functional (backend connected)
-    const editBtn = screen.getByLabelText('Editar canal El País');
-    expect(editBtn).not.toBeDisabled();
+    // Modal with truthful deactivation text
+    expect(screen.getByText('¿Eliminar «El País»?')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Se desactivará la fuente «El País». Se conservan sus canales RSS y sus noticias; podrás reactivarla con el interruptor.',
+      ),
+    ).toBeInTheDocument();
 
-    const deleteBtn = screen.getByLabelText('Eliminar canal El País');
-    expect(deleteBtn).not.toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Desactivar fuente' }));
 
-    // No REQUIERE BACK banners remain
-    expect(screen.queryByText('REQUIERE BACK')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(sourcesApi.deleteChannel).toHaveBeenCalledWith(1);
+      expect(screen.getByText('Fuente «El País» desactivada')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps drawer open and shows error toast when 400 error occurs', async () => {
+    const user = userEvent.setup();
+    vi.mocked(sourcesApi.createSources).mockRejectedValueOnce(
+      new Error('El nombre del canal ya existe'),
+    );
+
+    render(<SourcesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('El País')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: '+ Nueva fuente' }));
+
+    const nameInput = screen.getByLabelText('Nombre');
+    const urlInput = screen.getByLabelText('URL del sitio');
+    const feedInputs = screen.getAllByLabelText('URL RSS');
+
+    await user.type(nameInput, 'El País');
+    await user.type(urlInput, 'https://elpais.com');
+    await user.type(feedInputs[0], 'https://elpais.com/rss/dup.xml');
+
+    await user.click(screen.getByRole('button', { name: 'Crear fuente' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('El nombre del canal ya existe')).toBeInTheDocument();
+      // Drawer is still open
+      expect(screen.getByText('Registrar fuente RSS')).toBeInTheDocument();
+      expect(nameInput).toHaveValue('El País');
+    });
   });
 });

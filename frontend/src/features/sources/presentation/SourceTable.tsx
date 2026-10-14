@@ -1,16 +1,16 @@
 import { Fragment } from 'react';
 import { COUNTRY_BY_CODE } from '../domain/countries';
-import type { ChannelGroup, Source } from '../domain/source';
-import { CONTINENT_LABELS } from '../domain/source';
+import type { ChannelWithSources } from '../domain/source';
+import { CONTINENT_LABELS, IPTC_CATEGORY_LABELS } from '../domain/source';
 
 interface SourceTableProps {
-  channelGroups: ChannelGroup[];
+  channelGroups: ChannelWithSources[];
   openChannelIds: Set<number>;
   onToggleChannelOpen: (channelId: number) => void;
   onToggleSourceActive: (sourceId: number) => void;
   onToggleGroupActive: (groupId: number) => void;
-  onEditSource?: (source: Source) => void;
-  onDeleteChannel?: (group: ChannelGroup) => void;
+  onEditChannel?: (channel: ChannelWithSources) => void;
+  onDeleteChannel?: (channel: ChannelWithSources) => void;
 }
 
 export const SourceTable = ({
@@ -19,7 +19,7 @@ export const SourceTable = ({
   onToggleChannelOpen,
   onToggleSourceActive,
   onToggleGroupActive,
-  onEditSource,
+  onEditChannel,
   onDeleteChannel,
 }: SourceTableProps) => {
   if (channelGroups.length === 0) {
@@ -38,73 +38,72 @@ export const SourceTable = ({
       <table className="t">
         <thead>
           <tr>
-            <th style={{ width: '34px' }} aria-label="Desplegar" />
+            <th style={{ width: '34px' }}></th>
             <th>Fuente</th>
             <th>Idioma</th>
             <th>Continente</th>
             <th className="num">Canales</th>
             <th>Activa</th>
-            <th />
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {channelGroups.map((group) => {
-            const isOpen = openChannelIds.has(group.id);
-            const firstFeed = group.sources[0];
-            const countryInfo = group.country ? COUNTRY_BY_CODE.get(group.country) : null;
+          {channelGroups.map((s) => {
+            const isOpen = openChannelIds.has(s.id);
+            const countryInfo = s.country ? COUNTRY_BY_CODE.get(s.country) : null;
 
             return (
-              <Fragment key={`group-${group.id}`}>
+              <Fragment key={`channel-${s.id}`}>
                 <tr>
                   <td>
                     <button
                       className="btn ghost sm"
-                      onClick={() => onToggleChannelOpen(group.id)}
+                      onClick={() => onToggleChannelOpen(s.id)}
                       aria-expanded={isOpen}
-                      aria-label={`Ver canales de ${group.name}`}
+                      aria-label="Ver canales"
                     >
                       {isOpen ? '▾' : '▸'}
                     </button>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{group.name}</div>
-                    <div className="meta">
-                      {group.siteUrl ? (
-                        <a href={group.siteUrl} target="_blank" rel="noopener noreferrer">
-                          {group.siteUrl}
-                        </a>
-                      ) : (
-                        '—'
-                      )}
-                    </div>
+                    <div style={{ fontWeight: 600 }}>{s.name}</div>
+                    <div className="meta">{s.siteUrl || '—'}</div>
                   </td>
                   <td>
-                    <span className="pill">{firstFeed?.language.toUpperCase() ?? '—'}</span>
+                    {s.languages.length === 0 ? (
+                      <span className="meta">—</span>
+                    ) : (
+                      <span className="row" style={{ gap: '4px' }}>
+                        {s.languages.map((lang) => (
+                          <span key={lang} className="pill">
+                            {lang.toUpperCase()}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </td>
-                  <td>{CONTINENT_LABELS[group.continent]}</td>
-                  <td className="num">{group.sources.length}</td>
+                  <td>{CONTINENT_LABELS[s.continent]}</td>
+                  <td className="num">{s.sources.length}</td>
                   <td>
                     <button
-                      className={`sw ${group.isActive ? 'on' : ''}`}
-                      onClick={() => onToggleGroupActive(group.id)}
+                      className={`sw ${s.active ? 'on' : ''}`}
+                      onClick={() => onToggleGroupActive(s.id)}
                       role="switch"
-                      aria-checked={group.isActive}
-                      aria-label={`Activar o desactivar todos los canales de ${group.name}`}
-                    />
+                      aria-checked={s.active}
+                      aria-label={`Activar ${s.name}`}
+                    ></button>
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button
                       className="btn ghost sm"
-                      onClick={() => firstFeed && onEditSource?.(firstFeed)}
-                      aria-label={`Editar canal ${group.name}`}
+                      onClick={() => onEditChannel?.(s)}
                     >
                       Editar
                     </button>
                     <button
                       className="btn ghost sm"
                       style={{ color: 'var(--neg)' }}
-                      onClick={() => onDeleteChannel?.(group)}
-                      aria-label={`Eliminar canal ${group.name}`}
+                      onClick={() => onDeleteChannel?.(s)}
                     >
                       Eliminar
                     </button>
@@ -113,7 +112,7 @@ export const SourceTable = ({
 
                 {isOpen && (
                   <tr className="sub">
-                    <td />
+                    <td></td>
                     <td colSpan={6} style={{ padding: '4px 12px 14px' }}>
                       <table
                         className="t"
@@ -132,42 +131,45 @@ export const SourceTable = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {group.sources.map((feed) => (
-                            <tr key={`feed-${feed.id}`}>
-                              <td className="mono" style={{ fontSize: '12.5px' }}>
-                                <a
-                                  href={feed.feedUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title={feed.feedUrl}
-                                >
-                                  {feed.feedUrl}
-                                </a>
-                              </td>
-                              <td>{feed.iptcCategory}</td>
-                              <td>
-                                {countryInfo ? (
-                                  <span>
-                                    {countryInfo.name}{' '}
-                                    <span className="meta">{countryInfo.code}</span>
-                                  </span>
-                                ) : group.country ? (
-                                  <span>{group.country}</span>
-                                ) : (
-                                  <span className="meta">—</span>
-                                )}
-                              </td>
-                              <td>
-                                <button
-                                  className={`sw ${feed.active ? 'on' : ''}`}
-                                  onClick={() => onToggleSourceActive(feed.id)}
-                                  role="switch"
-                                  aria-checked={feed.active}
-                                  aria-label={`Activar o desactivar ${feed.name}`}
-                                />
+                          {s.sources.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="meta" style={{ textAlign: 'center', padding: '12px' }}>
+                                Sin canales RSS registrados
                               </td>
                             </tr>
-                          ))}
+                          ) : (
+                            s.sources.map((c) => (
+                              <tr key={`source-${c.id}`}>
+                                <td className="mono" style={{ fontSize: '12.5px' }}>
+                                  {c.feedUrl}
+                                </td>
+                                <td>{IPTC_CATEGORY_LABELS[c.category] || c.category}</td>
+                                <td>
+                                  {countryInfo ? (
+                                    <>
+                                      {countryInfo.name}{' '}
+                                      <span className="meta">{countryInfo.code}</span>
+                                    </>
+                                  ) : s.country ? (
+                                    <>
+                                      {s.country} <span className="meta">{s.country}</span>
+                                    </>
+                                  ) : (
+                                    <span className="meta">—</span>
+                                  )}
+                                </td>
+                                <td>
+                                  <button
+                                    className={`sw ${c.active ? 'on' : ''}`}
+                                    onClick={() => onToggleSourceActive(c.id)}
+                                    role="switch"
+                                    aria-checked={c.active}
+                                    aria-label="Activar canal"
+                                  ></button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </td>

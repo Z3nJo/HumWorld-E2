@@ -1,7 +1,18 @@
-export interface ChannelSummaryDto {
+export interface ChannelDto {
   id_canal: number;
   nombre: string;
   continente: string;
+  pais?: string | null;
+  url_sitio?: string | null;
+  activo?: boolean;
+  fecha_alta?: string;
+}
+
+export type ChannelSummaryDto = ChannelDto;
+
+export interface ChannelPatchDto {
+  nombre?: string;
+  continente?: string;
   pais?: string | null;
   url_sitio?: string | null;
   activo?: boolean;
@@ -15,7 +26,9 @@ export interface SourceResponseDto {
   categoria_iptc: string;
   idioma: string;
   activa: boolean;
-  canal: ChannelSummaryDto;
+  fecha_ultima_captura?: string | null;
+  fecha_alta?: string;
+  canal?: ChannelSummaryDto;
 }
 
 export interface SourceBatchCreateDto {

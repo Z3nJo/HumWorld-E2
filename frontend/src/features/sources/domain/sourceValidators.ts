@@ -11,14 +11,11 @@ export interface SourceValidationErrors {
   }>;
 }
 
+export const URL_REGEX = /^https?:\/\/\S+\.\S+/;
+
 export function isValidHttpUrl(str: string): boolean {
   if (!str) return false;
-  try {
-    const url = new URL(str);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+  return URL_REGEX.test(str.trim());
 }
 
 export function validateCreateBatch(input: CreateSourceBatchInput): SourceValidationErrors {
@@ -26,31 +23,25 @@ export function validateCreateBatch(input: CreateSourceBatchInput): SourceValida
 
   if (!input.channelId) {
     if (!input.channel?.name || !input.channel.name.trim()) {
-      errors.channelName = 'El nombre del medio/canal es obligatorio';
+      errors.channelName = 'Campo obligatorio';
     }
     if (input.channel?.siteUrl && input.channel.siteUrl.trim() && !isValidHttpUrl(input.channel.siteUrl.trim())) {
-      errors.channelSiteUrl = 'URL del sitio no válida (debe comenzar con http:// o https://)';
+      errors.channelSiteUrl = 'URL no válida';
     }
     if (!input.channel?.continent) {
-      errors.channelContinent = 'El continente es obligatorio';
+      errors.channelContinent = 'Campo obligatorio';
     }
   }
 
   if (!input.sources || input.sources.length === 0) {
-    errors.channelName = errors.channelName || 'Debe agregar al menos un feed RSS';
+    errors.channelName = errors.channelName || 'Campo obligatorio';
   } else {
     const sourceErrors = input.sources.map((s) => {
       const err: { name?: string; feedUrl?: string; iptcCategory?: string } = {};
-      if (!s.name || !s.name.trim()) {
-        err.name = 'El nombre del feed es obligatorio';
-      }
       if (!s.feedUrl || !s.feedUrl.trim()) {
-        err.feedUrl = 'La URL del feed RSS es obligatoria';
+        err.feedUrl = 'URL RSS no válida';
       } else if (!isValidHttpUrl(s.feedUrl.trim())) {
-        err.feedUrl = 'URL RSS no válida (debe comenzar con http:// o https://)';
-      }
-      if (!s.iptcCategory) {
-        err.iptcCategory = 'La categoría IPTC es obligatoria';
+        err.feedUrl = 'URL RSS no válida';
       }
       return err;
     });

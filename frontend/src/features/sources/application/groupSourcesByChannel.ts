@@ -1,30 +1,35 @@
-import type { ChannelGroup, Source } from '../domain/source';
+import type { Channel, ChannelWithSources, Language, RssSource } from '../domain/source';
 
-export function groupSourcesByChannel(sources: Source[]): ChannelGroup[] {
-  const channelMap = new Map<number, ChannelGroup>();
-
+export function deriveChannelLanguages(sources: RssSource[]): Language[] {
+  const langs = new Set<Language>();
   for (const src of sources) {
-    let group = channelMap.get(src.channelId);
-    if (!group) {
-      group = {
-        id: src.channel.id,
-        name: src.channel.name,
-        continent: src.channel.continent,
-        country: src.channel.country ?? null,
-        siteUrl: src.channel.siteUrl ?? null,
-        sources: [],
-        activeCount: 0,
-        isActive: src.channel.active ?? false,
-      };
-      channelMap.set(src.channelId, group);
-    }
-    group.sources.push(src);
-    if (src.active) {
-      group.activeCount += 1;
+    if (src.language) {
+      langs.add(src.language);
     }
   }
+  return Array.from(langs).sort();
+}
 
-  return Array.from(channelMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
-  );
+export function groupSourcesByChannel(
+  channels: Channel[] = [],
+  sources: RssSource[] = [],
+): ChannelWithSources[] {
+  const sourcesByChannelId = new Map<number, RssSource[]>();
+
+  for (const src of sources || []) {
+    const list = sourcesByChannelId.get(src.channelId) ?? [];
+    list.push(src);
+    sourcesByChannelId.set(src.channelId, list);
+  }
+
+  const result: ChannelWithSources[] = (channels || []).map((ch) => {
+    const chSources = sourcesByChannelId.get(ch.id) ?? [];
+    return {
+      ...ch,
+      sources: chSources,
+      languages: deriveChannelLanguages(chSources),
+    };
+  });
+
+  return result.sort((a, b) => a.id - b.id);
 }
