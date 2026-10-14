@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useSources } from '../../features/sources/application/useSources';
 import type {
+  ChannelGroup,
   Continent,
   CreateSourceBatchInput,
   ReplaceSourceInput,
@@ -31,6 +32,7 @@ export const SourcesPage = () => {
     addSourcesBatch,
     updateSourceItem,
     removeSourceItem,
+    removeChannelGroup,
     reload,
   } = useSources(continentFilter, statusFilter);
 
@@ -40,8 +42,9 @@ export const SourcesPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<Source | null>(null);
 
-  // Delete modal state
+  // Delete modal state — individual source or whole channel group
   const [deletingSource, setDeletingSource] = useState<Source | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<ChannelGroup | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleOpenCreateDrawer = () => {
@@ -129,6 +132,21 @@ export const SourcesPage = () => {
     }
   };
 
+  const handleConfirmDeleteGroup = async () => {
+    if (!deletingGroup) return;
+    setDeleting(true);
+    try {
+      await removeChannelGroup(deletingGroup.id);
+      addToast(`Canal «${deletingGroup.name}» y sus fuentes eliminados`, 'success');
+      setDeletingGroup(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar el canal';
+      addToast(msg, 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -181,13 +199,7 @@ export const SourcesPage = () => {
           </button>
         </div>
 
-        <div className="backend-note" role="note">
-          <strong>REQUIERE BACK</strong>
-          <span>
-            El backend actual permite gestionar fuentes RSS, pero todavía no expone estado propio
-            ni país para los canales. Esas capacidades se muestran como no disponibles.
-          </span>
-        </div>
+
 
         {loading && (
           <div className="card" style={{ padding: '24px' }}>
@@ -214,6 +226,8 @@ export const SourcesPage = () => {
             onToggleChannelOpen={toggleChannelOpen}
             onToggleSourceActive={handleToggleActive}
             onToggleGroupActive={handleToggleGroupActive}
+            onEditSource={handleOpenEditDrawer}
+            onDeleteChannel={(group) => setDeletingGroup(group)}
           />
         )}
       </div>
@@ -230,6 +244,15 @@ export const SourcesPage = () => {
         source={deletingSource}
         onClose={() => setDeletingSource(null)}
         onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
+
+      {/* Modal: eliminar canal completo (fuente + todos sus feeds) */}
+      <DeleteSourceModal
+        source={null}
+        channelGroup={deletingGroup}
+        onClose={() => setDeletingGroup(null)}
+        onConfirm={handleConfirmDeleteGroup}
         loading={deleting}
       />
     </>
