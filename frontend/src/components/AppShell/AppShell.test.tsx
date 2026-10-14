@@ -15,9 +15,9 @@ describe('AppShell', () => {
       'href',
       '/dictionary',
     );
-    expect(screen.getByRole('link', { name: /Parámetros/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Fuentes y canales/i })).toHaveAttribute(
       'href',
-      '/parametros',
+      '/fuentes',
     );
   });
 });
