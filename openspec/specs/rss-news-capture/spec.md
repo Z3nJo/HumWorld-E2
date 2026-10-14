@@ -20,15 +20,23 @@ El sistema SHALL programar la captura automatica usando el valor persistido de `
 - **THEN** el sistema no inicia una segunda instancia concurrente del mismo job
 
 ### Requirement: Recorrido de fuentes activas
-Cada ejecucion automatica SHALL consultar y procesar todas las fuentes RSS activas al comenzar el recorrido y MUST excluir las fuentes inactivas.
+Cada ejecucion automatica SHALL consultar y procesar solamente las fuentes RSS con `activa=true` cuyo canal asociado tenga `activo=true` al comenzar el recorrido. La ejecucion MUST excluir tanto las fuentes inactivas como las fuentes pertenecientes a canales inactivos.
 
 #### Scenario: Capturar todas las fuentes activas
-- **WHEN** comienza una ejecucion con varias fuentes activas
+- **WHEN** comienza una ejecucion con varias fuentes activas asociadas a canales activos
 - **THEN** el sistema intenta procesar cada una de esas fuentes
 
 #### Scenario: Excluir una fuente inactiva
-- **WHEN** una fuente esta registrada con `activa` igual a `false`
+- **WHEN** una fuente esta registrada con `activa=false` aunque su canal este activo
 - **THEN** el sistema no descarga ni procesa su feed durante la ejecucion
+
+#### Scenario: Excluir un canal inactivo
+- **WHEN** una fuente tiene `activa=true` pero su canal asociado tiene `activo=false`
+- **THEN** el sistema no descarga ni procesa su feed durante la ejecucion
+
+#### Scenario: Reactivar un canal sin alterar las fuentes
+- **WHEN** un canal vuelve a `activo=true`
+- **THEN** las siguientes ejecuciones vuelven a considerar solamente sus fuentes que conservan `activa=true`
 
 ### Requirement: Normalizacion y persistencia de noticias RSS
 El sistema SHALL persistir cada entrada RSS valida con `id_fuente`, `guid_origen`, `titulo`, `descripcion` opcional, `url`, el idioma heredado de la fuente, `fecha_publicacion` opcional y `fecha_registro`. `fecha_registro` SHALL representar la fecha y hora en que la noticia fue almacenada. Al completar correctamente el procesamiento de la fuente, cada noticia nueva SHALL tener `fecha_analisis` informada y `valor_humor` calculado conforme a ADR-001 o nulo si no hay términos reconocidos.
@@ -124,22 +132,27 @@ La logica de captura MUST poder probarse sin acceso a Internet mediante entradas
 - **THEN** se comprueban la persistencia de noticias, sus fechas, la unicidad compuesta y la actualizacion de la fuente
 
 ### Requirement: Captura manual de fuentes RSS
-El sistema SHALL exponer `POST /api/v1/sources/capture` para ejecutar inmediatamente la captura RSS de todas las fuentes activas o de un subconjunto seleccionado mediante `source_ids`.
+El sistema SHALL exponer `POST /api/v1/sources/capture` para ejecutar inmediatamente la captura RSS de todas las fuentes elegibles o de un subconjunto seleccionado mediante `source_ids`. Una fuente SHALL ser elegible solamente cuando tanto ella como su canal asociado esten activos.
 
 #### Scenario: Capturar todas las fuentes activas
 - **WHEN** se solicita `POST /api/v1/sources/capture` sin identificadores
-- **THEN** el sistema procesa todas las fuentes activas
+- **THEN** el sistema procesa todas las fuentes activas asociadas a canales activos
 - **AND** responde con el resumen de la ejecución
 
 #### Scenario: Capturar fuentes seleccionadas
-- **WHEN** se solicita el endpoint con una lista válida de `source_ids`
-- **THEN** el sistema procesa solo las fuentes activas seleccionadas
+- **WHEN** se solicita el endpoint con una lista de `source_ids` existentes, activos y asociados a canales activos
+- **THEN** el sistema procesa solamente esas fuentes
 - **AND** conserva la deduplicación y actualización de fecha de captura existentes
 
 #### Scenario: Ignorar fuentes inactivas
-- **WHEN** una fuente indicada existe pero está inactiva
+- **WHEN** una fuente indicada existe pero tiene `activa=false`
 - **THEN** el sistema no descarga su feed
-- **AND** la respuesta la identifica como omitida
+- **AND** la respuesta incluye su identificador en `skipped_source_ids`
+
+#### Scenario: Omitir una fuente seleccionada de canal inactivo
+- **WHEN** una fuente indicada tiene `activa=true` pero su canal asociado tiene `activo=false`
+- **THEN** el sistema no descarga su feed
+- **AND** la respuesta incluye su identificador en `skipped_source_ids`
 
 #### Scenario: Rechazar fuente inexistente
 - **WHEN** la lista contiene un identificador que no existe

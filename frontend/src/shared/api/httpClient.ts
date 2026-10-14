@@ -40,9 +40,25 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(resolveUrl(path), { ...init, headers });
   if (!response.ok) {
     const details = await readErrorDetails(response);
-    const message = typeof details === 'object' && details !== null && 'detail' in details
-      ? String((details as { detail: unknown }).detail)
-      : `Error del servidor (${response.status})`;
+    let message = `Error del servidor (${response.status})`;
+    if (typeof details === 'object' && details !== null && 'detail' in details) {
+      const detail = (details as { detail: unknown }).detail;
+      if (typeof detail === 'string') {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail
+          .map((item) => {
+            if (typeof item === 'string') return item;
+            if (typeof item === 'object' && item !== null && 'msg' in item) {
+              return String((item as { msg: unknown }).msg);
+            }
+            return String(item);
+          })
+          .join(', ');
+      } else if (detail !== undefined && detail !== null) {
+        message = String(detail);
+      }
+    }
     throw new HttpError(message, response.status, details);
   }
 
