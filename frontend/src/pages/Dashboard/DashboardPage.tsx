@@ -37,6 +37,19 @@ function toISODate(d: Date): string {
 
 const MONTH_NAMES = ['', '', '', '', '', '', '', '', 'sep', 'oct'];
 
+// Actual news distribution in the backend database
+const DB_NEWS_COUNTS: Record<string, number> = {
+  '2026-10-06': 125,
+  '2026-10-07': 9,
+  '2026-10-08': 12,
+  '2026-10-09': 14,
+  '2026-10-10': 7,
+  '2026-10-11': 9,
+  '2026-10-13': 30,
+  '2026-10-14': 6,
+  '2026-10-15': 10,
+};
+
 export const DashboardPage: React.FC = () => {
   const [continent, setContinent] = useState<Continent | null>(null);
   const [pais, setPais] = useState<string | null>(null);
@@ -93,19 +106,6 @@ export const DashboardPage: React.FC = () => {
       suficiente: totalNews >= 3,
     };
   }, [data, continent, pais]);
-
-// Actual news distribution in the backend database
-const DB_NEWS_COUNTS: Record<string, number> = {
-  '2026-10-06': 125,
-  '2026-10-07': 9,
-  '2026-10-08': 12,
-  '2026-10-09': 14,
-  '2026-10-10': 7,
-  '2026-10-11': 9,
-  '2026-10-13': 30,
-  '2026-10-14': 6,
-  '2026-10-15': 10,
-};
 
 // Construct daily timeline series using real API aggregates when available
   const timelineSeries: TimelinePoint[] = useMemo(() => {

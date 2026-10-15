@@ -15,7 +15,7 @@ const colorScale = d3
   .scaleLinear<string>()
   .domain([-1, -0.5, 0, 0.5, 1])
   .range(['#bf4f22', '#e2a383', '#e6e0d2', '#93b1d6', '#285f9f'])
-  .interpolate(d3.interpolateLab as any)
+  .interpolate(d3.interpolateLab)
   .clamp(true);
 
 interface DashboardTimelineProps {
@@ -146,7 +146,7 @@ export const DashboardTimeline: React.FC<DashboardTimelineProps> = ({
       .attr('fill', 'none')
       .attr('stroke', '#1c1f26')
       .attr('stroke-width', 1.6)
-      .attr('d', lineGenerator as any);
+      .attr('d', lineGenerator);
 
     // Data points circles
     svg

@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useDashboard } from './useDashboard';
 import { fetchDashboard, fetchInfluentialTerms } from '../infrastructure/dashboardApi';
 import type { DashboardData, InfluentialTermsData } from '../domain/dashboard';
+import type { Continent } from '../../sources/domain/source';
 
 vi.mock('../infrastructure/dashboardApi', () => ({
   fetchDashboard: vi.fn(),
@@ -95,9 +96,12 @@ describe('useDashboard', () => {
     mockedFetchDashboard.mockResolvedValue(dummyDashboard);
     mockedFetchInfluentialTerms.mockResolvedValue(dummyTerms);
 
-    const { result, rerender } = renderHook(
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useDashboard>,
+      { cont: Continent | null; p: string | null }
+    >(
       ({ cont, p }) => useDashboard('2026-10-01', '2026-10-01', cont, p),
-      { initialProps: { cont: null as any, p: null as any } }
+      { initialProps: { cont: null, p: null } }
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));

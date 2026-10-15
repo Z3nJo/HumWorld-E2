@@ -10,17 +10,27 @@ import {
   CONTINENT_OVERRIDES,
   formatHumor,
 } from '../domain/countries';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { Topology, GeometryCollection } from 'topojson-specification';
 
-let cachedWorld: any = null;
+export interface CountryProperties {
+  name: string;
+  cont?: Continent;
+}
+
+export type CountryFeature = Feature<Geometry, CountryProperties>;
+export type WorldFeatureCollection = FeatureCollection<Geometry, CountryProperties>;
+
+let cachedWorld: WorldFeatureCollection | null = null;
 
 const colorScale = d3
   .scaleLinear<string>()
   .domain([-1, -0.5, 0, 0.5, 1])
   .range(['#bf4f22', '#e2a383', '#e6e0d2', '#93b1d6', '#285f9f'])
-  .interpolate(d3.interpolateLab as any)
+  .interpolate(d3.interpolateLab)
   .clamp(true);
 
-function determineContinent(feature: any): Continent {
+function determineContinent(feature: CountryFeature): Continent {
   const name = feature.properties?.name;
   if (name && CONTINENT_OVERRIDES[name]) {
     return CONTINENT_OVERRIDES[name];
@@ -65,9 +75,9 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
       if (!cachedWorld) {
         try {
           const resp = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json');
-          const atlas = await resp.json();
-          const feat = (topojson.feature(atlas, atlas.objects.countries as any) as any);
-          feat.features.forEach((f: any) => {
+          const atlas = (await resp.json()) as Topology<{ countries: GeometryCollection<CountryProperties> }>;
+          const feat = topojson.feature(atlas, atlas.objects.countries) as unknown as WorldFeatureCollection;
+          feat.features.forEach((f: CountryFeature) => {
             f.properties.cont = determineContinent(f);
           });
           cachedWorld = feat;
@@ -79,7 +89,8 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         }
       }
 
-      if (isCancelled || !containerRef.current) return;
+      if (isCancelled || !containerRef.current || !cachedWorld) return;
+      const world = cachedWorld;
 
       // Group aggregates by continent and country
       const contAggs: Record<string, DashboardAggregate> = {};
@@ -138,26 +149,26 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
       pp.append('rect').attr('width', 2.2).attr('height', 6).attr('fill', '#fff').attr('opacity', 0.85);
 
       // Sphere base
-      svg.append('path').datum({ type: 'Sphere' }).attr('d', path as any).attr('fill', '#f0ece3').attr('stroke', '#d9d2c3');
+      svg.append('path').datum<d3.GeoPermissibleObjects>({ type: 'Sphere' }).attr('d', path).attr('fill', '#f0ece3').attr('stroke', '#d9d2c3');
 
       // Graticule
       svg
         .append('path')
-        .datum(d3.geoGraticule10())
-        .attr('d', path as any)
+        .datum<d3.GeoPermissibleObjects>(d3.geoGraticule10())
+        .attr('d', path)
         .attr('fill', 'none')
         .attr('stroke', '#e2dccf')
         .attr('stroke-width', 0.5);
 
-      const getDatum = (f: any): DashboardAggregate | null => {
+      const getDatum = (f: CountryFeature): DashboardAggregate | null => {
         if (continent && f.properties.cont === continent) {
           const iso = TOPO_TO_ISO[f.properties.name];
           return iso ? countryAggs[iso] || null : null;
         }
-        return contAggs[f.properties.cont] || null;
+        return f.properties.cont ? contAggs[f.properties.cont] || null : null;
       };
 
-      const getFill = (f: any): string => {
+      const getFill = (f: CountryFeature): string => {
         const d = getDatum(f);
         return d && d.noticias > 0 && d.humor !== null ? colorScale(d.humor) : 'url(#hnd)';
       };
@@ -168,30 +179,30 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
       svg
         .append('g')
         .selectAll('path')
-        .data(cachedWorld.features)
+        .data(world.features)
         .join('path')
         .attr('class', 'clickable')
-        .attr('d', path as any)
+        .attr('d', path)
         .attr('fill', getFill)
-        .attr('stroke', (f: any) => {
+        .attr('stroke', (f: CountryFeature) => {
           const iso = TOPO_TO_ISO[f.properties.name];
           return pais && iso === pais ? '#1c1f26' : '#fcfbf7';
         })
-        .attr('stroke-width', (f: any) => {
+        .attr('stroke-width', (f: CountryFeature) => {
           const iso = TOPO_TO_ISO[f.properties.name];
           return pais && iso === pais ? 1.8 : 0.5;
         })
-        .attr('opacity', (f: any) => {
+        .attr('opacity', (f: CountryFeature) => {
           return continent && f.properties.cont !== continent ? 0.35 : 1;
         })
         .style('cursor', 'pointer')
-        .on('mousemove', (e: MouseEvent, f: any) => {
+        .on('mousemove', (e: MouseEvent, f: CountryFeature) => {
           const d = getDatum(f);
           const [x, y] = d3.pointer(e, el);
           const iso = TOPO_TO_ISO[f.properties.name];
           const countryName = iso ? COUNTRIES_BY_ISO[iso]?.es : f.properties.name;
           const isSameContinent = continent === f.properties.cont;
-          const label = isSameContinent ? (countryName || f.properties.name) : (f.properties.cont as string);
+          const label = isSameContinent ? (countryName || f.properties.name) : ((f.properties.cont ?? '') as string);
 
           tip
             .style('display', 'block')
@@ -212,7 +223,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .on('mouseleave', () => {
           tip.style('display', 'none');
         })
-        .on('click', (_e: MouseEvent, f: any) => {
+        .on('click', (_e: MouseEvent, f: CountryFeature) => {
           const c = f.properties.cont as Continent;
           const iso = TOPO_TO_ISO[f.properties.name];
 
@@ -234,7 +245,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('pointer-events', 'none')
         .selectAll('path')
         .data(
-          cachedWorld.features.filter((f: any) => {
+          world.features.filter((f: CountryFeature) => {
             const d = getDatum(f);
             return (
               d &&
@@ -245,7 +256,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           })
         )
         .join('path')
-        .attr('d', path as any)
+        .attr('d', path)
         .attr('fill', 'url(#hpr)')
         .attr('stroke', '#1c1f26')
         .attr('stroke-dasharray', '3 2')
@@ -272,7 +283,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           if (!p.pais) return;
           const info = COUNTRIES_BY_ISO[p.pais];
           if (!info) return;
-          const feat = cachedWorld.features.find((f: any) => f.properties.name === info.topo);
+          const feat = world.features.find((f: CountryFeature) => f.properties.name === info.topo);
           if (!feat) return;
           const centroid = path.centroid(feat);
           if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return;
