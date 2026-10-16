@@ -136,19 +136,30 @@ Ordenar por visitas, comparticiones o relevancia del medio.
 |---|---|
 | **Filtro seleccionado** | Combinación de ventana temporal `[fecha_desde, fecha_hasta]` (obligatoria, días completos en UTC), `continente` (opcional) y `pais` (opcional, código de dos letras, exige `continente`). Es el mismo filtro que usan los demás endpoints de `/dashboards`. |
 | **Noticia candidata** | Noticia evaluable (`valor_humor IS NOT NULL`, C-03) cuya `fecha_registro` cae en `[fecha_desde 00:00 UTC, fecha_hasta + 1 día 00:00 UTC)` y cuyo canal pertenece al continente y país del filtro, si se indicaron (C-04, C-05). |
+| **Noticia representante** | La candidata que representa una URL exacta dentro del filtro: la de `fecha_registro` más antigua; a igual fecha, la de menor `id_noticia`. |
 | **Influencia** | `|valor_humor(n)|`, en `[0, 1]`, sobre el valor persistido con tres decimales. |
-| **Noticia influyente** | Cada una de las, como máximo, 10 primeras noticias candidatas según el orden de la secc. 4.3. |
+| **Noticia influyente** | Cada una de las, como máximo, 10 primeras noticias representantes según el orden de la secc. 4.3. |
 
 ### 4.2 Reglas normativas
 
 - **I-1 — Solo noticias evaluables.** Una noticia sin términos reconocidos no es candidata, ni siquiera con influencia 0.
 - **I-2 — Positivas y negativas compiten juntas.** El orden usa el valor absoluto; el signo se devuelve en la respuesta para que el frontend lo represente (color o etiqueta), sin reordenar.
-- **I-3 — Máximo 10.** Si hay menos de 10 candidatas, se devuelven todas. Si no hay ninguna, la lista va vacía; no es un error.
+- **I-3 — Máximo 10.** La deduplicación por URL se resuelve antes del límite. Si hay menos de 10 noticias representantes, se devuelven todas; si no hay ninguna, la lista va vacía; no es un error.
 - **I-4 — Filtro geográfico estricto.** Con `pais`, solo cuentan las noticias de canales con ese país. Las noticias de canales con `pais` nulo solo aparecen cuando no se filtra por país (igual que `ADR-001`, regla H-3).
 - **I-5 — El criterio vive en el backend.** El frontend muestra el listado en el orden recibido y no recalcula ni reordena (C-06).
 - **I-6 — Instantánea.** Como `valor_humor` no se recalcula al editar el diccionario (`ADR-001`, regla H-7), el listado de un periodo pasado es estable.
 
 ### 4.3 Orden y desempate
+
+Primero, sobre las candidatas ya filtradas, se selecciona una representante por cada valor exacto de `url`:
+
+```
+PARTITION BY url
+ORDER BY     fecha_registro ASC,  -- primera captura de la URL
+             id_noticia     ASC   -- desempate de representación
+```
+
+Después, las representantes se ordenan y limitan:
 
 ```
 ORDER BY  ABS(valor_humor)  DESC,   -- influencia
@@ -157,7 +168,7 @@ ORDER BY  ABS(valor_humor)  DESC,   -- influencia
 LIMIT 10
 ```
 
-El segundo criterio favorece la noticia más reciente porque es la que el usuario espera ver primero en un dashboard. El tercero no tiene significado de negocio: solo garantiza que el orden sea total y, por tanto, determinista (D-D).
+La primera fase evita que una misma URL ocupe más de una posición, sin alterar la trazabilidad de sus capturas por fuente. En la segunda, el criterio de influencia conserva la semántica original: a igual influencia se favorece la noticia más reciente, y `id_noticia` solo garantiza un orden total y determinista (D-D).
 
 ### 4.4 Contrato de la respuesta
 
@@ -167,7 +178,7 @@ La respuesta repite el filtro aplicado y devuelve `noticias`, ordenadas según l
 
 ### 4.5 Ubicación en la arquitectura
 
-El orden y el límite se ejecutan en la consulta del repositorio (`DashboardRepository.influential_news`) para que PostgreSQL devuelva solo 10 filas, en lugar de cargar todas las candidatas en memoria y ordenarlas en el servicio. Es una consulta, no una regla nueva: el servicio valida el filtro y el repositorio aplica el orden que fija este ADR. Respeta `ADR-000` (el servicio no consulta la base de datos; el repositorio no decide qué filtro es válido).
+La selección de representantes, el orden y el límite se ejecutan en la consulta del repositorio (`DashboardRepository.influential_news`) para que PostgreSQL devuelva solo 10 filas, en lugar de cargar candidatas en memoria. El servicio valida el filtro y el repositorio aplica la selección y el orden que fija este ADR. Respeta `ADR-000` (el servicio no consulta la base de datos; el repositorio no decide qué filtro es válido).
 
 ---
 
@@ -227,11 +238,24 @@ Estos criterios se incorporan a la verificación de `E3-H02`.
 
 ---
 
-## 8. Supuestos y puntos abiertos
+## 8. Supuestos, verificaciones y puntos abiertos
 
 1. **Observación de proceso.** El endpoint `GET /api/v1/dashboards/noticias-influyentes` y su consumo en el frontend ya están en `main` (PR #66, commit `f35c3a9`), con el orden y el límite que fija la secc. 4.3. Este ADR **ratifica** esa implementación; no exige cambios de código. La implementación se adelantó a la aprobación del ADR, al contrario de lo previsto en la Planificación v2. `E3-H02` no debe darse por terminada hasta que este ADR esté aprobado.
 2. **Pruebas pendientes.** A la fecha de redacción, `backend/tests/test_dashboards_postgresql.py` y `backend/tests/test_dashboard_evolution.py` cubren el orden por valor absoluto, la ventana UTC, los nulos y los filtros (C-V1, C-V4). **No hay prueba del desempate (C-V2) ni del límite de 10 (C-V3).** Deben añadirse antes de cerrar `E3-H02`. Seguimiento: issue #67.
-3. **Punto abierto — duplicados entre fuentes.** La unicidad de `NOTICIA` es `(id_fuente, guid_origen)`, no la URL. Si dos fuentes publican la misma noticia, puede aparecer dos veces en el listado. Este ADR no deduplica; se revisa con datos reales junto al riesgo R-1, y si ocurre, la deduplicación por `url` se decide en una revisión de este ADR. Seguimiento: issue #68.
+3. **Seguimiento reabierto — duplicados entre fuentes.** La unicidad de `NOTICIA` se mantiene en `(id_fuente, guid_origen)`, no en la URL. El 16 de octubre de 2026 se consultaron inicialmente las capturas presentes en PostgreSQL mediante:
+
+   ```sql
+   SELECT url, COUNT(*) AS total
+   FROM noticia
+   WHERE url IS NOT NULL
+   GROUP BY url
+   HAVING COUNT(*) > 1
+   ORDER BY total DESC, url;
+   ```
+
+   La consulta devolvió **0 filas** en esa instantánea. Posteriormente, una reproducción controlada creó dos noticias evaluables de fuentes distintas con la URL `https://example.test/noticia-duplicada-prueba`, `valor_humor = -1,000` y fechas de registro `2026-10-10` e `2026-10-12`. El endpoint devolvió ambas filas en el listado, con la más reciente primero conforme al desempate de la secc. 4.3. Por tanto, issue #68 queda **reabierto**.
+
+   **Decisión:** el listado deduplicará por el valor exacto de `url` después de aplicar el rango y los filtros geográficos. Para cada URL conservará la noticia con `fecha_registro` más antigua; a igual fecha, la de menor `id_noticia`. Sobre esas representantes aplicará el orden de la secc. 4.3 y `LIMIT 10`. Esta regla no cambia la unicidad de captura ni elimina filas de `NOTICIA`; solo evita que un artículo ocupe varios puestos del ranking. La igualdad de URL es textual: no se normalizan parámetros, redirecciones ni mayúsculas.
 
 ---
 
@@ -251,4 +275,6 @@ Estos criterios se incorporan a la verificación de `E3-H02`.
 
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
+| 1.2 | 2026-10-16 | Matías Santos | Se reabre issue #68 tras reproducción controlada de dos fuentes con la misma URL en el ranking. Se decide deduplicar por URL exacta dentro del filtro, conservando la captura más antigua y, a igual fecha, el menor identificador; el orden y límite se aplican después. |
+| 1.1 | 2026-10-16 | Matías Santos | Verificación de issue #68: la consulta de URLs repetidas en las capturas PostgreSQL devolvió 0 filas. Se cierra el seguimiento como no reproducido; no se modifica la unicidad de captura ni el ranking. |
 | 1.0 | 2026-10-16 | Matías Santos | Redacción inicial. Formaliza `D-05` y `D-06`; fija candidatas, filtro, orden con desempate, límite de 10, contrato de respuesta y reglas I-1 a I-6. Responde al punto abierto 3 de `ADR-001`. Estado: **Propuesto**. |

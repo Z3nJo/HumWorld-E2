@@ -92,16 +92,30 @@ class DashboardRepository:
         self, *, start_at: datetime, end_at: datetime,
         continent: str | None, country: str | None,
     ) -> list[InfluentialNewsRecord]:
-        statement = self._news_query(
+        candidates = self._news_query(
             start_at=start_at, end_at=end_at, continent=continent, country=country,
         ).with_only_columns(
             News.id_noticia, News.titulo, News.url,
             Channel.nombre.label("canal"), Channel.continente, Channel.pais,
             News.fecha_registro, News.valor_humor,
-        ).order_by(
-            func.abs(News.valor_humor).desc(),
-            News.fecha_registro.desc(),
-            News.id_noticia.asc(),
+            func.row_number().over(
+                partition_by=News.url,
+                order_by=(News.fecha_registro.asc(), News.id_noticia.asc()),
+            ).label("url_rank"),
+        ).subquery()
+        statement = select(
+            candidates.c.id_noticia,
+            candidates.c.titulo,
+            candidates.c.url,
+            candidates.c.canal,
+            candidates.c.continente,
+            candidates.c.pais,
+            candidates.c.fecha_registro,
+            candidates.c.valor_humor,
+        ).where(candidates.c.url_rank == 1).order_by(
+            func.abs(candidates.c.valor_humor).desc(),
+            candidates.c.fecha_registro.desc(),
+            candidates.c.id_noticia.asc(),
         ).limit(10)
         return [
             InfluentialNewsRecord(**row._mapping)
