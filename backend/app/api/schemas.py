@@ -310,3 +310,39 @@ class InfluentialTermsResponse(BaseModel):
     continente: Continent | None
     pais: str | None
     terminos: list[InfluentialTermResponse]
+
+
+class DashboardDayResponse(BaseModel):
+    fecha: date
+    humor: Decimal | None
+    noticias: int = Field(ge=0)
+    suficiente: bool
+
+
+class DashboardEvolutionResponse(BaseModel):
+    fecha_desde: date
+    fecha_hasta: date
+    continente: Continent | None
+    pais: str | None
+    dias: list[DashboardDayResponse]
+
+
+class InfluentialNewsItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id_noticia: int
+    titulo: str
+    url: str
+    canal: str
+    continente: Continent
+    pais: str | None
+    fecha_registro: datetime
+    valor_humor: Decimal
+
+
+class InfluentialNewsResponse(BaseModel):
+    fecha_desde: date
+    fecha_hasta: date
+    continente: Continent | None
+    pais: str | None
+    noticias: list[InfluentialNewsItemResponse]

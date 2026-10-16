@@ -21,6 +21,7 @@ class SourceSeed:
     category: IptcCategory
     language: Language
     active: bool = True
+    country: str | None = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,7 @@ PBS_AMERICA_SOURCE = SourceSeed(
     feed_url="https://www.pbs.org/newshour/feeds/rss/headlines",
     category=IptcCategory.SOCIETY,
     language=Language.ENGLISH,
+    country="US",
 )
 
 
@@ -77,6 +79,7 @@ SOURCE_SEEDS: tuple[SourceSeed, ...] = (
         ),
         category=IptcCategory.SOCIETY,
         language=Language.ENGLISH,
+        country="SG",
     ),
     SourceSeed(
         channel_name="Deutsche Welle",
@@ -85,6 +88,7 @@ SOURCE_SEEDS: tuple[SourceSeed, ...] = (
         feed_url="https://rss.dw.com/rdf/rss-en-all",
         category=IptcCategory.SOCIETY,
         language=Language.ENGLISH,
+        country="DE",
     ),
     SourceSeed(
         channel_name="ABC News Australia",
@@ -93,6 +97,7 @@ SOURCE_SEEDS: tuple[SourceSeed, ...] = (
         feed_url="https://www.abc.net.au/news/feed/51120/rss.xml",
         category=IptcCategory.SOCIETY,
         language=Language.ENGLISH,
+        country="AU",
     ),
 )
 
@@ -121,6 +126,9 @@ def seed_sources(session: Session) -> SeedResult:
 
             if channel is not None:
                 _ensure_channel_compatible(channel, entry)
+                # Backfill catalog metadata without replacing a user's country choice.
+                if channel.pais is None and entry.country is not None:
+                    channel.pais = entry.country
             elif source is not None:
                 raise SeedConflictError(
                     f"La URL {entry.feed_url!r} ya pertenece a otro canal"
@@ -129,6 +137,7 @@ def seed_sources(session: Session) -> SeedResult:
                 channel = Channel(
                     nombre=entry.channel_name,
                     continente=entry.continent.value,
+                    pais=entry.country,
                 )
                 session.add(channel)
                 session.flush()
@@ -199,6 +208,8 @@ def _reconcile_legacy_america_source(
 
     legacy_channel.nombre = PBS_AMERICA_SOURCE.channel_name
     legacy_channel.continente = PBS_AMERICA_SOURCE.continent.value
+    if legacy_channel.pais is None:
+        legacy_channel.pais = PBS_AMERICA_SOURCE.country
     legacy_source.nombre = PBS_AMERICA_SOURCE.source_name
     legacy_source.url_feed = PBS_AMERICA_SOURCE.feed_url
     legacy_source.categoria_iptc = PBS_AMERICA_SOURCE.category.value

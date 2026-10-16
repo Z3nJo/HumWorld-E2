@@ -177,6 +177,31 @@ def test_repository_aggregates_with_utc_boundaries_nulls_and_geography(engine) -
         assert chile_only[0].country == "CL"
         assert chile_only[0].humor == Decimal("0.20000000000000000000")
         assert chile_only[0].news_count == 2
+        countries = repository.aggregate_countries(start_at=start, end_at=end)
+        assert {(item.continent, item.country, item.news_count) for item in countries} == {
+            ("America", "CL", 2), ("Europa", "ES", 1),
+        }
+
+
+def test_daily_evolution_uses_utc_in_other_session_timezone(engine) -> None:
+    start = datetime(2026, 9, 1, tzinfo=UTC)
+    end = start + timedelta(days=2)
+    with Session(engine) as session:
+        source = _source(session, "daily-utc", "America", "CL")
+        _news(session, source, "utc-midnight", start, Decimal("-0.800"))
+        _news(session, source, "utc-next-day", start + timedelta(days=1), Decimal("0.200"))
+        _news(session, source, "excluded-end", end, Decimal("1.000"))
+        _news(session, source, "excluded-null", start, None)
+        session.execute(text("SET LOCAL TIME ZONE 'America/Santiago'"))
+        repository = DashboardRepository(session)
+        days = repository.daily_evolution(
+            start_at=start, end_at=end, continent="America", country="CL")
+        assert [(item.day, item.news_count) for item in days] == [
+            (date(2026, 9, 1), 1), (date(2026, 9, 2), 1)]
+        news = repository.influential_news(
+            start_at=start, end_at=end, continent="America", country="CL")
+        assert [item.titulo for item in news] == [
+            "Noticia utc-midnight", "Noticia utc-next-day"]
 
 
 def test_service_represents_empty_scope_and_threshold_boundaries(engine) -> None:

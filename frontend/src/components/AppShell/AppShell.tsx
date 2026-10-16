@@ -19,10 +19,6 @@ export const AppShell = () => {
           <NavLink
             to="/dashboard"
             className={({ isActive }) => (isActive ? 'on' : '')}
-            onClick={(e) => {
-              // placeholder
-              if (window.location.pathname === '/') e.preventDefault();
-            }}
           >
             Dashboard de humor<span>4.3.2</span>
           </NavLink>
