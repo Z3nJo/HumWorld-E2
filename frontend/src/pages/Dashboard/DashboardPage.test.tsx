@@ -1,9 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardPage } from "./DashboardPage";
 import {
   fetchDashboard,
   fetchInfluentialTerms,
+  fetchEvolution,
+  fetchInfluentialNews,
+  fetchGeography,
 } from "../../features/dashboard/infrastructure/dashboardApi";
 import type {
   DashboardData,
@@ -13,6 +16,9 @@ import type {
 vi.mock("../../features/dashboard/infrastructure/dashboardApi", () => ({
   fetchDashboard: vi.fn(),
   fetchInfluentialTerms: vi.fn(),
+  fetchEvolution: vi.fn(),
+  fetchInfluentialNews: vi.fn(),
+  fetchGeography: vi.fn(),
 }));
 
 const mockedFetchDashboard = vi.mocked(fetchDashboard);
@@ -69,7 +75,10 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedFetchDashboard.mockResolvedValue(mockDashboardResponse);
+    vi.mocked(fetchGeography).mockResolvedValue(mockDashboardResponse);
     mockedFetchInfluentialTerms.mockResolvedValue(mockTermsResponse);
+    vi.mocked(fetchEvolution).mockResolvedValue({ fecha_desde: '2026-10-01', fecha_hasta: '2026-10-30', dias: [] });
+    vi.mocked(fetchInfluentialNews).mockResolvedValue({ noticias: [] });
   });
 
   // Header
@@ -148,7 +157,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText(/Datos disponibles/i)).toBeInTheDocument();
-      expect(screen.getByText(/caducidad 30 d.as/i)).toBeInTheDocument();
+      expect(screen.getByText(/.ltimos 30 d.as/i)).toBeInTheDocument();
     });
   });
 
@@ -205,6 +214,30 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/Pa.ses de Europa/i)).toBeInTheDocument();
     });
+  });
+
+  it('keeps all country counts and humor after selecting a country', async () => {
+    mockedFetchDashboard.mockImplementation(async (params) => ({
+      ...mockDashboardResponse,
+      agregados: params.pais ? mockDashboardResponse.agregados.filter((a) => a.pais === params.pais)
+        : mockDashboardResponse.agregados.filter((a) => !a.pais),
+    }));
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByText(/Am.rica/));
+    await screen.findByText(/Pa.ses de Am.rica/);
+    const table = screen.getByRole('table', { name: /Humor por pa.s/ });
+    expect(within(table).getByText('Chile').closest('tr')).toHaveTextContent('+0,25');
+    expect(within(table).getByText('Chile').closest('tr')).toHaveTextContent('15');
+    expect(within(table).getByText('Argentina').closest('tr')).toHaveTextContent('−0,08');
+    fireEvent.click(within(table).getByText('Chile'));
+    await screen.findByRole('heading', { name: 'Chile' });
+    const filteredTable = screen.getByRole('table', { name: /Humor por pa.s/ });
+    expect(within(filteredTable).getByText('Argentina').closest('tr')).toHaveTextContent('−0,08');
+    expect(within(filteredTable).getByText('Argentina').closest('tr')).toHaveTextContent('10');
+    expect(fetchGeography).toHaveBeenLastCalledWith({
+      fecha_desde: expect.any(String), fecha_hasta: expect.any(String),
+    });
+    expect(mockedFetchDashboard).toHaveBeenLastCalledWith(expect.objectContaining({ pais: 'CL' }));
   });
 
   // Summary card
@@ -277,12 +310,48 @@ describe("DashboardPage", () => {
     expect(nubeBtn).toHaveClass("on");
   });
 
-  // Noticias placeholder
-  it("renders Noticias mas influyentes placeholder card", async () => {
+  it("renders Noticias mas influyentes card", async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText(/Noticias m.s influyentes/)).toBeInTheDocument();
     });
+  });
+
+  it("renders ranked news from the API with links and scores", async () => {
+    vi.mocked(fetchInfluentialNews).mockResolvedValue({ noticias: [{
+      id_noticia: 1, titulo: 'Noticia destacada real', url: 'https://example.com/news/1',
+      canal: 'Canal Chile', continente: 'America', pais: 'CL',
+      fecha_registro: '2026-10-16T00:00:00Z', valor_humor: -0.9,
+    }] });
+    render(<DashboardPage />);
+    const link = await screen.findByRole('link', { name: 'Noticia destacada real' });
+    expect(link).toHaveAttribute('href', 'https://example.com/news/1');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link.closest('li')).toHaveTextContent('Canal Chile');
+    expect(link.closest('li')).toHaveTextContent('−0,90');
+    expect(screen.queryByText('Sin noticias evaluables')).not.toBeInTheDocument();
+  });
+
+  it("uses current UTC dates and real daily counts without duplicating range totals", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    vi.mocked(fetchEvolution).mockResolvedValue({ fecha_desde: today, fecha_hasta: today, dias: [{
+      fecha: today, humor: -0.4, noticias: 17, suficiente: true,
+    }] });
+    render(<DashboardPage />);
+    await screen.findByText('Humor por continente');
+    const dayButtons = screen.getByRole('listbox', { name: /D.as con datos/i }).querySelectorAll('button');
+    expect(dayButtons[29]).toHaveAttribute('title', expect.stringContaining('17 noticias'));
+    expect(dayButtons[28]).toHaveAttribute('title', expect.stringContaining('sin datos'));
+    expect(mockedFetchDashboard).toHaveBeenCalledWith(expect.objectContaining({
+      fecha_desde: today, fecha_hasta: today,
+    }));
+    fireEvent.click(screen.getByText(/7 d.as/));
+    await waitFor(() => expect(mockedFetchDashboard).toHaveBeenLastCalledWith(expect.objectContaining({
+      fecha_desde: new Date(Date.parse(today) - 6 * 864e5).toISOString().slice(0, 10),
+      fecha_hasta: today,
+    })));
+    await screen.findByText('Humor por continente');
+    expect(dayButtons[28]).toHaveAttribute('title', expect.stringContaining('sin datos'));
   });
 
   // Legend

@@ -708,3 +708,21 @@ table.t {
   color: var(--ink3);
   font-weight: 400;
 }
+.influential-news {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.influential-news li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line, #e7e1d5);
+}
+
+.influential-news a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.influential-news a:hover {
+  text-decoration: underline;
+}

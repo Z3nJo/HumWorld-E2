@@ -37,6 +37,34 @@ export interface InfluentialTermsData {
 
 export type CloudMode = 'nube' | 'tabla';
 
+export interface DashboardDay {
+  fecha: string;
+  humor: number | null;
+  noticias: number;
+  suficiente: boolean;
+}
+
+export interface DashboardEvolutionData {
+  fecha_desde: string;
+  fecha_hasta: string;
+  dias: DashboardDay[];
+}
+
+export interface InfluentialNews {
+  id_noticia: number;
+  titulo: string;
+  url: string;
+  canal: string;
+  continente: Continent;
+  pais: string | null;
+  fecha_registro: string;
+  valor_humor: number;
+}
+
+export interface InfluentialNewsData {
+  noticias: InfluentialNews[];
+}
+
 export interface DashboardScope {
   continente: Continent | null;
   pais: string | null;

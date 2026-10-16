@@ -12,6 +12,31 @@ DATABASE_URL=postgresql://humworld:humworld@localhost:5432/humworld
 
 El backend normaliza internamente `postgresql://` a `postgresql+psycopg://`. Puede copiarse `.env.example` como `.env` para desarrollo local.
 
+## Dashboard: evolución diaria y noticias influyentes
+
+`GET /api/v1/dashboards/geografia?fecha_desde=2026-10-01&fecha_hasta=2026-10-07`
+devuelve agregados por continente (`pais=null`) y por país (`pais` ISO) para el
+mapa y la tabla. Conserva el contexto geográfico completo al filtrar un país
+en el resumen, evolución y noticias. Las noticias de canales sin país cuentan
+en el continente, pero no se atribuyen artificialmente a un país.
+
+`GET /api/v1/dashboards/evolucion` devuelve `fecha_desde`, `fecha_hasta`,
+`continente`, `pais` y `dias`: una entrada por fecha UTC con `fecha`, `humor`,
+`noticias` y `suficiente`. Sin fechas usa los últimos 30 días, incluido hoy UTC.
+Se pueden enviar `fecha_desde` y `fecha_hasta` inclusivas (máximo 366 días).
+Los días sin noticias evaluables llevan conteo cero y humor nulo; `suficiente`
+respeta `minimo_noticias_agregacion`.
+
+`GET /api/v1/dashboards/noticias-influyentes?fecha_desde=2026-10-01&fecha_hasta=2026-10-07`
+devuelve `noticias` con las diez noticias evaluables de mayor `abs(valor_humor)`.
+Los empates se ordenan por registro más reciente y luego por ID ascendente.
+Cada elemento incluye `id_noticia`, `titulo`, `url`, `canal`, `continente`,
+`pais`, `fecha_registro` y `valor_humor`.
+
+Ambas rutas aceptan los filtros opcionales `continente` y `pais` (ISO de dos
+letras; requiere continente). El conteo considera solo noticias con humor
+calculado, igual que el dashboard agregado. No requieren migraciones.
+
 ## Instalacion local
 
 ```bash
@@ -51,6 +76,14 @@ encuentra un canal o una URL con datos incompatibles, revierte la ejecucion
 completa y muestra el conflicto en lugar de sobrescribir los datos existentes.
 Las instalaciones inicializadas con la antigua fuente CBC se reconcilian en
 sitio hacia PBS, conservando los identificadores y las noticias relacionadas.
+
+El seed completa el país de los canales conocidos PBS (`US`), CNA (`SG`),
+DW (`DE`) y ABC (`AU`) si está vacío, y respeta cualquier país ya asignado.
+Después de actualizar el backend, repítalo para completar los canales existentes:
+
+```powershell
+docker compose -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
+```
 
 ## API de fuentes RSS
 

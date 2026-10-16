@@ -1,5 +1,5 @@
 import { http } from '../../../shared/api/httpClient';
-import type { DashboardAggregate, DashboardData, InfluentialTerm, InfluentialTermsData } from '../domain/dashboard';
+import type { DashboardAggregate, DashboardData, DashboardEvolutionData, InfluentialNewsData, InfluentialTerm, InfluentialTermsData } from '../domain/dashboard';
 import type { Continent } from '../../sources/domain/source';
 
 interface DashboardAggregateDto {
@@ -83,11 +83,40 @@ export interface FetchDashboardParams {
   pais?: string | null;
 }
 
+function queryString(params: FetchDashboardParams): URLSearchParams {
+  const q = new URLSearchParams({ fecha_desde: params.fecha_desde, fecha_hasta: params.fecha_hasta });
+  if (params.continente) q.set('continente', params.continente);
+  if (params.pais) q.set('pais', params.pais);
+  return q;
+}
+
+export async function fetchEvolution(params: FetchDashboardParams): Promise<DashboardEvolutionData> {
+  type Dto = Omit<DashboardEvolutionData, 'dias'> & {
+    dias: (Omit<DashboardEvolutionData['dias'][number], 'humor'> & { humor: string | null })[];
+  };
+  const dto = await http.get<Dto>(`/api/v1/dashboards/evolucion?${queryString(params)}`);
+  return { ...dto, dias: dto.dias.map((day) => ({
+    ...day, humor: day.humor === null ? null : Number(day.humor),
+  })) };
+}
+
+export async function fetchInfluentialNews(params: FetchDashboardParams): Promise<InfluentialNewsData> {
+  type Dto = { noticias: (Omit<InfluentialNewsData['noticias'][number], 'valor_humor'> & { valor_humor: string })[] };
+  const dto = await http.get<Dto>(`/api/v1/dashboards/noticias-influyentes?${queryString(params)}`);
+  return { noticias: dto.noticias.map((news) => ({ ...news, valor_humor: Number(news.valor_humor) })) };
+}
+
 export async function fetchDashboard(params: FetchDashboardParams): Promise<DashboardData> {
   const q = new URLSearchParams({ fecha_desde: params.fecha_desde, fecha_hasta: params.fecha_hasta });
   if (params.continente) q.set('continente', params.continente);
   if (params.pais) q.set('pais', params.pais);
   const dto = await http.get<DashboardResponseDto>(`/api/v1/dashboards?${q}`);
+  return mapDashboard(dto);
+}
+
+export async function fetchGeography(params: Pick<FetchDashboardParams, 'fecha_desde' | 'fecha_hasta'>): Promise<DashboardData> {
+  const q = new URLSearchParams({ fecha_desde: params.fecha_desde, fecha_hasta: params.fecha_hasta });
+  const dto = await http.get<DashboardResponseDto>(`/api/v1/dashboards/geografia?${q}`);
   return mapDashboard(dto);
 }
 

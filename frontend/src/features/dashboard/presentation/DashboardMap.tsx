@@ -182,6 +182,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .data(world.features)
         .join('path')
         .attr('class', 'clickable')
+        .attr('data-country', (f: CountryFeature) => TOPO_TO_ISO[f.properties.name] || '')
         .attr('d', path)
         .attr('fill', getFill)
         .attr('stroke', (f: CountryFeature) => {

@@ -5,7 +5,10 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Protocol
 
 from app.models.domains import Continent
-from app.repositories.dashboards import DashboardAggregateRecord, InfluentialTermRecord
+from app.repositories.dashboards import (
+    DashboardAggregateRecord, DashboardDayRecord, InfluentialNewsRecord,
+    InfluentialTermRecord,
+)
 
 THREE_DECIMALS = Decimal("0.001")
 COUNTRY_PATTERN = re.compile(r"^[A-Za-z]{2}$")
@@ -63,6 +66,20 @@ class _ValidatedQuery:
 
 
 class DashboardRepositoryProtocol(Protocol):
+    def aggregate_countries(
+        self, *, start_at: datetime, end_at: datetime,
+    ) -> list[DashboardAggregateRecord]: ...
+
+    def daily_evolution(
+        self, *, start_at: datetime, end_at: datetime,
+        continent: str | None, country: str | None,
+    ) -> list[DashboardDayRecord]: ...
+
+    def influential_news(
+        self, *, start_at: datetime, end_at: datetime,
+        continent: str | None, country: str | None,
+    ) -> list[InfluentialNewsRecord]: ...
+
     def aggregate(
         self,
         *,
@@ -95,6 +112,52 @@ class DashboardService:
         self._repository = repository
         self._sentiment_configuration = sentiment_configuration
 
+    def get_evolution(
+        self, *, date_from: date | None = None, date_to: date | None = None,
+        continent: Continent | None = None, country: str | None = None,
+    ) -> dict[str, object]:
+        date_to = date_to or datetime.now(UTC).date()
+        date_from = date_from or date_to - timedelta(days=29)
+        query = self._validate_query(date_from, date_to, continent, country)
+        if (date_to - date_from).days >= 366:
+            raise DashboardValidationError("El rango de evolucion no puede superar 366 dias")
+        records = self._repository.daily_evolution(
+            start_at=query.start_at, end_at=query.end_at,
+            continent=continent.value if continent else None, country=query.country,
+        )
+        by_day = {record.day: record for record in records}
+        minimum = int(getattr(
+            self._sentiment_configuration.resolve(), "minimo_noticias_agregacion"
+        ))
+        days = []
+        for offset in range((date_to - date_from).days + 1):
+            day = date_from + timedelta(days=offset)
+            record = by_day.get(day)
+            count = record.news_count if record else 0
+            days.append({
+                "fecha": day,
+                "humor": self._round_humor(record.humor if record else None),
+                "noticias": count, "suficiente": count >= minimum,
+            })
+        return {
+            "fecha_desde": date_from, "fecha_hasta": date_to,
+            "continente": continent, "pais": query.country, "dias": days,
+        }
+
+    def get_influential_news(
+        self, *, date_from: date, date_to: date,
+        continent: Continent | None = None, country: str | None = None,
+    ) -> dict[str, object]:
+        query = self._validate_query(date_from, date_to, continent, country)
+        records = self._repository.influential_news(
+            start_at=query.start_at, end_at=query.end_at,
+            continent=continent.value if continent else None, country=query.country,
+        )
+        return {
+            "fecha_desde": date_from, "fecha_hasta": date_to,
+            "continente": continent, "pais": query.country, "noticias": records,
+        }
+
     def get_dashboard(
         self,
         *,
@@ -102,6 +165,7 @@ class DashboardService:
         date_to: date,
         continent: Continent | None = None,
         country: str | None = None,
+        include_countries: bool = False,
     ) -> DashboardResult:
         query = self._validate_query(date_from, date_to, continent, country)
         records = self._repository.aggregate(
@@ -131,6 +195,18 @@ class DashboardService:
                     news_count=count,
                     sufficient=count >= minimum,
                 )
+            )
+        if include_countries:
+            country_records = self._repository.aggregate_countries(
+                start_at=query.start_at, end_at=query.end_at,
+            )
+            aggregates.extend(
+                DashboardAggregate(
+                    continent=Continent(record.continent), country=record.country,
+                    humor=self._round_humor(record.humor), news_count=record.news_count,
+                    sufficient=record.news_count >= minimum,
+                )
+                for record in country_records
             )
         return DashboardResult(
             date_from=query.date_from,

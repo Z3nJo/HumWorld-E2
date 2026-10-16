@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useDashboard } from './useDashboard';
-import { fetchDashboard, fetchInfluentialTerms } from '../infrastructure/dashboardApi';
+import { fetchDashboard, fetchEvolution, fetchGeography, fetchInfluentialNews, fetchInfluentialTerms } from '../infrastructure/dashboardApi';
 import type { DashboardData, InfluentialTermsData } from '../domain/dashboard';
 import type { Continent } from '../../sources/domain/source';
 
 vi.mock('../infrastructure/dashboardApi', () => ({
   fetchDashboard: vi.fn(),
   fetchInfluentialTerms: vi.fn(),
+  fetchEvolution: vi.fn(),
+  fetchInfluentialNews: vi.fn(),
+  fetchGeography: vi.fn(),
 }));
 
 const mockedFetchDashboard = vi.mocked(fetchDashboard);
@@ -49,6 +52,9 @@ describe('useDashboard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(fetchGeography).mockResolvedValue(dummyDashboard);
+    vi.mocked(fetchEvolution).mockResolvedValue({ fecha_desde: '2026-10-01', fecha_hasta: '2026-10-01', dias: [] });
+    vi.mocked(fetchInfluentialNews).mockResolvedValue({ noticias: [] });
   });
 
   it('fetches dashboard data and influential terms on mount', async () => {
@@ -116,5 +122,36 @@ describe('useDashboard', () => {
         pais: 'CL',
       });
     });
+  });
+
+  it('requests the whole timeline separately from the selected ranking period', async () => {
+    mockedFetchDashboard.mockResolvedValue(dummyDashboard);
+    mockedFetchInfluentialTerms.mockResolvedValue(dummyTerms);
+    const { result } = renderHook(() => useDashboard(
+      '2026-10-01', '2026-10-07', 'America', 'CL', '2026-09-08', '2026-10-07',
+    ));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(fetchEvolution).toHaveBeenCalledWith({
+      fecha_desde: '2026-09-08', fecha_hasta: '2026-10-07', continente: 'America', pais: 'CL',
+    });
+    expect(fetchInfluentialNews).toHaveBeenCalledWith({
+      fecha_desde: '2026-10-01', fecha_hasta: '2026-10-07', continente: 'America', pais: 'CL',
+    });
+  });
+
+  it('ignores a slow response from an earlier filter selection', async () => {
+    let finishFirst!: (data: DashboardData) => void;
+    mockedFetchDashboard.mockImplementationOnce(() => new Promise((resolve) => { finishFirst = resolve; }));
+    mockedFetchDashboard.mockResolvedValue({ ...dummyDashboard, continente: 'Europa' });
+    mockedFetchInfluentialTerms.mockResolvedValue(dummyTerms);
+    const { result, rerender } = renderHook(
+      ({ cont }: { cont: Continent | null }) => useDashboard('2026-10-01', '2026-10-01', cont, null),
+      { initialProps: { cont: null as Continent | null } },
+    );
+    rerender({ cont: 'Europa' });
+    await waitFor(() => expect(result.current.data?.continente).toBe('Europa'));
+    await act(async () => finishFirst(dummyDashboard));
+    expect(result.current.data?.continente).toBe('Europa');
+    expect(result.current.loading).toBe(false);
   });
 });

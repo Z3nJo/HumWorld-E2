@@ -46,6 +46,10 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({
   const suficiente = scopeAggregate?.suficiente ?? false;
 
   const state = noticias === 0 ? 'nd' : suficiente ? 'ok' : 'prov';
+  const continentTotal = aggregates.find((a) => a.continente === continent && !a.pais)?.noticias ?? 0;
+  const assignedTotal = aggregates.filter((a) => a.continente === continent && a.pais)
+    .reduce((total, a) => total + a.noticias, 0);
+  const unassignedCount = Math.max(0, continentTotal - assignedTotal);
 
   // Sub-items for table
   const subItems = continent
@@ -219,6 +223,12 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({
             )}
           </tbody>
         </table>
+        {continent && unassignedCount > 0 && (
+          <p className="help" role="status">
+            {formatNumber(unassignedCount)} noticias de canales sin país asignado.
+            Asigna el país en Fuentes y canales para incluirlas en el mapa y la tabla por país.
+          </p>
+        )}
       </div>
     </div>
   );

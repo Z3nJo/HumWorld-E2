@@ -10,13 +10,15 @@ import {
   COUNTRIES_DATA,
   COUNTRIES_BY_ISO,
   CONTINENT_ORDER,
+  formatHumor,
 } from '../../features/dashboard/domain/countries';
 import '../../features/dashboard/presentation/Dashboard.css';
 
-// 30 days window setup ending on current date (2026-10-15)
-// Day 0: 2026-09-16 -> Day 29: 2026-10-15
-const BASE_DATE_UTC = Date.UTC(2026, 8, 16);
-const DAYS_ARRAY: Date[] = Array.from({ length: 30 }, (_, i) => new Date(BASE_DATE_UTC + i * 864e5));
+function recentDays(): Date[] {
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Array.from({ length: 30 }, (_, i) => new Date(today - (29 - i) * 864e5));
+}
 
 function formatDate(d: Date): string {
   const day = String(d.getUTCDate()).padStart(2, '0');
@@ -35,22 +37,10 @@ function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-const MONTH_NAMES = ['', '', '', '', '', '', '', '', 'sep', 'oct'];
-
-// Actual news distribution in the backend database
-const DB_NEWS_COUNTS: Record<string, number> = {
-  '2026-10-06': 125,
-  '2026-10-07': 9,
-  '2026-10-08': 12,
-  '2026-10-09': 14,
-  '2026-10-10': 7,
-  '2026-10-11': 9,
-  '2026-10-13': 30,
-  '2026-10-14': 6,
-  '2026-10-15': 10,
-};
+const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 export const DashboardPage: React.FC = () => {
+  const [days] = useState(recentDays);
   const [continent, setContinent] = useState<Continent | null>(null);
   const [pais, setPais] = useState<string | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(29);
@@ -61,14 +51,16 @@ export const DashboardPage: React.FC = () => {
   const w0 = Math.max(0, selectedDayIndex - windowSize + 1);
   const w1 = selectedDayIndex;
 
-  const fechaDesde = toISODate(DAYS_ARRAY[w0]);
-  const fechaHasta = toISODate(DAYS_ARRAY[w1]);
+  const fechaDesde = toISODate(days[w0]);
+  const fechaHasta = toISODate(days[w1]);
 
-  const { data, terms, loading, error, reload } = useDashboard(
+  const { data, geography, terms, evolution, news, loading, error, reload } = useDashboard(
     fechaDesde,
     fechaHasta,
     continent,
-    pais
+    pais,
+    toISODate(days[0]),
+    toISODate(days[days.length - 1]),
   );
 
   const scopeTitle = pais
@@ -107,22 +99,21 @@ export const DashboardPage: React.FC = () => {
     };
   }, [data, continent, pais]);
 
-// Construct daily timeline series using real API aggregates when available
+  // Each point comes from the daily API, independently of the selected window.
   const timelineSeries: TimelinePoint[] = useMemo(() => {
-    return DAYS_ARRAY.map((d, idx) => {
-      const isSelected = idx >= w0 && idx <= w1;
-      const iso = toISODate(d);
-      const newsCount = DB_NEWS_COUNTS[iso] || 0;
+    const byDate = new Map(evolution?.dias.map((day) => [day.fecha, day]));
+    return days.map((d, idx) => {
+      const point = byDate.get(toISODate(d));
       return {
         date: formatDate(d),
         dayIndex: idx,
         label: formatDateShort(d),
-        humor: isSelected && scopeAggregate ? scopeAggregate.humor : null,
-        noticias: isSelected && scopeAggregate ? scopeAggregate.noticias : newsCount,
-        suficiente: (isSelected && scopeAggregate ? scopeAggregate.suficiente : newsCount >= 3),
+        humor: point?.humor ?? null,
+        noticias: point?.noticias ?? 0,
+        suficiente: point?.suficiente ?? false,
       };
     });
-  }, [w0, w1, scopeAggregate]);
+  }, [days, evolution]);
 
   return (
     <>
@@ -185,7 +176,7 @@ export const DashboardPage: React.FC = () => {
                   </button>
                   {CONTINENT_ORDER.map((c) => {
                     const isSelected = continent === c.key;
-                    const agg = data?.agregados.find((a) => a.continente === c.key && !a.pais);
+                    const agg = geography?.agregados.find((a) => a.continente === c.key && !a.pais);
                     return (
                       <button
                         key={c.key}
@@ -264,14 +255,14 @@ export const DashboardPage: React.FC = () => {
                   </button>
                   <b>
                     {windowSize > 1
-                      ? `${formatDateShort(DAYS_ARRAY[w0])} – ${formatDate(DAYS_ARRAY[w1])}`
-                      : formatDate(DAYS_ARRAY[selectedDayIndex])}
+                      ? `${formatDateShort(days[w0])} – ${formatDate(days[w1])}`
+                      : formatDate(days[selectedDayIndex])}
                   </b>
                   <button
                     className="btn sm"
-                    disabled={selectedDayIndex >= DAYS_ARRAY.length - 1}
+                    disabled={selectedDayIndex >= days.length - 1}
                     onClick={() =>
-                      setSelectedDayIndex((prev) => Math.min(DAYS_ARRAY.length - 1, prev + 1))
+                      setSelectedDayIndex((prev) => Math.min(days.length - 1, prev + 1))
                     }
                     aria-label="Día siguiente"
                   >
@@ -284,21 +275,20 @@ export const DashboardPage: React.FC = () => {
             {/* Days bar selector */}
             <div data-ann="GET /dashboards · Espec. 4.3.2">
               <div className="days" role="listbox" aria-label="Días con datos">
-                {DAYS_ARRAY.map((d, i) => {
-                  const iso = toISODate(d);
-                  const count = DB_NEWS_COUNTS[iso] || 0;
+                {days.map((d, i) => {
+                  const count = timelineSeries[i].noticias;
                   const hasData = count > 0;
                   const isCurrent = i === selectedDayIndex;
                   const isInWindow = i >= w0 && i <= w1 && windowSize > 1;
                   const maxHeight = 44;
-                  const maxTotal = 125;
+                  const maxTotal = Math.max(1, ...timelineSeries.map((point) => point.noticias));
                   const barHeight = hasData ? Math.max(6, (count / maxTotal) * maxHeight) : 0;
 
                   return (
                     <button
                       key={i}
                       className={`day ${isCurrent ? 'on' : ''} ${isInWindow ? 'win' : ''}`}
-                      disabled={!hasData}
+                      disabled={loading}
                       onClick={() => setSelectedDayIndex(i)}
                       title={`${formatDate(d)} · ${hasData ? `${count} noticias` : 'sin datos'}`}
                       aria-label={`${formatDate(d)}, ${hasData ? `${count} noticias` : 'sin datos'}`}
@@ -314,8 +304,8 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="row meta" style={{ justifyContent: 'space-between', marginTop: '8px' }}>
                 <span>
-                  Datos disponibles: {formatDate(DAYS_ARRAY[0])} —{' '}
-                  {formatDate(DAYS_ARRAY[DAYS_ARRAY.length - 1])} · caducidad 30 días
+                  Datos disponibles en ventana: {formatDate(days[0])} —{' '}
+                  {formatDate(days[days.length - 1])} · últimos 30 días
                 </span>
                 <span>Día = fecha_registro, corte UTC</span>
               </div>
@@ -368,7 +358,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div className="cb" style={{ padding: '8px 10px 6px' }}>
                   <DashboardMap
-                    aggregates={data?.agregados || []}
+                    aggregates={geography?.agregados || []}
                     continent={continent}
                     pais={pais}
                     onSelectContinent={setContinent}
@@ -406,9 +396,9 @@ export const DashboardPage: React.FC = () => {
               <DashboardSummary
                 scopeName={scopeTitle}
                 windowSize={windowSize}
-                dateLabel={formatDate(DAYS_ARRAY[selectedDayIndex])}
+                dateLabel={formatDate(days[selectedDayIndex])}
                 scopeAggregate={scopeAggregate}
-                aggregates={data?.agregados || []}
+                aggregates={geography?.agregados || []}
                 continent={continent}
                 pais={pais}
                 onSelectContinent={setContinent}
@@ -440,17 +430,27 @@ export const DashboardPage: React.FC = () => {
                 mode={cloudMode}
                 onToggleMode={setCloudMode}
               />
-              {/* Placeholder for influential news - matches prototype grid2b */}
               <div className="card">
                 <div className="ch">
                   <h2>Noticias más influyentes</h2>
                   <small>Top 10 por |valor_humor| · {scopeTitle}</small>
                 </div>
                 <div className="cb">
-                  <div className="empty">
+                  {news?.noticias.length ? (
+                    <ol className="influential-news">
+                      {news.noticias.map((item) => (
+                        <li key={item.id_noticia}>
+                          <a href={/^https?:\/\//i.test(item.url) ? item.url : undefined} target="_blank" rel="noopener noreferrer">
+                            {item.titulo}
+                          </a>
+                          <div className="meta">{item.canal} · {item.pais || item.continente} · <span className="mono">{formatHumor(item.valor_humor)}</span></div>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : <div className="empty">
                     <b>Sin noticias evaluables</b>
                     Prueba otro día con datos o amplía el ámbito.
-                  </div>
+                  </div>}
                 </div>
               </div>
             </div>

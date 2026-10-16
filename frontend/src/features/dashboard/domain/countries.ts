@@ -23,6 +23,7 @@ export const COUNTRIES_DATA: CountryInfo[] = [
   { iso: 'CN', topo: 'China', es: 'China', cont: 'Asia', lang: 'en' },
   { iso: 'JP', topo: 'Japan', es: 'Japón', cont: 'Asia', lang: 'en' },
   { iso: 'IN', topo: 'India', es: 'India', cont: 'Asia', lang: 'en' },
+  { iso: 'SG', topo: 'Singapore', es: 'Singapur', cont: 'Asia', lang: 'en' },
   { iso: 'KR', topo: 'South Korea', es: 'Corea del Sur', cont: 'Asia', lang: 'en' },
   { iso: 'ZA', topo: 'South Africa', es: 'Sudáfrica', cont: 'Africa', lang: 'en' },
   { iso: 'NG', topo: 'Nigeria', es: 'Nigeria', cont: 'Africa', lang: 'en' },

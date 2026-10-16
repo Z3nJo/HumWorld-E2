@@ -10,6 +10,8 @@ from app.api.schemas import (
     ErrorResponse,
     InfluentialTermResponse,
     InfluentialTermsResponse,
+    DashboardEvolutionResponse,
+    InfluentialNewsResponse,
 )
 from app.database import get_db
 from app.models.domains import Continent
@@ -30,6 +32,63 @@ def get_dashboard_service(
     return DashboardService(
         DashboardRepository(session),
         SentimentConfigurationService(ConfigurationRepository(session)),
+    )
+
+
+@dashboard_router.get(
+    "/geografia", response_model=DashboardResponse,
+    summary="Humor y noticias por continente y pais para el mapa",
+    responses=ERROR_RESPONSES,
+)
+def get_geography(
+    service: Annotated[DashboardService, Depends(get_dashboard_service)],
+    fecha_desde: Annotated[date, Query()],
+    fecha_hasta: Annotated[date, Query()],
+) -> DashboardResponse:
+    result = service.get_dashboard(
+        date_from=fecha_desde, date_to=fecha_hasta, include_countries=True,
+    )
+    return DashboardResponse(
+        fecha_desde=result.date_from, fecha_hasta=result.date_to,
+        continente=result.continent, pais=result.country,
+        agregados=[DashboardAggregateResponse(
+            continente=item.continent, pais=item.country, humor=item.humor,
+            noticias=item.news_count, suficiente=item.sufficient,
+        ) for item in result.aggregates],
+    )
+
+
+@dashboard_router.get(
+    "/evolucion", response_model=DashboardEvolutionResponse,
+    summary="Evolucion diaria UTC; por defecto los ultimos 30 dias",
+    responses=ERROR_RESPONSES,
+)
+def get_evolution(
+    service: Annotated[DashboardService, Depends(get_dashboard_service)],
+    fecha_desde: Annotated[date | None, Query()] = None,
+    fecha_hasta: Annotated[date | None, Query()] = None,
+    continente: Annotated[Continent | None, Query()] = None,
+    pais: Annotated[str | None, Query(min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")] = None,
+) -> dict[str, object]:
+    return service.get_evolution(
+        date_from=fecha_desde, date_to=fecha_hasta, continent=continente, country=pais,
+    )
+
+
+@dashboard_router.get(
+    "/noticias-influyentes", response_model=InfluentialNewsResponse,
+    summary="Top 10 noticias por valor absoluto del humor",
+    responses=ERROR_RESPONSES,
+)
+def get_influential_news(
+    service: Annotated[DashboardService, Depends(get_dashboard_service)],
+    fecha_desde: Annotated[date, Query()],
+    fecha_hasta: Annotated[date, Query()],
+    continente: Annotated[Continent | None, Query()] = None,
+    pais: Annotated[str | None, Query(min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")] = None,
+) -> dict[str, object]:
+    return service.get_influential_news(
+        date_from=fecha_desde, date_to=fecha_hasta, continent=continente, country=pais,
     )
 
 
