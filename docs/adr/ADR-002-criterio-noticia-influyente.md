@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | ADR-002 |
 | **Título** | Criterio de "noticia influyente": mayor valor absoluto de humor dentro del filtro seleccionado, limitado a las 10 primeras |
-| **Estado** | Propuesto — pendiente de aprobación del equipo |
+| **Estado** | Aceptado — aprobado el 19 de octubre de 2026 (tarea `ADR-002` cerrada en Jira, HUM-38) |
 | **Fecha de redacción** | 16 de octubre de 2026 |
 | **Sprint** | Sprint 3 |
 | **Autor / responsable** | Matías Santos — Arquitectura y Documentación |
@@ -252,3 +252,4 @@ Estos criterios se incorporan a la verificación de `E3-H02`.
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
 | 1.0 | 2026-10-16 | Matías Santos | Redacción inicial. Formaliza `D-05` y `D-06`; fija candidatas, filtro, orden con desempate, límite de 10, contrato de respuesta y reglas I-1 a I-6. Responde al punto abierto 3 de `ADR-001`. Estado: **Propuesto**. |
+| 1.1 | 2026-10-19 | Matías Santos | Cambio de estado a **Aceptado** al cerrar la tarea `ADR-002` (HUM-38) en el Sprint 3. Sin cambios en la decisión; los puntos abiertos de la secc. 8 siguen vigentes (issues #67 y #68). |

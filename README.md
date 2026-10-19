@@ -104,7 +104,7 @@ Base: `/api/v1` · Formato: JSON · Documentación interactiva: `/api/docs`
 | `/dictionary` | GET, POST, PUT, PATCH, DELETE | Implementado en E2-H01-API: gestión CRUD y búsqueda de términos evaluables |
 | `/config` | GET, PUT | Implementado en E1-H04 y E4-H01: parámetros generales (periodicidad de captura, caducidad de noticias) |
 | `/sentiment` | GET, POST | Implementado en E2-H04 (`POST` análisis puntual sin persistencia); `GET` para humor agregado previsto en Sprint 3 |
-| `/dashboards` | GET | Datos agregados para el mapa mundial y la nube de palabras (previsto en Sprint 3) |
+| `/dashboards` | GET | Implementado en T-DASH-01: humor agregado por continente y país, evolución diaria, nube de palabras y noticias influyentes (ADR-002) |
 
 Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
@@ -114,15 +114,19 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 |---|---|
 | [`docs/adr/ADR-000`](docs/adr/ADR-000-arquitectura-tres-capas.md) | Arquitectura en tres capas y reglas de dependencia |
 | [`docs/adr/ADR-001`](docs/adr/ADR-001-algoritmo-calculo-humor.md) | Algoritmo de cálculo del humor, rango `[-1, 1]` y agregación regional |
+| [`docs/adr/ADR-002`](docs/adr/ADR-002-criterio-noticia-influyente.md) | Criterio de noticia influyente: mayor valor absoluto de humor, top 10 |
 | [`docs/adr/ADR-003`](docs/adr/ADR-003-stack-tecnologico.md) | Selección del stack tecnológico y justificación del gestor de datos |
 | [`docs/adr/ADR-004`](docs/adr/ADR-004-arquitectura-interna-frontend.md) | Organización interna del frontend por funcionalidad |
 | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) | Modelo E/R preliminar: entidades, relaciones e integridad |
+| [`docs/uml/UML-01`](docs/uml/UML-01-casos-de-uso.md) | Diagrama de casos de uso: actores, casos de uso y endpoints |
+| [`docs/uml/UML-02`](docs/uml/UML-02-diagrama-componentes.md) | Diagrama de componentes: frontend, capas del backend, scheduler y PostgreSQL |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación, cierre y evidencia de validación por sprint e historia |
 | [`docs/sprints/planificacion-sprint-1.md`](docs/sprints/planificacion-sprint-1.md) | Planificación del Sprint 1 (31 puntos) |
 | [`docs/sprints/cierre-sprint-1.md`](docs/sprints/cierre-sprint-1.md) | Resultado del Sprint 1, métricas reales y primera recalibración |
 | [`docs/sprints/planificacion-sprint-2.md`](docs/sprints/planificacion-sprint-2.md) | Planificación del Sprint 2 (35 puntos) |
 | [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md) | Resultado del Sprint 2, métricas y recalibración de velocidad |
+| [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) | Resultado del Sprint 3, métricas de CI, deuda abierta y recalibración |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
 | `openspec/` | Única fuente editable de propuestas, especificaciones y tareas OpenSpec; incluye las capacidades frontend bajo `openspec/specs/frontend/` |
 | `opsx/contracts/` | Copia entregable generada mediante `python opsx/sync_contracts.py` |
@@ -140,9 +144,12 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
 - **Sprint 1 — Captura RSS: cerrado.** Se entregaron los 31 puntos comprometidos (`INFRA-02`, `CICD-00`, E1-H01, E1-H02, E1-H04, E4-H01, E1-H03, E1-H05, `QA-S1` e `INT-S1`).
 - **Sprint 2 — Motor de sentimiento y purgado: cerrado.** Se entregaron los 35 puntos comprometidos: E2-H01-API, ADR-001, E2-H02, E2-H03, E2-H04, E4-H02, `QA-S2`, `INT-S2` y `DOC-S2`.
+- **Sprint 3 — Interfaz de usuario y dashboards: cerrado.** Se entregaron los 41 puntos comprometidos: E2-H01-UI, T-DASH-01, E3-H01, E3-H03, E4-H04, ADR-002, `QA-S3`, `INT-S3` y `DOC-S3`.
 
 El sistema cuenta con el motor de sentimiento en español e inglés formalizado en ADR-001, con cálculo y persistencia del humor por noticia en PostgreSQL, desglose de términos en `NOTICIA_TERMINO`, léxico curado reproducible de 30 pares de conceptos, CRUD de diccionario en `/api/v1/dictionary`, endpoint `POST /api/v1/sentiment` para análisis puntual y purgado periódico de noticias caducadas. La suite cuenta con 168 pruebas y 97,62 % de cobertura (CI y revalidación local del 28 de septiembre de 2026), con verificación contra PostgreSQL 16 real.
 
-El detalle del resultado, las métricas y la recalibración de velocidad están en [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md).
+Desde el Sprint 3 cuenta además con una interfaz React/Vite: dashboard con mapa mundial por continente y país, evolución diaria y nube de palabras (`/dashboard`), gestión del diccionario (`/dictionary`) y panel de administración de fuentes, canales y parámetros (`/fuentes`, `/parametros`), sobre los endpoints `/api/v1/dashboards` y `/api/v1/channels`. En CI sobre `main` (16 de octubre de 2026) la suite backend tiene 242 pruebas y 97,82 % de cobertura, y la suite frontend, 136 pruebas.
 
-**Siguiente:** Sprint 3 — Interfaz de usuario (React/Vite), dashboards, mapa mundial coropleta y nube de palabras.
+El detalle del resultado, las métricas y la recalibración de velocidad están en [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) (Sprint 2: [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md)).
+
+**Siguiente:** Sprint 4 — cierre de `E3-H02` y de la deuda abierta, y estabilización antes del congelamiento interno del 30 de octubre de 2026.
