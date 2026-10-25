@@ -58,10 +58,32 @@ describe('LandingPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('labels the background map as illustrative sample data', () => {
+  it('keeps the headline, both buttons and the legend visible over the globe', () => {
     renderLanding();
 
-    expect(screen.getByText('Mapa de fondo ilustrativo · valores de ejemplo')).toBeInTheDocument();
+    const hero = screen.getByRole('region', { name: '¿De qué humor está el mundo?' });
+    expect(within(hero).getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(within(hero).getByRole('link', { name: 'Explorar el humor global →' })).toBeInTheDocument();
+    expect(within(hero).getByRole('link', { name: 'Cómo funciona' })).toBeInTheDocument();
+    expect(within(hero).getByRole('img', { name: /^Escala de humor/ })).toBeInTheDocument();
+    // The globe is decoration: present in the hero, hidden from screen readers.
+    expect(hero.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('labels the globe as illustrative sample data', () => {
+    renderLanding();
+
+    expect(screen.getByText('Globo de fondo ilustrativo · valores de ejemplo')).toBeInTheDocument();
+  });
+
+  it('renders without crashing when canvas getContext returns null', () => {
+    // jsdom has no canvas; browsers can also return null, e.g. past the context limit.
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+    expect(() => renderLanding()).not.toThrow();
+    expect(getContext).toHaveBeenCalledWith('2d');
+
+    getContext.mockRestore();
   });
 
   it('renders a section for every in-page anchor', () => {

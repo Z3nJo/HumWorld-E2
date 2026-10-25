@@ -1,3 +1,4 @@
+import { scaleLinear } from 'd3-scale';
 import type { Continent } from './continent';
 
 export type ContinentValues = Record<Continent, number>;
@@ -10,6 +11,11 @@ export const HUMOR_STOPS: { value: number; color: string }[] = [
   { value: 0.5, color: '#9cc4a8' },
   { value: 1, color: '#357050' },
 ];
+
+export const humorColor = scaleLinear<string>()
+  .domain(HUMOR_STOPS.map(({ value }) => value))
+  .range(HUMOR_STOPS.map(({ color }) => color))
+  .clamp(true);
 
 // Spanish display: real minus sign and comma decimal, e.g. "−0,76". Values that round to zero
 // print unsigned, so -0.004 shows "0,00" instead of "−0,00".

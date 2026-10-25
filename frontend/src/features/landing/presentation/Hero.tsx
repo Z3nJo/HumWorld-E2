@@ -1,40 +1,21 @@
 import { Link } from 'react-router-dom';
-import { HERO_SAMPLE, HUMOR_STOPS } from '../domain/humorScale';
+import { HUMOR_STOPS } from '../domain/humorScale';
+import { GlobeCanvas } from './GlobeCanvas';
 import { PANEL_PATH } from './paths';
-import { useHeartbeat } from './useHeartbeat';
-import { MapPulses, WorldMap } from './WorldMap';
 import './Hero.css';
 
 const ramp = (stops: typeof HUMOR_STOPS) =>
   `linear-gradient(90deg, ${stops.map(({ color }) => color).join(', ')})`;
 
-const RAMP_FULL = ramp(HUMOR_STOPS);
+const RAMP_NEGATIVE = ramp(HUMOR_STOPS.filter(({ value }) => value <= 0));
 const RAMP_POSITIVE = ramp(HUMOR_STOPS.filter(({ value }) => value >= 0));
-
-// Separate component so each heartbeat re-renders only the map layers.
-// The ripples sit in a twin frame above the veil, so they stay visible over the center.
-const HeroMap = () => {
-  const values = useHeartbeat(HERO_SAMPLE);
-  return (
-    <>
-      <div aria-hidden="true" className="lp-hero__map">
-        <div className="lp-hero__map-frame">
-          <WorldMap variant="hero" values={values} />
-        </div>
-      </div>
-      <div aria-hidden="true" className="lp-hero__veil" />
-      <div aria-hidden="true" className="lp-hero__map">
-        <div className="lp-hero__map-frame lp-hero__pulses">
-          <MapPulses values={values} />
-        </div>
-      </div>
-    </>
-  );
-};
 
 export const Hero = () => (
   <section id="inicio" aria-labelledby="hero-t" className="lp-hero">
-    <HeroMap />
+    <div className="lp-hero__map">
+      <GlobeCanvas />
+    </div>
+    <div aria-hidden="true" className="lp-hero__veil" />
     <div className="lp-container lp-hero__inner">
       <div className="lp-eyebrow lp-hero__meta">
         <span>Edición global</span>
@@ -63,7 +44,7 @@ export const Hero = () => (
           <i className="lp-hero__swatch" style={{ background: 'var(--neg)' }} />
           Negativo <span className="lp-hero__value">−1</span>
         </span>
-        <span aria-hidden="true" className="lp-hero__ramp" style={{ background: RAMP_FULL }} />
+        <span aria-hidden="true" className="lp-hero__ramp" style={{ background: RAMP_NEGATIVE }} />
         <span className="lp-hero__stop">
           <i className="lp-hero__swatch lp-hero__swatch--neu" style={{ background: 'var(--neu)' }} />
           Neutro <span className="lp-hero__value">0</span>
@@ -74,7 +55,7 @@ export const Hero = () => (
           Positivo <span className="lp-hero__value">+1</span>
         </span>
       </div>
-      <p className="lp-hero__caption">Mapa de fondo ilustrativo · valores de ejemplo</p>
+      <p className="lp-hero__caption">Globo de fondo ilustrativo · valores de ejemplo</p>
     </div>
   </section>
 );
