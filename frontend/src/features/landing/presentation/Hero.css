@@ -28,11 +28,6 @@
   aspect-ratio: 2 / 1;
 }
 
-.lp-hero__globe {
-  width: min(760px, 92vw);
-  aspect-ratio: 1;
-}
-
 .lp-hero__map-frame {
   flex: none;
   width: max(980px, 112%);

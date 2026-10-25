@@ -1,0 +1,116 @@
+/* Tall track: the stage stays pinned while the scroll through it drives the story. */
+.lp-story {
+  height: 340vh;
+  margin-top: 32px;
+}
+
+/* Never hidden by the section reveal: the canvas already draws at the slot. */
+.lp--reveal .lp-section > .lp-story {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.lp-story__stage {
+  position: sticky;
+  top: 62px;
+  height: calc(100vh - 62px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.lp-story__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.lp-story__eyebrow {
+  margin: 0;
+  font: 500 11.5px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+.lp-story__headline {
+  margin: 0;
+  font: 500 clamp(24px, 4vw, 40px) / 1.2 var(--serif);
+}
+
+.lp-story__term {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  transition: background-color 0.4s ease;
+}
+
+.lp-story__term[data-on='true'].lp-story__term--pos {
+  background: #9cc4a8;
+}
+
+.lp-story__term[data-on='true'].lp-story__term--neg {
+  background: #e2a383;
+}
+
+.lp-story__value {
+  margin-left: 2px;
+  font: 500 12px/1 var(--mono);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.lp-story__term[data-on='true'] .lp-story__value {
+  opacity: 1;
+}
+
+.lp-story__score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font: 500 14px/1.2 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lp-story__score strong {
+  font: 500 clamp(28px, 4vw, 40px) / 1 var(--serif);
+  letter-spacing: 0;
+}
+
+.lp-story__formula {
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+
+/* Slot the canvas draws the map into; the dot is positioned in percentages of this box. */
+.lp-story__map {
+  position: relative;
+  flex: none;
+  width: min(800px, 92vw);
+  aspect-ratio: 2 / 1;
+}
+
+.lp-story__drop {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--ink3);
+}
+
+@media (max-height: 640px) {
+  .lp-story__map {
+    width: min(480px, 92vw);
+  }
+}

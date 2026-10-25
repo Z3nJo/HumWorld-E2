@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { HowStory } from './HowStory';
 import { PANEL_PATH } from './paths';
 import './HowItWorks.css';
 
@@ -55,6 +56,7 @@ export const HowItWorks = () => (
       </div>
       <span className="lp-section__note">4 pasos · se repite en cada captura</span>
     </div>
+    <HowStory />
     <ol className="lp-steps">
       {STEPS.map(({ icon, title, text, link, to }, i) => (
         <li key={to} className="lp-stack lp-steps__item">

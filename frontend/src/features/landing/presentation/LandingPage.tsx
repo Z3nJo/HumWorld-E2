@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { GlobeCanvas } from './GlobeCanvas';
 import { Hero } from './Hero';
 import { HowItWorks } from './HowItWorks';
 import { LandingFooter } from './LandingFooter';
@@ -15,6 +16,7 @@ export const LandingPage = () => {
 
   return (
     <div ref={root} className="lp">
+      <GlobeCanvas root={root} />
       <LandingHeader />
       <main>
         <Hero />

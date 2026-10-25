@@ -130,3 +130,17 @@ html:has(.lp) {
   display: flex;
   flex-direction: column;
 }
+
+/* Fixed particle layer behind the content; sections sit above it in paint order. */
+.lp-globe {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.lp main > section {
+  position: relative;
+}

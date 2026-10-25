@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { HUMOR_STOPS } from '../domain/humorScale';
-import { GlobeCanvas } from './GlobeCanvas';
 import { PANEL_PATH } from './paths';
 import './Hero.css';
 
@@ -12,9 +11,6 @@ const RAMP_POSITIVE = ramp(HUMOR_STOPS.filter(({ value }) => value >= 0));
 
 export const Hero = () => (
   <section id="inicio" aria-labelledby="hero-t" className="lp-hero">
-    <div className="lp-hero__map">
-      <GlobeCanvas />
-    </div>
     <div aria-hidden="true" className="lp-hero__veil" />
     <div className="lp-container lp-hero__inner">
       <div className="lp-eyebrow lp-hero__meta">

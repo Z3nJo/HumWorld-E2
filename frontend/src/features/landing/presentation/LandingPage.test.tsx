@@ -66,8 +66,23 @@ describe('LandingPage', () => {
     expect(within(hero).getByRole('link', { name: 'Explorar el humor global →' })).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Cómo funciona' })).toBeInTheDocument();
     expect(within(hero).getByRole('img', { name: /^Escala de humor/ })).toBeInTheDocument();
-    // The globe is decoration: present in the hero, hidden from screen readers.
-    expect(hero.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('draws the particle globe on a decorative canvas hidden from screen readers', () => {
+    const { container } = renderLanding();
+
+    expect(container.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('tells the how-it-works story with an example headline and its dictionary terms', () => {
+    renderLanding();
+
+    const section = screen.getByRole('region', { name: 'De un titular a un color en el mapa' });
+    const terms = within(section).getAllByText(/^(acuerdo|récord|crecimiento|inflación)/, { selector: 'mark' });
+
+    expect(terms).toHaveLength(4);
+    expect(within(section).getByText(/Ejemplo ilustrativo de un titular/)).toBeInTheDocument();
+    expect(section.querySelector('[data-map-slot]')).toBeInTheDocument();
   });
 
   it('labels the globe as illustrative sample data', () => {
