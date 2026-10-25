@@ -1,6 +1,15 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { fetchDashboard, fetchInfluentialNews, fetchInfluentialTerms } from '../../dashboard/infrastructure/dashboardApi';
 import { LandingPage } from './LandingPage';
+
+vi.mock('../../dashboard/infrastructure/dashboardApi');
+
+beforeEach(() => {
+  vi.mocked(fetchDashboard).mockRejectedValue(new Error('offline'));
+  vi.mocked(fetchInfluentialTerms).mockRejectedValue(new Error('offline'));
+  vi.mocked(fetchInfluentialNews).mockRejectedValue(new Error('offline'));
+});
 
 const renderLanding = () =>
   render(
@@ -135,5 +144,37 @@ describe('LandingPage', () => {
     expect(within(scope).getByRole('heading', { name: 'Lo que hace' })).toBeInTheDocument();
     expect(within(scope).getByRole('heading', { name: 'Lo que no hace' })).toBeInTheDocument();
     expect(within(scope).getAllByRole('listitem')).toHaveLength(8);
+  });
+
+  it("shows the API's real humor of the day in the panel preview once it arrives", async () => {
+    vi.mocked(fetchDashboard).mockResolvedValue({
+      fecha_desde: '2026-10-25', fecha_hasta: '2026-10-25', continente: null, pais: null,
+      agregados: [{ continente: 'Europa', pais: null, humor: -0.4, noticias: 9, suficiente: true }],
+    });
+    vi.mocked(fetchInfluentialTerms).mockResolvedValue({
+      fecha_desde: '2026-10-25', fecha_hasta: '2026-10-25', continente: null, pais: null,
+      terminos: [{ id_termino: 1, termino: 'sequía', idioma: 'es', peso: -6, aporte_total: -12, frecuencia: 3 }],
+    });
+    vi.mocked(fetchInfluentialNews).mockResolvedValue({
+      noticias: [{
+        id_noticia: 1, titulo: 'Sequía récord golpea la cosecha', url: 'https://x.test', canal: 'X',
+        continente: 'Europa', pais: 'ES', fecha_registro: '2026-10-25', valor_humor: -0.91,
+      }],
+    });
+    renderLanding();
+
+    expect(await screen.findByText('Sequía récord golpea la cosecha')).toBeInTheDocument();
+    expect(screen.getByText('sequía')).toBeInTheDocument();
+    expect(screen.getByText('−0,91')).toBeInTheDocument();
+    expect(screen.queryByText('Acuerdo regional amplía cuotas de exportación')).not.toBeInTheDocument();
+    expect(screen.getByText(/^Datos reales del \d{2}-\d{2}-\d{4}$/)).toBeInTheDocument();
+  });
+
+  it('keeps the illustrative samples and says so when the API is unavailable', async () => {
+    renderLanding();
+
+    await waitFor(() => expect(fetchDashboard).toHaveBeenCalled());
+    expect(screen.getByText('Previsualizaciones con datos de ejemplo')).toBeInTheDocument();
+    expect(screen.getByText('Acuerdo regional amplía cuotas de exportación')).toBeInTheDocument();
   });
 });
