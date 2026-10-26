@@ -13,6 +13,7 @@ from app.api import (
     configuration_router,
     dashboard_router,
     dictionary_router,
+    news_router,
     sentiment_router,
     sources_router,
 )
@@ -70,6 +71,7 @@ app.include_router(configuration_router, prefix="/api/v1")
 app.include_router(channels_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(dictionary_router, prefix="/api/v1")
+app.include_router(news_router, prefix="/api/v1")
 app.include_router(sentiment_router, prefix="/api/v1")
 app.include_router(sources_router, prefix="/api/v1")
 
