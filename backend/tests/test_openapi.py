@@ -44,6 +44,17 @@ def test_openapi_documents_required_source_operations_and_errors() -> None:
             assert "422" not in operation["responses"]
 
 
+def test_openapi_documents_manual_news_purge() -> None:
+    path_item = app.openapi()["paths"]["/api/v1/news"]
+    assert set(path_item) == {"delete"}
+    operation = path_item["delete"]
+    assert "purgar" in operation["summary"].lower()
+    assert operation["responses"].keys() >= {"204", "500"}
+    assert "422" not in operation["responses"]
+    assert "requestBody" not in operation
+    assert "parameters" not in operation
+
+
 def test_openapi_documents_channel_operations_source_fields_and_filters() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/channels"]
