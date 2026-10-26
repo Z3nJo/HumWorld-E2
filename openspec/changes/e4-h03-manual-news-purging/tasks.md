@@ -19,5 +19,5 @@
 ## 4. Contratos y verificación final
 
 - [ ] 4.1 Ejecutar las suites unitarias de purgado, scheduler y API, además de la integración PostgreSQL pertinente; verificar que no existen regresiones en el purgado automático ni fallos en las pruebas modificadas.
-- [ ] 4.2 Sincronizar el delta `news-purging` con la especificación principal y regenerar `opsx/contracts/news-purging/spec.md`; verificar que el sincronizador de contratos pasa también en modo `--check`.
+- [x] 4.2 Sincronizar el delta `news-purging` con la especificación principal y regenerar `opsx/contracts/news-purging/spec.md`; verificar que el sincronizador de contratos pasa también en modo `--check`.
 - [ ] 4.3 Ejecutar `openspec validate e4-h03-manual-news-purging --strict` y las verificaciones de OpenAPI; confirmar que todos los artefactos y el contrato HTTP cumplen el criterio de finalización de E4-H03.
