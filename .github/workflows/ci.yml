@@ -58,6 +58,10 @@ jobs:
           python -m pip install -r backend/requirements.txt
           python -m pip install pytest pytest-cov
 
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
       - name: Frontend quality check
         shell: bash
         run: |
@@ -72,8 +76,8 @@ jobs:
           fi
 
           cd frontend
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm run lint
+          pnpm install --frozen-lockfile
+          pnpm run lint
 
       - name: Apply backend migrations
         shell: bash
@@ -107,6 +111,10 @@ jobs:
           cd backend
           pytest --cov=. --cov-report=term-missing --cov-fail-under=80
 
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
       - name: Frontend tests
         shell: bash
         run: |
@@ -121,8 +129,8 @@ jobs:
           fi
 
           cd frontend
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test
+          pnpm install --frozen-lockfile
+          pnpm test
 
       - name: Build Docker services
         run: docker compose -f opsx/docker-compose.yml build
