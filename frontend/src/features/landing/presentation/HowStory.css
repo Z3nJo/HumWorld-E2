@@ -13,8 +13,8 @@
 
 .lp-story__stage {
   position: sticky;
-  top: 62px;
-  height: calc(100vh - 62px);
+  top: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -33,7 +33,7 @@
 
 .lp-story__eyebrow {
   margin: 0;
-  font: 500 11.5px/1 var(--mono);
+  font: 500 12px/1 var(--sans);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink2);
@@ -41,28 +41,32 @@
 
 .lp-story__headline {
   margin: 0;
-  font: 500 clamp(24px, 4vw, 40px) / 1.2 var(--serif);
+  font: 500 clamp(26px, 4vw, 44px) / 1.15 var(--serif);
+  letter-spacing: -0.03em;
 }
 
+/* Lit terms glow in their tone; the words stay white so they keep full contrast. */
 .lp-story__term {
-  padding: 0 4px;
-  border-radius: 4px;
+  padding: 0 6px;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   transition: background-color 0.4s ease;
 }
 
 .lp-story__term[data-on='true'].lp-story__term--pos {
-  background: #9cc4a8;
+  background: #19c3b847; /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, var(--pos) 28%, transparent);
 }
 
 .lp-story__term[data-on='true'].lp-story__term--neg {
-  background: #e2a383;
+  background: #f29cf759;
+  background: color-mix(in srgb, var(--neg) 35%, transparent);
 }
 
 .lp-story__value {
   margin-left: 2px;
-  font: 500 12px/1 var(--mono);
+  font: 500 12px/1 var(--sans);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
@@ -76,18 +80,20 @@
   flex-direction: column;
   gap: 4px;
   margin: 0;
-  font: 500 14px/1.2 var(--mono);
-  letter-spacing: 0.06em;
+  font: 500 12px/1.2 var(--sans);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--mist);
 }
 
 .lp-story__score strong {
-  font: 500 clamp(28px, 4vw, 40px) / 1 var(--serif);
-  letter-spacing: 0;
+  font: 500 clamp(44px, 6vw, 72px) / 1 var(--serif);
+  letter-spacing: -0.046em;
 }
 
 .lp-story__formula {
-  font-size: 11.5px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
   color: var(--ink3);
 }
 
@@ -106,7 +112,7 @@
   margin: -8px 0 0 -8px;
   border-radius: 50%;
   border: 2px solid var(--paper);
-  box-shadow: 0 0 0 1px var(--ink3);
+  outline: 1px solid var(--ink);
 }
 
 @media (max-height: 640px) {

@@ -1,14 +1,20 @@
+/* Manifesto block: a centered statement that lights up on scroll, then a narrow reading column. */
 .lp-whatis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: 24px 64px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.lp-whatis__statement {
+  margin-top: 28px;
 }
 
 .lp-whatis__body {
-  gap: 14px;
-  padding-top: 6px;
-  font-size: 16.5px;
-  line-height: 1.65;
+  gap: 16px;
+  max-width: 560px;
+  margin-top: 40px;
+  font-size: 15px;
+  line-height: 1.5;
   color: var(--ink2);
 }

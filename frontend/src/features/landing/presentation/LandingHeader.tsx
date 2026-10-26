@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
 import { PANEL_PATH } from './paths';
@@ -18,11 +17,8 @@ export const LandingHeader = () => (
         <span className="lp-header__name">HumWorld</span>
       </a>
       <nav aria-label="Secciones" className="lp-header__nav">
-        {SECTIONS.map(({ href, label }, i) => (
-          <Fragment key={href}>
-            {i > 0 && <span aria-hidden="true" className="lp-header__sep">·</span>}
-            <a href={href} className="lp-header__link">{label}</a>
-          </Fragment>
+        {SECTIONS.map(({ href, label }) => (
+          <a key={href} href={href} className="lp-header__link">{label}</a>
         ))}
       </nav>
       <Link to={PANEL_PATH} className="lp-btn lp-btn--dark lp-header__cta">Ir al panel →</Link>

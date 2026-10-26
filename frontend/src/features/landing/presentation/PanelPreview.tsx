@@ -61,7 +61,7 @@ const NewsPreview = ({ news }: { news: PreviewNews[] }) =>
     </div>
   ));
 
-type Card = { kind: string; preview: ReactNode; title: string; text: string; cta: string };
+type Card = { kind: string; preview: ReactNode; title: string; text: string };
 
 const cards = (values: ContinentValues, words: PreviewWord[], news: PreviewNews[]): Card[] => [
   {
@@ -69,21 +69,18 @@ const cards = (values: ContinentValues, words: PreviewWord[], news: PreviewNews[
     preview: <MapPreview values={values} />,
     title: 'Mapa coroplético',
     text: 'Humor por continente con selector de fecha. Haz clic en un continente para bajar al detalle por país.',
-    cta: 'Abrir el mapa →',
   },
   {
     kind: 'cloud',
     preview: <CloudPreview words={words} />,
     title: 'Nube de términos',
-    text: 'Los términos que más pesaron en el resultado. Verde suma, naranja resta; el tamaño indica su influencia.',
-    cta: 'Ver la nube →',
+    text: 'Los términos que más pesaron en el resultado. Turquesa suma, rosa resta; el tamaño indica su influencia.',
   },
   {
     kind: 'news',
     preview: <NewsPreview news={news} />,
     title: 'Noticias influyentes',
     text: 'Las noticias con valor más extremo de la región y fecha elegidas, con su fuente y tema IPTC.',
-    cta: 'Ver el listado →',
   },
 ];
 
@@ -101,25 +98,25 @@ export const PanelPreview = () => {
 
   return (
     <section id="que-veras" aria-labelledby="qv-t" className="lp-section">
-      <div className="lp-section__row lp-panel__head">
-        <div>
-          <div className="lp-eyebrow">03 — Qué verás en el panel</div>
-          <h2 id="qv-t" className="lp-section__title">Tres lecturas del mismo día</h2>
-        </div>
-        <span className="lp-section__note">
+      <div className="lp-section__row">
+        <div className="lp-eyebrow">Qué verás en el panel</div>
+        <h2 id="qv-t" className="lp-section__title">Tres lecturas del mismo día</h2>
+        <p className="lp-section__note">
           {today ? `Datos reales del ${dateLabel(today.date)}` : 'Previsualizaciones con datos de ejemplo'}
-        </span>
+        </p>
       </div>
       <div className="lp-panel">
-        {items.map(({ kind, preview, title, text, cta }) => (
+        {items.map(({ kind, preview, title, text }) => (
           <Link key={kind} to={PANEL_PATH} className="lp-stack lp-panel__card">
             <div aria-hidden="true" className={`lp-panel__preview lp-panel__preview--${kind}`}>
               {preview}
             </div>
             <div className="lp-stack lp-panel__body">
-              <h3 className="lp-panel__title">{title}</h3>
+              <div className="lp-panel__head-row">
+                <h3 className="lp-panel__title">{title}</h3>
+                <span aria-hidden="true" className="lp-arrow">↗</span>
+              </div>
               <p className="lp-panel__text">{text}</p>
-              <span className="lp-panel__cta">{cta}</span>
             </div>
           </Link>
         ))}

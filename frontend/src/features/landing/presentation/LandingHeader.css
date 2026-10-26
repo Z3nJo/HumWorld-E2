@@ -1,21 +1,24 @@
+/* Thin translucent bar that stays on top: logo left, links centered, CTA right. */
 .lp-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: #f5f2ebf2; /* fallback for browsers without color-mix() */
-  background: color-mix(in srgb, var(--paper) 95%, transparent);
-  border-bottom: 1px solid var(--line);
+  background: #03393599; /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, #033935 70%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line2);
 }
 
 .lp-header__bar {
-  height: 62px;
-  display: flex;
+  height: 64px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
 }
 
 .lp-header__brand {
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -24,45 +27,38 @@
 }
 
 .lp-header__name {
-  font: 600 22px/1 var(--serif);
+  font: 500 18px/1 var(--sans);
   letter-spacing: -0.01em;
 }
 
 .lp-header__nav {
   display: flex;
-  gap: 4px;
+  gap: 28px;
   align-items: center;
 }
 
 .lp-header__link {
-  padding: 8px 12px;
-  border-radius: 6px;
   color: var(--ink2);
   text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
+  font: 400 11px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
 }
 
 .lp-header__link:hover {
-  background: var(--paper2);
   color: var(--ink);
 }
 
-.lp-header__sep {
-  color: var(--line);
-}
-
-/* Scoped under .lp-header so it beats the shared .lp-btn size regardless of CSS order. */
 .lp-header .lp-header__cta {
-  gap: 8px;
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 7px;
-  font-size: 14px;
-  flex: none;
+  justify-self: end;
 }
 
 @media (max-width: 759px) {
+  .lp-header__bar {
+    grid-template-columns: 1fr auto;
+  }
+
   .lp-header__nav {
     display: none;
   }

@@ -1,77 +1,138 @@
+/* One large well: the stacked step rows on the left, the molecule floating on the right. */
+.lp-explore {
+  display: grid;
+  gap: 40px;
+  align-items: center;
+  margin-top: clamp(40px, 6vw, 80px);
+  padding: clamp(24px, 3vw, 40px);
+}
+
+@media (min-width: 960px) {
+  .lp-explore {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+  }
+}
+
+.lp-explore__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-explore__title {
+  margin: 20px 0 28px;
+  font: 500 clamp(30px, 3vw, 40px) / 1.05 var(--serif);
+  letter-spacing: -0.03em;
+}
+
 .lp-steps {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  column-gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-@media (min-width: 560px) {
-  .lp-steps {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1000px) {
-  .lp-steps {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
+/* Feature row: transparent until active; the first one is lit while none is hovered. */
 .lp-steps__item {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  padding: 28px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 20px;
+  border-radius: 12px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 0.25s ease;
 }
 
-.lp-steps__top {
+.lp-steps__item:hover,
+.lp-steps:not(:hover) li:first-child .lp-steps__item {
+  background: var(--card);
+  color: var(--ink);
+}
+
+.lp-steps__head {
   display: flex;
   justify-content: space-between;
-}
-
-.lp-steps__icon {
-  stroke: var(--ink);
-  stroke-width: 1.25;
-  fill: none;
-}
-
-/*
- * Icons draw themselves once the step list is revealed (see useReveal), left to right.
- * 120 exceeds every shape's length in the 40px box, so a full dash offset hides it.
- */
-@media (prefers-reduced-motion: no-preference) {
-  .lp--reveal .lp-steps__icon > * {
-    stroke-dasharray: 120;
-    stroke-dashoffset: 120;
-    transition: stroke-dashoffset 1.4s ease-in-out 0.3s;
-  }
-
-  .lp--reveal .lp-in .lp-steps__icon > * {
-    stroke-dashoffset: 0;
-  }
-
-  .lp--reveal .lp-steps__item:nth-child(2) .lp-steps__icon > * { transition-delay: 0.55s; }
-  .lp--reveal .lp-steps__item:nth-child(3) .lp-steps__icon > * { transition-delay: 0.8s; }
-  .lp--reveal .lp-steps__item:nth-child(4) .lp-steps__icon > * { transition-delay: 1.05s; }
+  align-items: center;
+  gap: 16px;
 }
 
 .lp-steps__title {
-  margin: 0;
-  font: 500 22px / 1.2 var(--serif);
+  font: 500 clamp(20px, 1.8vw, 24px) / 1.2 var(--serif);
+  letter-spacing: -0.02em;
+}
+
+.lp-steps__num {
+  margin-right: 6px;
+  font-size: 0.6em;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  vertical-align: 0.35em;
 }
 
 .lp-steps__text {
-  font-size: 14.5px;
+  max-width: 54ch;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: var(--ink2);
 }
 
-/* Colors come from the global a / a:hover rules (--pos, then --ink). */
-.lp-steps__link {
-  margin-top: auto;
-  font: 500 12.5px var(--mono);
-  text-decoration: none;
+.lp-molecule {
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+  margin: 0 auto;
 }
 
-.lp-steps__link:hover {
-  text-decoration: underline;
+@media (max-width: 959px) {
+  .lp-molecule {
+    width: min(70%, 300px);
+    order: -1;
+  }
+}
+
+.lp-molecule__bond {
+  stroke: var(--mist);
+  stroke-width: 26;
+  stroke-linecap: round;
+}
+
+.lp-molecule__dot {
+  fill: var(--mist);
+}
+
+.lp-molecule__core {
+  fill: var(--dim);
+}
+
+/* Atoms pop in one after another once the well is revealed (see useReveal), then drift. */
+@media (prefers-reduced-motion: no-preference) {
+  .lp--reveal .lp-molecule__atom,
+  .lp--reveal .lp-molecule__bond {
+    transform-box: fill-box;
+    transform-origin: center;
+    scale: 0;
+    transition: scale 0.7s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  .lp--reveal .lp-in .lp-molecule__atom,
+  .lp--reveal .lp-in .lp-molecule__bond {
+    scale: 1;
+  }
+
+  .lp-molecule__atom:nth-child(odd) { transition-delay: 0.15s; }
+  .lp-molecule__atom:nth-child(3n) { transition-delay: 0.3s; }
+  .lp-molecule__atom:nth-child(4n) { transition-delay: 0.45s; }
+
+  .lp-molecule {
+    animation: lp-molecule-drift 9s ease-in-out infinite alternate;
+  }
+
+  @keyframes lp-molecule-drift {
+    to {
+      transform: translateY(-10px) rotate(2deg);
+    }
+  }
 }

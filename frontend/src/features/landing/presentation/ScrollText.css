@@ -1,0 +1,51 @@
+.lp-reveal {
+  margin: 0 auto;
+  max-width: 22ch;
+  font: 500 clamp(36px, 5vw, 72px) / 1.05 var(--serif);
+  letter-spacing: -0.035em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.lp-statement {
+  padding-block: clamp(120px, 18vw, 240px) 0;
+}
+
+.lp-reveal__word {
+  color: var(--dim);
+  transition: color 0.5s ease;
+}
+
+/* --warm is 0% for most words and grows on the last ones, mixing in the phosphor pink. */
+.lp-reveal__word[data-on='true'] {
+  color: var(--ink);
+  color: color-mix(in srgb, var(--phosphor) var(--warm), var(--ink));
+}
+
+/* Display text as an environmental element: huge, tight, filled with a mist-to-lavender sheen. */
+.lp-kinetic {
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(40px, 8vw, 120px);
+  overflow: hidden;
+  font: 500 clamp(88px, 17vw, 260px) / 0.95 var(--sans);
+  letter-spacing: -0.046em;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.lp-kinetic__line {
+  width: max-content;
+  padding-right: 0.1em;
+  background: linear-gradient(90deg, #cfe9e6 0%, #dce4ee 55%, #e6c6f0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-kinetic__line {
+    transform: none !important;
+  }
+}

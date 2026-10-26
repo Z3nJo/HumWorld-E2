@@ -1,0 +1,58 @@
+/* Bento of statistic counters: one tall phosphor card, one wide, two small kelp tiles. */
+.lp-bento {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+  max-width: 1080px;
+}
+
+@media (min-width: 760px) {
+  .lp-bento {
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(200px, auto));
+  }
+
+  .lp-bento__card--glow {
+    grid-row: span 2;
+  }
+
+  .lp-bento__card--wide {
+    grid-column: span 2;
+  }
+}
+
+.lp-bento__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 180px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.lp-bento__card dt {
+  max-width: 16ch;
+  font: 500 12px/1.4 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+.lp-bento__card dd {
+  margin: 0;
+  font: 500 clamp(48px, 5.4vw, 76px) / 1 var(--sans);
+  letter-spacing: -0.046em;
+  color: var(--ink);
+}
+
+/* Lavender phosphor to near white: the one light surface, so its text turns dark. */
+.lp-bento__card--glow {
+  background: linear-gradient(180deg, #fad1ff 0%, #fde9ff 45%, #fffdfa 100%);
+}
+
+.lp-bento__card--glow dt,
+.lp-bento__card--glow dd {
+  color: var(--paper);
+}

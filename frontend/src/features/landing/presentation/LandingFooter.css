@@ -1,31 +1,66 @@
+/* Closing band over the brightest glow: statement left, action right, then a quiet link row. */
 .lp-footer {
-  background: var(--ink);
-  color: #e8e4da;
+  background: radial-gradient(60% 80% at 45% 70%, #0aa39b4d 0%, #0aa39b00 100%);
+  color: var(--ink2);
 }
 
 .lp-footer__inner {
-  padding-top: clamp(48px, 7vw, 80px);
+  padding-top: 120px;
   padding-bottom: 28px;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 56px;
 }
 
 .lp-footer__cta-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 24px;
+  gap: 32px;
   flex-wrap: wrap;
 }
 
 .lp-footer__title {
   margin: 0;
-  font: 500 clamp(30px, 4.4vw, 52px) / 1.05 var(--serif);
-  letter-spacing: -0.02em;
-  max-width: 16ch;
-  color: var(--paper);
+  font: 500 clamp(32px, 3.6vw, 52px) / 1.05 var(--serif);
+  letter-spacing: -0.03em;
+  max-width: 13ch;
+  color: var(--ink);
   text-wrap: balance;
+}
+
+.lp-footer__connect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  font: 500 clamp(20px, 1.8vw, 26px) / 1.2 var(--sans);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.lp-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  font: 400 12px/1 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lp-footer__links a {
+  padding-right: 14px;
+  color: var(--ink2);
+  text-decoration: none;
+}
+
+.lp-footer__links a + a {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+.lp-footer__links a:hover {
+  color: var(--ink);
 }
 
 .lp-footer__meta {
@@ -33,10 +68,11 @@
   justify-content: space-between;
   gap: 16px 32px;
   flex-wrap: wrap;
-  padding-top: 20px;
-  border-top: 1px solid #343841;
-  font: 12px/1.6 var(--mono);
-  color: #a9a69e;
+  padding-top: 24px;
+  font: 500 10px/1.6 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
 }
 
 .lp-footer__credit {
@@ -45,12 +81,8 @@
   gap: 10px;
 }
 
-.lp-footer__repo {
-  color: #e8e4da;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.lp-footer__repo:hover {
-  color: #fff;
+@media (max-width: 559px) {
+  .lp-footer__connect {
+    align-items: flex-start;
+  }
 }
