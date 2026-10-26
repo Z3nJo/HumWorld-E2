@@ -14,7 +14,7 @@ export interface TimelinePoint {
 const colorScale = d3
   .scaleLinear<string>()
   .domain([-1, -0.5, 0, 0.5, 1])
-  .range(['#bf4f22', '#e2a383', '#e6e0d2', '#93b1d6', '#285f9f'])
+  .range(['#bf4f22', '#e2a383', '#e6e0d2', '#9cc4a8', '#357050'])
   .interpolate(d3.interpolateLab)
   .clamp(true);
 
@@ -81,7 +81,7 @@ export const DashboardTimeline: React.FC<DashboardTimelineProps> = ({
       .attr('width', Math.max(0, x1 - x0 + x.step()))
       .attr('y', m.t)
       .attr('height', h - m.t - m.b)
-      .attr('fill', '#285f9f14');
+      .attr('fill', '#35705014');
 
     // Volume bars (noticias)
     svg

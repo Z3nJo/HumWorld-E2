@@ -35,12 +35,12 @@ PostgreSQL 16 como servicio (`humworld_test`) y ejecuta, en orden:
 2. Validacion de la configuracion: `docker compose -f opsx/docker-compose.yml config`.
 3. Sincronizacion de contratos OpenSpec: `python opsx/sync_contracts.py --check`.
 4. Instalacion de dependencias del backend, `pytest` y `pytest-cov`.
-5. Control de calidad del frontend: `npm run lint`, solo si `frontend/package.json` define un
+5. Control de calidad del frontend: `pnpm install --frozen-lockfile` y `pnpm run lint`, solo si `frontend/package.json` define un
    script `lint`; el backend no tiene paso de formateo ni linting.
 6. Migraciones Alembic desde `backend/`: `alembic upgrade head`.
 7. Suite completa del backend con umbral minimo de cobertura del 80 %, desde `backend/`:
    `pytest --cov=. --cov-report=term-missing --cov-fail-under=80`.
-8. Pruebas del frontend (`npm test`), solo si existe el script `test`.
+8. Pruebas del frontend (`pnpm test`), solo si existe el script `test`.
 9. Construccion de imagenes: `docker compose -f opsx/docker-compose.yml build`.
 
 Validacion local con el mismo comando de CI, ejecutada en un contenedor `python:3.12-slim`

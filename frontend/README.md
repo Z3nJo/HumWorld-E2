@@ -26,10 +26,13 @@ Las funciones puras y mapeadores se prueban con Vitest sin DOM ni red cuando sea
 
 Comandos locales:
 
+El gestor de paquetes es **pnpm** (versión fijada en `packageManager` de `package.json`; se activa con `corepack enable`).
+
 ```bash
-npm run lint
-npm run build
-npm run test
+pnpm install
+pnpm run lint
+pnpm run build
+pnpm run test
 ```
 
 ## Plantilla Vite

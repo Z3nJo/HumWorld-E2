@@ -1,0 +1,122 @@
+/* Tall track: the stage stays pinned while the scroll through it drives the story. */
+.lp-story {
+  height: 340vh;
+  margin-top: 32px;
+}
+
+/* Never hidden by the section reveal: the canvas already draws at the slot. */
+.lp--reveal .lp-section > .lp-story {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.lp-story__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.lp-story__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.lp-story__eyebrow {
+  margin: 0;
+  font: 500 12px/1 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+.lp-story__headline {
+  margin: 0;
+  font: 500 clamp(26px, 4vw, 44px) / 1.15 var(--serif);
+  letter-spacing: -0.03em;
+}
+
+/* Lit terms glow in their tone; the words stay white so they keep full contrast. */
+.lp-story__term {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  transition: background-color 0.4s ease;
+}
+
+.lp-story__term[data-on='true'].lp-story__term--pos {
+  background: #19c3b847; /* fallback for browsers without color-mix() */
+  background: color-mix(in srgb, var(--pos) 28%, transparent);
+}
+
+.lp-story__term[data-on='true'].lp-story__term--neg {
+  background: #f29cf759;
+  background: color-mix(in srgb, var(--neg) 35%, transparent);
+}
+
+.lp-story__value {
+  margin-left: 2px;
+  font: 500 12px/1 var(--sans);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.lp-story__term[data-on='true'] .lp-story__value {
+  opacity: 1;
+}
+
+.lp-story__score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font: 500 12px/1.2 var(--sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+.lp-story__score strong {
+  font: 500 clamp(44px, 6vw, 72px) / 1 var(--serif);
+  letter-spacing: -0.046em;
+}
+
+.lp-story__formula {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--ink3);
+}
+
+/* Slot the canvas draws the map into; the dot is positioned in percentages of this box. */
+.lp-story__map {
+  position: relative;
+  flex: none;
+  width: min(800px, 92vw);
+  aspect-ratio: 2 / 1;
+}
+
+.lp-story__drop {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  outline: 1px solid var(--ink);
+}
+
+@media (max-height: 640px) {
+  .lp-story__map {
+    width: min(480px, 92vw);
+  }
+}

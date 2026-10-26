@@ -197,7 +197,7 @@
 
 .day.win,
 .day-btn.win-bg {
-  background: #285f9f14;
+  background: #35705014;
 }
 
 .day.on .bar,
@@ -398,7 +398,7 @@
 .ramp-grad {
   height: 12px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #93b1d6, #285f9f);
+  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #9cc4a8, #357050);
 }
 
 .ramp-tk {
@@ -439,7 +439,7 @@
 
 .lgi-icon.pr,
 .lgi i.pr {
-  background: repeating-linear-gradient(135deg, #93b1d6 0 3px, #fff 3px 5px);
+  background: repeating-linear-gradient(135deg, #9cc4a8 0 3px, #fff 3px 5px);
   border: 1px dashed var(--ink2);
 }
 
@@ -456,7 +456,7 @@
 .ramp .g {
   height: 12px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #93b1d6, #285f9f);
+  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #9cc4a8, #357050);
 }
 
 .ramp .tk {
@@ -502,7 +502,7 @@
   position: relative;
   height: 10px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #93b1d6, #285f9f);
+  background: linear-gradient(90deg, #bf4f22, #e2a383, #e6e0d2, #9cc4a8, #357050);
   margin: 14px 0 4px;
 }
 

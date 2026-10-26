@@ -1,13 +1,15 @@
+import { RevealText } from './ScrollText';
 import './WhatIs.css';
 
 export const WhatIs = () => (
   <section id="que-es" aria-labelledby="qe-t" className="lp-section lp-whatis">
-    <div>
-      <div className="lp-eyebrow">01 — Qué es</div>
-      <h2 id="qe-t" className="lp-section__title">
-        Un termómetro del tono de las noticias, no de la opinión pública.
-      </h2>
-    </div>
+    <div className="lp-eyebrow">Qué es</div>
+    <RevealText
+      as="h2"
+      id="qe-t"
+      className="lp-whatis__statement"
+      text="Un termómetro del tono de las noticias, no de la opinión pública."
+    />
     <div className="lp-stack lp-whatis__body">
       <p>
         Cada noticia capturada recibe un valor numérico de humor entre −1 y +1, calculado con un

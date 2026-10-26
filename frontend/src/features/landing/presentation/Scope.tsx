@@ -27,30 +27,32 @@ const LISTS = [
 
 export const Scope = () => (
   <section id="alcance" aria-labelledby="al-t" className="lp-section lp-section--end">
-    <div className="lp-scope">
-      <div className="lp-stack lp-scope__intro">
+    <div className="lp-well lp-scope">
+      <div className="lp-section__row">
         <div className="lp-eyebrow">Nota del editor</div>
-        <h2 id="al-t" className="lp-scope__title">Transparencia y alcance</h2>
-        <p className="lp-scope__lead">
+        <h2 id="al-t" className="lp-section__title">Transparencia y alcance</h2>
+        <p className="lp-section__note">
           El humor que mostramos es el tono de lo publicado, medido con reglas explícitas. Conviene
           leerlo como un indicador, no como un veredicto.
         </p>
       </div>
-      {LISTS.map(({ title, marker, tone, items }) => (
-        <div key={title} className="lp-stack lp-scope__col">
-          <h3 className="lp-scope__heading">{title}</h3>
-          <ul className="lp-stack lp-scope__list">
-            {items.map((item) => (
-              <li key={item} className="lp-scope__item">
-                <span aria-hidden="true" className={`mono lp-tone-${tone}`}>
-                  {marker}
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      <div className="lp-scope__cols">
+        {LISTS.map(({ title, marker, tone, items }) => (
+          <div key={title} className="lp-stack lp-scope__col">
+            <h3 className="lp-scope__heading">{title}</h3>
+            <ul className="lp-stack lp-scope__list">
+              {items.map((item) => (
+                <li key={item} className="lp-scope__item">
+                  <span aria-hidden="true" className={`lp-tone-${tone}`}>
+                    {marker}
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   </section>
 );

@@ -26,7 +26,7 @@ let cachedWorld: WorldFeatureCollection | null = null;
 const colorScale = d3
   .scaleLinear<string>()
   .domain([-1, -0.5, 0, 0.5, 1])
-  .range(['#bf4f22', '#e2a383', '#e6e0d2', '#93b1d6', '#285f9f'])
+  .range(['#bf4f22', '#e2a383', '#e6e0d2', '#9cc4a8', '#357050'])
   .interpolate(d3.interpolateLab)
   .clamp(true);
 
