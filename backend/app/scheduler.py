@@ -13,7 +13,7 @@ from app.repositories import (
 )
 from app.services.capture import HttpxFeedparserClient, NewsCaptureService
 from app.services.configuration import ConfigurationService
-from app.services.purging import NewsPurgeService
+from app.services.purging import NewsPurgeApplicationService, NewsPurgeService
 
 logger = logging.getLogger(__name__)
 CAPTURE_JOB_ID = "rss-news-capture"
@@ -40,12 +40,10 @@ def run_capture_job() -> None:
 def run_purge_job() -> int | None:
     with get_session_factory()() as session:
         try:
-            retention_days = ConfigurationService(
-                ConfigurationRepository(session)
-            ).get_runtime_configuration().noticias_caducidad_dias
-            deleted = NewsPurgeService(NewsPurgeRepository(session)).purge_expired(
-                retention_days
-            )
+            deleted = NewsPurgeApplicationService(
+                ConfigurationService(ConfigurationRepository(session)),
+                NewsPurgeService(NewsPurgeRepository(session)),
+            ).purge_expired()
         except Exception:
             session.rollback()
             logger.exception("News purge failed")
