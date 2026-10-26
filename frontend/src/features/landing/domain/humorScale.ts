@@ -3,13 +3,14 @@ import type { Continent } from './continent';
 
 export type ContinentValues = Record<Continent, number>;
 
-// Same colors as the --neg / --neu / --pos tokens in index.css (domain cannot read CSS vars).
+// Same colors as the landing's --neg / --neu / --pos tokens in LandingPage.css (domain cannot
+// read CSS vars). Phosphor pink to mist white to bioluminescent teal, the particle-orb palette.
 export const HUMOR_STOPS: { value: number; color: string }[] = [
-  { value: -1, color: '#bf4f22' },
-  { value: -0.5, color: '#e2a383' },
-  { value: 0, color: '#e6e0d2' },
-  { value: 0.5, color: '#9cc4a8' },
-  { value: 1, color: '#357050' },
+  { value: -1, color: '#f29cf7' },
+  { value: -0.5, color: '#fad1ff' },
+  { value: 0, color: '#edfffe' },
+  { value: 0.5, color: '#7fe6df' },
+  { value: 1, color: '#19c3b8' },
 ];
 
 export const humorColor = scaleLinear<string>()

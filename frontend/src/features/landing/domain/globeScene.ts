@@ -20,6 +20,11 @@ export const globeRotation = (scrollY: number): [number, number] => [
   BASE_ROTATION[1],
 ];
 
+// Swell of the orb's surface at a point and time (seconds), in -1..1. Two slow waves cross
+// the sphere at different angles and speeds, so the crests roll like water, never in lockstep.
+export const waveAt = (lon: number, lat: number, time: number) =>
+  0.6 * Math.sin(lat * 0.11 + lon * 0.045 - time * 1.6) + 0.4 * Math.sin(lon * 0.09 - lat * 0.05 - time * 1.05);
+
 // Share of the story's pinned scroll spent turning the globe into the map.
 export const MORPH_END = 0.2;
 

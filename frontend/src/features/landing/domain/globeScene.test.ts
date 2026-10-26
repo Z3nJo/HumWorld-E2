@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { flatPoint, globeRotation, MORPH_END, morphAmount, placeParticle, storyProgress } from './globeScene';
+import { flatPoint, globeRotation, MORPH_END, morphAmount, placeParticle, storyProgress, waveAt } from './globeScene';
 
 const GLOBE = { x: 400, y: 300, radius: 200 };
 const MAP = { x: 0, y: 100, width: 800 };
@@ -56,5 +56,21 @@ describe('placeParticle', () => {
     const target = flatPoint([15, 50], MAP);
     expect(dot.x).toBeCloseTo(target.x);
     expect(dot.y).toBeCloseTo(target.y);
+  });
+});
+
+describe('waveAt', () => {
+  it('stays within -1..1 across the sphere and over time', () => {
+    for (let lon = -180; lon <= 180; lon += 30) {
+      for (let lat = -90; lat <= 90; lat += 30) {
+        for (const time of [0, 1.3, 7.9]) {
+          expect(Math.abs(waveAt(lon, lat, time))).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  it('moves the swell at a fixed point as time passes', () => {
+    expect(waveAt(10, 20, 0)).not.toBeCloseTo(waveAt(10, 20, 1));
   });
 });

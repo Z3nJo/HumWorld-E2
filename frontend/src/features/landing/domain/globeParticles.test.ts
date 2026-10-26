@@ -35,9 +35,9 @@ describe('createGlobeParticles', () => {
     const particles = createGlobeParticles();
     // Hand-interpolated between the legend stops: Europa -0.12, Oceania 0.4, Antartida 0.
     const expected = {
-      Europa: 'rgb(229, 209, 191)',
-      Oceania: 'rgb(171, 202, 176)',
-      Antartida: 'rgb(230, 224, 210)',
+      Europa: 'rgb(240, 244, 254)',
+      Oceania: 'rgb(149, 235, 229)',
+      Antartida: 'rgb(237, 255, 254)',
     };
 
     for (const [continent, color] of Object.entries(expected)) {
