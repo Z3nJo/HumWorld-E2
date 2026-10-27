@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Protocol
 
-from app.models import Channel
+from app.models import Channel, Country
 from app.models.domains import Continent
 from app.repositories.sources import DuplicateRecordError
 from app.services.sources import ResourceNotFoundError
@@ -26,6 +26,8 @@ class ChannelRepositoryProtocol(Protocol):
     def get_channel(self, channel_id: int) -> Channel | None: ...
 
     def get_channel_by_name(self, name: str) -> Channel | None: ...
+
+    def get_country(self, country_code: str) -> Country | None: ...
 
     def list_channels(
         self,
@@ -121,6 +123,16 @@ class ChannelService:
             duplicate = self._repository.get_channel_by_name(str(new_name))
             if duplicate is not None and duplicate.id_canal != channel_id:
                 raise ChannelValidationError("El nombre del canal ya existe")
+        target_country = normalized.get("pais", channel.pais)
+        target_continent = normalized.get("continente", channel.continente)
+        if target_country is not None:
+            country = self._repository.get_country(str(target_country))
+            if country is None:
+                raise ChannelValidationError("El país no está soportado por el catálogo")
+            if country.continente != target_continent:
+                raise ChannelValidationError(
+                    "El país no pertenece al continente declarado"
+                )
         try:
             return self._repository.update_channel(channel, normalized)
         except DuplicateRecordError as error:

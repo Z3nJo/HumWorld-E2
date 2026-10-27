@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from app.models import Channel, RssSource
+from app.models import Channel, Country, RssSource
 from app.models.domains import Continent, IptcCategory, Language
 from app.repositories import DuplicateRecordError
 from app.services.sources import (
@@ -23,12 +23,18 @@ class FakeSourceRepository:
             tuple[str | None, bool | None, int | None, str | None] | None
         ) = None
         self.raise_duplicate = False
+        self.countries = {
+            "CL": Country(codigo_iso2="CL", nombre_es="Chile", nombre_en="Chile", continente="America")
+        }
 
     def get_channel(self, channel_id: int) -> Channel | None:
         return self.channels.get(channel_id)
 
     def get_channel_by_name(self, name: str) -> Channel | None:
         return next((item for item in self.channels.values() if item.nombre == name), None)
+
+    def get_country(self, country_code: str) -> Country | None:
+        return self.countries.get(country_code)
 
     def get_source(self, source_id: int) -> RssSource | None:
         return self.sources.get(source_id)
@@ -148,6 +154,17 @@ def test_creates_new_channel_with_multiple_sources(
     assert {item.id_canal for item in sources} == {channel.id_canal}
     assert all(item.activa for item in sources)
     assert len(repository.channels) == 1
+
+
+def test_new_channel_rejects_unknown_or_incoherent_country(
+    service: SourceService,
+) -> None:
+    unknown = ChannelCreateData("Unknown", Continent.AMERICA, "ZZ")
+    incoherent = ChannelCreateData("Wrong", Continent.EUROPE, "CL")
+    with pytest.raises(SourceValidationError, match="soportado"):
+        service.create_sources(channel=unknown, sources=[source_data()])
+    with pytest.raises(SourceValidationError, match="continente"):
+        service.create_sources(channel=incoherent, sources=[source_data()])
 
 
 def test_adds_sources_to_existing_channel(

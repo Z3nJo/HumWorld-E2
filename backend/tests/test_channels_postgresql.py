@@ -10,6 +10,7 @@ from app.database import get_db
 from app.main import app
 from app.models import Channel, RssSource
 from app.repositories import NewsCaptureRepository
+from app.seeds.geography import load_catalog, seed_geography
 
 
 pytestmark = pytest.mark.integration
@@ -34,6 +35,8 @@ def engine(database_url: str):
     assert {"canal", "fuente_rss"} <= set(
         inspect(database_engine).get_table_names()
     )
+    with Session(database_engine) as session:
+        seed_geography(session, load_catalog())
     yield database_engine
     database_engine.dispose()
 
@@ -72,7 +75,7 @@ def create_channel_with_source(
         json={
             "channel": {
                 "nombre": name,
-                "continente": "America",
+                "continente": "Europa" if country.upper() in {"ES", "PT"} else "America",
                 "pais": country,
                 "url_sitio": "https://example.com",
                 "activo": True,

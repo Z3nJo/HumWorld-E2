@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, Select, func, select
+from sqlalchemy import Date, Select, and_, exists, func, or_, select, union
 from sqlalchemy.orm import Session
 
-from app.models import Channel, News, NewsTerm, RssSource, Term
+from app.models import Channel, Country, News, NewsCountry, NewsTerm, RssSource, Term
 
 
 @dataclass(frozen=True)
@@ -65,9 +65,17 @@ class DashboardRepository:
             )
         )
         if continent is not None:
-            statement = statement.where(Channel.continente == continent)
-        if country is not None:
-            statement = statement.where(Channel.pais == country)
+            statement = statement.where(
+                DashboardRepository._geographic_filter(
+                    continent=continent, country=country
+                )
+            )
+        elif country is not None:
+            statement = statement.where(
+                DashboardRepository._geographic_filter(
+                    continent=None, country=country
+                )
+            )
         return statement
 
     def daily_evolution(
@@ -128,13 +136,17 @@ class DashboardRepository:
         statement = self._news_query(
             start_at=start_at, end_at=end_at, continent=None, country=None,
         ).with_only_columns(
-            Channel.continente.label("continent"),
-            Channel.pais.label("country"),
+            Country.continente.label("continent"),
+            NewsCountry.codigo_pais.label("country"),
             func.avg(News.valor_humor).label("humor"),
             func.count(News.id_noticia).label("news_count"),
-        ).where(Channel.pais.is_not(None)).group_by(
-            Channel.continente, Channel.pais,
-        ).order_by(Channel.continente, Channel.pais)
+        ).join(
+            NewsCountry, NewsCountry.id_noticia == News.id_noticia
+        ).join(
+            Country, Country.codigo_iso2 == NewsCountry.codigo_pais
+        ).group_by(
+            Country.continente, NewsCountry.codigo_pais,
+        ).order_by(Country.continente, NewsCountry.codigo_pais)
         return [
             DashboardAggregateRecord(
                 continent=row.continent, country=row.country,
@@ -151,31 +163,42 @@ class DashboardRepository:
         continent: str | None,
         country: str | None,
     ) -> list[DashboardAggregateRecord]:
-        statement = (
-            select(
-                Channel.continente.label("continent"),
-                func.avg(News.valor_humor).label("humor"),
-                func.count(News.valor_humor).label("news_count"),
-            )
-            .select_from(News)
-            .join(RssSource, RssSource.id_fuente == News.id_fuente)
-            .join(Channel, Channel.id_canal == RssSource.id_canal)
-            .where(
-                News.fecha_registro >= start_at,
-                News.fecha_registro < end_at,
-                News.valor_humor.is_not(None),
-            )
+        base_filters = (
+            News.fecha_registro >= start_at,
+            News.fecha_registro < end_at,
+            News.valor_humor.is_not(None),
         )
-        if continent is not None:
-            statement = statement.where(Channel.continente == continent)
         if country is not None:
-            statement = statement.where(Channel.pais == country)
-
-        statement = statement.group_by(Channel.continente)
-        if country is not None:
-            statement = statement.add_columns(Channel.pais.label("country")).group_by(
-                Channel.pais
+            statement = (
+                select(
+                    Country.continente.label("continent"),
+                    NewsCountry.codigo_pais.label("country"),
+                    func.avg(News.valor_humor).label("humor"),
+                    func.count(News.id_noticia).label("news_count"),
+                )
+                .select_from(News)
+                .join(NewsCountry, NewsCountry.id_noticia == News.id_noticia)
+                .join(Country, Country.codigo_iso2 == NewsCountry.codigo_pais)
+                .where(*base_filters, NewsCountry.codigo_pais == country)
+                .group_by(Country.continente, NewsCountry.codigo_pais)
             )
+            if continent is not None:
+                statement = statement.where(Country.continente == continent)
+        else:
+            membership = self._continent_membership()
+            statement = (
+                select(
+                    membership.c.continent.label("continent"),
+                    func.avg(News.valor_humor).label("humor"),
+                    func.count(News.id_noticia).label("news_count"),
+                )
+                .select_from(News)
+                .join(membership, membership.c.id_noticia == News.id_noticia)
+                .where(*base_filters)
+                .group_by(membership.c.continent)
+            )
+            if continent is not None:
+                statement = statement.where(membership.c.continent == continent)
 
         rows = self._session.execute(statement).all()
         return [
@@ -219,10 +242,11 @@ class DashboardRepository:
                 News.valor_humor.is_not(None),
             )
         )
-        if continent is not None:
-            statement = statement.where(Channel.continente == continent)
-        if country is not None:
-            statement = statement.where(Channel.pais == country)
+        geographic_filter = self._geographic_filter(
+            continent=continent, country=country
+        )
+        if geographic_filter is not None:
+            statement = statement.where(geographic_filter)
 
         rows = self._session.execute(
             statement.group_by(Term.id_termino, Term.palabra, Term.idioma)
@@ -240,3 +264,60 @@ class DashboardRepository:
             )
             for row in rows
         ]
+    @staticmethod
+    def _geographic_filter(
+        *, continent: str | None, country: str | None
+    ):
+        country_membership = exists(
+            select(1).where(
+                NewsCountry.id_noticia == News.id_noticia,
+                NewsCountry.codigo_pais == country,
+            )
+        ) if country is not None else None
+        if continent is None:
+            return country_membership
+        attributed_continent = exists(
+            select(1)
+            .select_from(NewsCountry)
+            .join(Country, Country.codigo_iso2 == NewsCountry.codigo_pais)
+            .where(
+                NewsCountry.id_noticia == News.id_noticia,
+                Country.continente == continent,
+            )
+        )
+        any_country = exists(
+            select(1).where(NewsCountry.id_noticia == News.id_noticia)
+        )
+        fallback_continent = and_(
+            News.fecha_clasificacion_geografica.is_not(None),
+            ~any_country,
+            Channel.continente == continent,
+        )
+        continent_membership = or_(attributed_continent, fallback_continent)
+        if country_membership is not None:
+            return and_(country_membership, continent_membership)
+        return continent_membership
+
+    @staticmethod
+    def _continent_membership():
+        attributed = (
+            select(
+                NewsCountry.id_noticia.label("id_noticia"),
+                Country.continente.label("continent"),
+            )
+            .join(Country, Country.codigo_iso2 == NewsCountry.codigo_pais)
+            .distinct()
+        )
+        any_country = exists(
+            select(1).where(NewsCountry.id_noticia == News.id_noticia)
+        )
+        fallback = (
+            select(
+                News.id_noticia.label("id_noticia"),
+                Channel.continente.label("continent"),
+            )
+            .join(RssSource, RssSource.id_fuente == News.id_fuente)
+            .join(Channel, Channel.id_canal == RssSource.id_canal)
+            .where(News.fecha_clasificacion_geografica.is_not(None), ~any_country)
+        )
+        return union(attributed, fallback).subquery("pertenencia_continente")

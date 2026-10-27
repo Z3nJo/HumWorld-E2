@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session
 
 from app.config import normalize_database_url
-from app.models import Channel, News, NewsTerm, RssSource, Term
+from app.models import Channel, Country, News, NewsCountry, NewsTerm, RssSource, Term
 from app.repositories import ConfigurationRepository, DashboardRepository
 from app.services.dashboards import DashboardService
 from app.services.sentiment_configuration import SentimentConfigurationService
@@ -55,6 +55,15 @@ def _source(
     continent: str,
     country: str | None,
 ) -> RssSource:
+    if country is not None and session.get(Country, country) is None:
+        session.add(
+            Country(
+                codigo_iso2=country,
+                nombre_es=country,
+                nombre_en=country,
+                continente=continent,
+            )
+        )
     source = RssSource(
         canal=Channel(
             nombre=f"Canal {slug}",
@@ -88,9 +97,19 @@ def _news(
         idioma="es",
         fecha_registro=registered_at,
         valor_humor=humor,
+        fecha_clasificacion_geografica=registered_at,
+        version_clasificador_geografico="test-v1",
     )
     session.add(item)
     session.flush()
+    if source.canal.pais is not None:
+        session.add(
+            NewsCountry(
+                id_noticia=item.id_noticia,
+                codigo_pais=source.canal.pais,
+                origen="fuente",
+            )
+        )
     return item
 
 

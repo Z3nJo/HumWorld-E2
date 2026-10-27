@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from app.models import Channel, RssSource
+from app.models import Channel, Country, RssSource
 from app.models.domains import Continent
 from app.repositories import DuplicateRecordError
 from app.services.channels import (
@@ -23,6 +23,10 @@ class FakeChannelRepository:
         self.last_filters: tuple[str | None, str | None, bool | None] | None = None
         self.update_count = 0
         self.raise_duplicate = False
+        self.countries = {
+            "CL": Country(codigo_iso2="CL", nombre_es="Chile", nombre_en="Chile", continente="America"),
+            "ES": Country(codigo_iso2="ES", nombre_es="España", nombre_en="Spain", continente="Europa"),
+        }
 
     def get_channel(self, channel_id: int) -> Channel | None:
         return self.channels.get(channel_id)
@@ -32,6 +36,9 @@ class FakeChannelRepository:
             (channel for channel in self.channels.values() if channel.nombre == name),
             None,
         )
+
+    def get_country(self, country_code: str) -> Country | None:
+        return self.countries.get(country_code)
 
     def list_channels(
         self,
@@ -165,3 +172,12 @@ def test_missing_channel_and_concurrent_duplicate_are_translated(
     repository.raise_duplicate = True
     with pytest.raises(ChannelValidationError, match="concurrente"):
         service.patch_channel(1, {"nombre": "Nombre nuevo"})
+
+
+def test_rejects_unknown_country_and_country_continent_mismatch(
+    service: ChannelService,
+) -> None:
+    with pytest.raises(ChannelValidationError, match="soportado"):
+        service.patch_channel(1, {"pais": "ZZ"})
+    with pytest.raises(ChannelValidationError, match="continente"):
+        service.patch_channel(1, {"pais": "ES"})
