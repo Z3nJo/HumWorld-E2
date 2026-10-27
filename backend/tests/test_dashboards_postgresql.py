@@ -77,12 +77,14 @@ def _news(
     slug: str,
     registered_at: datetime,
     humor: Decimal | None,
+    *,
+    url: str | None = None,
 ) -> News:
     item = News(
         fuente=source,
         guid_origen=slug,
         titulo=f"Noticia {slug}",
-        url=f"https://example.com/news/{slug}",
+        url=url or f"https://example.com/news/{slug}",
         idioma="es",
         fecha_registro=registered_at,
         valor_humor=humor,
@@ -202,6 +204,107 @@ def test_daily_evolution_uses_utc_in_other_session_timezone(engine) -> None:
             start_at=start, end_at=end, continent="America", country="CL")
         assert [item.titulo for item in news] == [
             "Noticia utc-midnight", "Noticia utc-next-day"]
+
+
+def test_influential_news_deduplicates_urls_and_keeps_oldest_capture(engine) -> None:
+    start = datetime(2026, 9, 1, tzinfo=UTC)
+    end = start + timedelta(days=2)
+    duplicate_url = "https://example.com/news/shared"
+    with Session(engine, expire_on_commit=False) as session:
+        first_source = _source(session, "first", "America", "CL")
+        second_source = _source(session, "second", "America", "CL")
+        oldest = _news(
+            session,
+            first_source,
+            "shared-oldest",
+            start + timedelta(hours=1),
+            Decimal("-1.000"),
+            url=duplicate_url,
+        )
+        _news(
+            session,
+            second_source,
+            "shared-newest",
+            start + timedelta(hours=2),
+            Decimal("-1.000"),
+            url=duplicate_url,
+        )
+        session.commit()
+
+        records = DashboardRepository(session).influential_news(
+            start_at=start,
+            end_at=end,
+            continent="America",
+            country="CL",
+        )
+
+        assert [record.id_noticia for record in records] == [oldest.id_noticia]
+        assert [record.url for record in records] == [duplicate_url]
+
+
+def test_influential_news_deduplicates_before_limit_with_ties_and_range(engine) -> None:
+    start = datetime(2026, 9, 1, tzinfo=UTC)
+    end = start + timedelta(days=2)
+    tie_url = "https://example.com/news/same-time"
+    range_url = "https://example.com/news/range"
+    with Session(engine, expire_on_commit=False) as session:
+        first_source = _source(session, "ties-first", "America", "CL")
+        second_source = _source(session, "ties-second", "America", "CL")
+        same_instant = start + timedelta(hours=1)
+        tie_winner = _news(
+            session,
+            first_source,
+            "tie-winner",
+            same_instant,
+            Decimal("-1.000"),
+            url=tie_url,
+        )
+        _news(
+            session,
+            second_source,
+            "tie-loser",
+            same_instant,
+            Decimal("-1.000"),
+            url=tie_url,
+        )
+        _news(
+            session,
+            first_source,
+            "outside-range",
+            start - timedelta(microseconds=1),
+            Decimal("-1.000"),
+            url=range_url,
+        )
+        in_range = _news(
+            session,
+            second_source,
+            "inside-range",
+            start + timedelta(hours=2),
+            Decimal("-0.950"),
+            url=range_url,
+        )
+        for index in range(10):
+            _news(
+                session,
+                first_source,
+                f"unique-{index}",
+                start + timedelta(hours=3, minutes=index),
+                Decimal("-0.900"),
+            )
+        session.commit()
+
+        records = DashboardRepository(session).influential_news(
+            start_at=start,
+            end_at=end,
+            continent="America",
+            country="CL",
+        )
+
+        record_ids = {record.id_noticia for record in records}
+        assert tie_winner.id_noticia in record_ids
+        assert in_range.id_noticia in record_ids
+        assert len(records) == 10
+        assert len({record.url for record in records}) == 10
 
 
 def test_service_represents_empty_scope_and_threshold_boundaries(engine) -> None:
