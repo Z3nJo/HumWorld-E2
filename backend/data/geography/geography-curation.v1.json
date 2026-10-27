@@ -1,0 +1,46 @@
+{
+  "additional_aliases": [],
+  "ambiguous_alias_overrides": {
+    "en": {},
+    "es": {}
+  },
+  "catalog_version": "2026-10-27.v1",
+  "continent_overrides": {
+    "AQ": "Antartida",
+    "RU": "Europa",
+    "TR": "Asia"
+  },
+  "demonyms": {
+    "AR": {"en": ["Argentine", "Argentinian"], "es": ["argentino", "argentina", "argentinos", "argentinas"]},
+    "CL": {"en": ["Chilean", "Chileans"], "es": ["chileno", "chilena", "chilenos", "chilenas"]},
+    "ES": {"en": ["Spanish"], "es": ["español", "española", "españoles", "españolas"]},
+    "GB": {"en": ["British"], "es": ["británico", "británica", "británicos", "británicas"]},
+    "MX": {"en": ["Mexican", "Mexicans"], "es": ["mexicano", "mexicana", "mexicanos", "mexicanas"]},
+    "UA": {"en": ["Ukrainian", "Ukrainians"], "es": ["ucraniano", "ucraniana", "ucranianos", "ucranianas"]},
+    "US": {"en": ["American", "Americans"], "es": ["estadounidense", "estadounidenses"]}
+  },
+  "excluded_aliases": {
+    "en": ["Turkey", "Georgia", "Jordan", "Chad", "Nice", "Reading", "Mobile"],
+    "es": ["Georgia", "Jordania", "Chad", "Móvil"]
+  },
+  "licenses": {
+    "GeoNames": "CC BY 4.0",
+    "REST Countries": "MPL 2.0"
+  },
+  "release_date": "2026-10-27",
+  "source_metadata": {
+    "alternateNamesV2.zip": {
+      "release": "downloaded-2026-10-27",
+      "url": "https://download.geonames.org/export/dump/alternateNamesV2.zip"
+    },
+    "cities15000.txt": {
+      "release": "downloaded-2026-10-27",
+      "url": "https://download.geonames.org/export/dump/cities15000.zip"
+    },
+    "rest-countries.json": {
+      "release": "countriesV3.1@master-2026-10-27",
+      "url": "https://github.com/restcountries/restcountries/blob/master/src/main/resources/countriesV3.1.json"
+    }
+  },
+  "unofficial_inclusions": []
+}

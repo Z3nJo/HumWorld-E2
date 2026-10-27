@@ -1,10 +1,10 @@
 """Pure sentiment recognition and calculation for captured news."""
 
-import re
-import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Protocol, Sequence
+
+from app.services.text_normalization import tokenize
 
 TERM_LIMIT = Decimal("10")
 TERM_PRECISION = Decimal("0.1")
@@ -86,9 +86,8 @@ class TermRecognizer(Protocol):
 
 
 def _tokens(value: str) -> tuple[str, ...]:
-    folded = unicodedata.normalize("NFKD", value.casefold())
-    unaccented = "".join(character for character in folded if not unicodedata.combining(character))
-    return tuple(re.findall(r"\w+", unaccented, flags=re.UNICODE))
+    """Backward-compatible private alias for the shared tokenizer."""
+    return tokenize(value)
 
 
 def _english_inflections(word: str) -> set[str]:
