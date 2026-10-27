@@ -9,7 +9,13 @@ from typing import Any, Protocol
 import feedparser
 import httpx
 
-from app.models import Configuration, News, RssSource, Term
+from app.models import Configuration, CountryAlias, News, RssSource, Term
+from app.services.geographic_attribution import (
+    GeographicAlias,
+    GeographicAttributionResult,
+    GeographicAttributionService,
+    GeographicMatcher,
+)
 from app.services.sentiment_configuration import SentimentConfigurationService
 from app.services.sentiment_engine import (
     ExactTermRecognizer,
@@ -88,9 +94,25 @@ class CaptureRepositoryProtocol(Protocol):
         self, news: News, result: SentimentResult, analyzed_at: datetime
     ) -> None: ...
 
+    def load_geographic_catalog(
+        self, language: str
+    ) -> tuple[str, list[CountryAlias], list[str]]: ...
+
+    def persist_geographic_attribution(
+        self,
+        news: News,
+        result: GeographicAttributionResult,
+        classified_at: datetime,
+        version: str,
+    ) -> None: ...
+
     def update_source_capture(self, source_id: int, captured_at: datetime) -> None: ...
 
     def claim_pending_news(self, limit: int) -> list[News]: ...
+
+    def claim_pending_geographic_news(
+        self, limit: int, version: str, language: str
+    ) -> list[News]: ...
 
     def commit(self) -> None: ...
 
@@ -165,6 +187,7 @@ class NewsCaptureService:
         self._feed_client = feed_client
         self._clock = clock or (lambda: datetime.now(UTC))
         self._recognizer = recognizer or ExactTermRecognizer()
+        self._geographic_services: dict[str, GeographicAttributionService] = {}
 
     def capture_active_sources(self) -> CaptureRunReport:
         return self.capture_sources()
@@ -212,6 +235,12 @@ class NewsCaptureService:
                 parameters = SentimentConfigurationService(self._repository).resolve()
                 terms = self._repository.list_active_terms(source.idioma)
                 self._analyze_news(inserted_news, terms, parameters, captured_at)
+                self._attribute_news(
+                    inserted_news,
+                    language=source.idioma,
+                    source_country=source.canal.pais,
+                    classified_at=captured_at,
+                )
             self._repository.update_source_capture(source.id_fuente, captured_at)
             self._repository.commit()
             inserted = len(inserted_news)
@@ -252,6 +281,41 @@ class NewsCaptureService:
             self._repository.rollback()
             raise
 
+    def process_pending_geographic_news(
+        self, *, language: str, limit: int = 100, version: str | None = None
+    ) -> int:
+        if limit < 1:
+            raise ValueError("El límite de pendientes debe ser positivo")
+        try:
+            geographic_service = self._geographic_service(language)
+            catalog_version = geographic_service.matcher.version
+            if version is not None and version != catalog_version:
+                raise ValueError(
+                    f"La versión solicitada {version} no coincide con el catálogo {catalog_version}"
+                )
+            pending = self._repository.claim_pending_geographic_news(
+                limit, catalog_version, language
+            )
+            classified_at = self._clock()
+            for news in pending:
+                result = geographic_service.classify(
+                    title=news.titulo,
+                    description=news.descripcion,
+                    language=news.idioma,
+                    source_country=news.fuente.canal.pais,
+                )
+                self._repository.persist_geographic_attribution(
+                    news,
+                    result,
+                    classified_at,
+                    geographic_service.matcher.version,
+                )
+            self._repository.commit()
+            return len(pending)
+        except Exception:
+            self._repository.rollback()
+            raise
+
     def _analyze_news(
         self,
         news_items: Sequence[News],
@@ -278,6 +342,48 @@ class NewsCaptureService:
             )
             result = calculate_sentiment(recognized, parameters)
             self._repository.persist_sentiment(news, result, analyzed_at)
+
+    def _geographic_service(self, language: str) -> GeographicAttributionService:
+        cached = self._geographic_services.get(language)
+        if cached is not None:
+            return cached
+        version, aliases, country_codes = self._repository.load_geographic_catalog(language)
+        candidates = tuple(
+            GeographicAlias(
+                id_alias=item.id_alias,
+                alias=item.alias,
+                idioma=item.idioma,
+                codigo_pais=item.codigo_pais,
+                tipo=item.tipo,
+                activo=item.activo,
+            )
+            for item in aliases
+        )
+        service = GeographicAttributionService(
+            GeographicMatcher(candidates, version=version), country_codes
+        )
+        self._geographic_services[language] = service
+        return service
+
+    def _attribute_news(
+        self,
+        news_items: Sequence[News],
+        *,
+        language: str,
+        source_country: str | None,
+        classified_at: datetime,
+    ) -> None:
+        service = self._geographic_service(language)
+        for news in news_items:
+            result = service.classify(
+                title=news.titulo,
+                description=news.descripcion,
+                language=language,
+                source_country=source_country,
+            )
+            self._repository.persist_geographic_attribution(
+                news, result, classified_at, service.matcher.version
+            )
 
     @staticmethod
     def _normalize_entry(

@@ -1,11 +1,22 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
+from app.models import (
+    Channel,
+    Configuration,
+    Country,
+    CountryAlias,
+    News,
+    NewsCountry,
+    NewsTerm,
+    RssSource,
+    Term,
+)
+from app.services.geographic_attribution import GeographicAttributionResult
 from app.services.sentiment_engine import SentimentResult
 
 
@@ -75,6 +86,49 @@ class NewsCaptureRepository:
             for item in result.contributions
         )
 
+    def load_geographic_catalog(
+        self, language: str
+    ) -> tuple[str, list[CountryAlias], list[str]]:
+        aliases = list(
+            self._session.scalars(
+                select(CountryAlias)
+                .where(CountryAlias.activo.is_(True), CountryAlias.idioma == language)
+                .order_by(CountryAlias.id_alias)
+            ).all()
+        )
+        versions = {item.version_catalogo for item in aliases}
+        if len(versions) != 1:
+            version = ""
+        else:
+            version = versions.pop()
+        countries = list(
+            self._session.scalars(select(Country.codigo_iso2).order_by(Country.codigo_iso2)).all()
+        )
+        return version, aliases, countries
+
+    def persist_geographic_attribution(
+        self,
+        news: News,
+        result: GeographicAttributionResult,
+        classified_at: datetime,
+        version: str,
+    ) -> None:
+        self._session.execute(
+            delete(NewsCountry).where(NewsCountry.id_noticia == news.id_noticia)
+        )
+        self._session.add_all(
+            NewsCountry(
+                id_noticia=news.id_noticia,
+                codigo_pais=item.codigo_pais,
+                origen=item.origen,
+                id_alias=item.id_alias,
+                campo=item.campo,
+            )
+            for item in result.countries
+        )
+        news.fecha_clasificacion_geografica = classified_at
+        news.version_clasificador_geografico = version
+
     def update_source_capture(self, source_id: int, captured_at: datetime) -> None:
         self._session.execute(
             update(RssSource)
@@ -88,7 +142,28 @@ class NewsCaptureRepository:
             .where(News.fecha_analisis.is_(None))
             .order_by(News.id_noticia)
             .limit(limit)
-            .with_for_update(skip_locked=True)
+            .with_for_update(skip_locked=True, of=News)
+        )
+        return list(self._session.scalars(statement).all())
+
+    def claim_pending_geographic_news(
+        self, limit: int, version: str, language: str
+    ) -> list[News]:
+        statement = (
+            select(News)
+            .join(News.fuente)
+            .join(RssSource.canal)
+            .options(joinedload(News.fuente).joinedload(RssSource.canal))
+            .where(
+                News.idioma == language,
+                or_(
+                    News.fecha_clasificacion_geografica.is_(None),
+                    News.version_clasificador_geografico != version,
+                )
+            )
+            .order_by(News.id_noticia)
+            .limit(limit)
+            .with_for_update(skip_locked=True, of=News)
         )
         return list(self._session.scalars(statement).all())
 
