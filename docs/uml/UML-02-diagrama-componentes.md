@@ -1,5 +1,7 @@
 # UML-02 — Diagrama de componentes
 
+> **Actualización geográfica (27-10-2026).** El backend incluye un generador offline de catálogo (REST Countries + GeoNames + overlay curado), un seed idempotente y un reconocedor trie local. `NewsCaptureService` ejecuta sentimiento y atribución en la misma transacción por fuente; el backfill geográfico usa lotes independientes del sentimiento. `DashboardRepository` consulta `NOTICIA_PAIS/PAIS` y conserva `CANAL` para mostrar procedencia y para el respaldo continental sin país. En runtime no se consulta ningún servicio geográfico externo.
+
 | Campo | Valor |
 |---|---|
 | **Identificador** | `UML-02` |
