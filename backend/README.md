@@ -17,8 +17,9 @@ El backend normaliza internamente `postgresql://` a `postgresql+psycopg://`. Pue
 `GET /api/v1/dashboards/geografia?fecha_desde=2026-10-01&fecha_hasta=2026-10-07`
 devuelve agregados por continente (`pais=null`) y por país (`pais` ISO) para el
 mapa y la tabla. Conserva el contexto geográfico completo al filtrar un país
-en el resumen, evolución y noticias. Las noticias de canales sin país cuentan
-en el continente, pero no se atribuyen artificialmente a un país.
+en el resumen, evolución y noticias. Los filtros usan los países atribuidos por
+mención y no la procedencia editorial. Una noticia se cuenta una vez por país y
+una vez por continente; si fue clasificada sin país, usa el continente del canal.
 
 `GET /api/v1/dashboards/evolucion` devuelve `fecha_desde`, `fecha_hasta`,
 `continente`, `pais` y `dias`: una entrada por fecha UTC con `fecha`, `humor`,
@@ -131,8 +132,9 @@ fuentes activas de un canal en Chile:
 curl "http://localhost:3000/api/v1/sources?channel_id=1&country=cl&active=true"
 ```
 
-El pais se recibe como dos letras ASCII, se eliminan los espacios exteriores y
-se devuelve en mayusculas. No se valida contra un catalogo ISO.
+El país se recibe como dos letras ASCII, se eliminan los espacios exteriores y
+se devuelve en mayúsculas. Debe existir en el catálogo local y corresponder al
+continente declarado; una incoherencia responde `400` sin escritura parcial.
 
 ## API de canales
 
@@ -169,9 +171,46 @@ curl -X PATCH http://localhost:3000/api/v1/channels/1 \
 ```
 
 Una fuente solo participa en la captura cuando tanto ella como su canal estan
-activos. Ademas, cambiar `continente` o `pais` reclasifica las noticias
-historicas en las consultas geograficas, porque esas propiedades se resuelven
-mediante la relacion entre noticia, fuente y canal.
+activos. Además, cambiar `continente` o `pais` reconcilia en la misma transacción
+solo las asociaciones históricas con origen `fuente`; las menciones se conservan.
+
+## Catálogo y atribución geográfica
+
+Después de migrar la base, cargue el catálogo versionado y diagnostique canales
+históricos antes de habilitar la captura:
+
+```powershell
+python -m app.seeds.geography --diagnose-channels
+```
+
+La imagen Docker incluye `data/` y `scripts/`. Al iniciar el servicio `backend`
+ejecuta primero las migraciones y este seed local idempotente, antes de arrancar
+Uvicorn y el scheduler. El mismo diagnóstico queda registrado en sus logs:
+
+```powershell
+docker compose -f opsx/docker-compose.yml up --build -d
+docker compose -f opsx/docker-compose.yml logs backend
+```
+
+La captura reconoce aliases locales con prioridad título → descripción y usa el
+país del canal solo cuando no existe ninguna mención. No hay solicitudes
+geográficas externas en runtime. Para clasificar el histórico por lotes:
+
+```powershell
+python scripts/backfill_geography.py --version 2026-10-27.v1 --batch-size 100
+```
+
+En un despliegue Docker, ejecute el backfill de forma explícita después de que
+el backend esté saludable:
+
+```powershell
+docker compose -f opsx/docker-compose.yml exec backend python scripts/backfill_geography.py --version 2026-10-27.v1 --batch-size 100
+```
+
+El comando es reanudable e idempotente para la misma versión. Cambiar de versión
+reemplaza las asociaciones, pero no modifica `valor_humor`, `fecha_analisis` ni
+`NOTICIA_TERMINO`. Procedencia, licencias y limitaciones están en
+`data/geography/README.md` y `manifest.json`.
 
 ## API de diccionario
 
