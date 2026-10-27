@@ -1,0 +1,40 @@
+{
+  "capitals_always_included": true,
+  "catalog_version": "2026-10-27.v1",
+  "city_population_threshold": 100000,
+  "counts": {
+    "aliases": 14924,
+    "ambiguous_aliases_excluded": 171,
+    "capitals_from_rest_countries": 248,
+    "countries": 249
+  },
+  "licenses": {
+    "GeoNames": "CC BY 4.0",
+    "REST Countries": "MPL 2.0"
+  },
+  "release_date": "2026-10-27",
+  "sources": [
+    {
+      "name": "rest-countries.json",
+      "release": "countriesV3.1@master-2026-10-27",
+      "sha256": "8209daa9fd26e842e84992739dfbfb272566b60357a6ee760955bb4e9f2cc18e",
+      "url": "https://github.com/restcountries/restcountries/blob/master/src/main/resources/countriesV3.1.json"
+    },
+    {
+      "name": "cities15000.txt",
+      "release": "downloaded-2026-10-27",
+      "sha256": "87947849121f4b05201165a43b2ce2bc5fba45e6305339e6acc2c08855131426",
+      "url": "https://download.geonames.org/export/dump/cities15000.zip"
+    },
+    {
+      "name": "geography-curation.v1.json",
+      "sha256": "d35cd6df64cdf29927fb2c95036a187b821d44f3f9bfc3035172331920a463e6"
+    },
+    {
+      "name": "alternateNamesV2.zip",
+      "release": "downloaded-2026-10-27",
+      "sha256": "1741ffd3dfe705c7000ef9233319bc07fe83b58fdb1e0a6c5a10a41c97894e28",
+      "url": "https://download.geonames.org/export/dump/alternateNamesV2.zip"
+    }
+  ]
+}
