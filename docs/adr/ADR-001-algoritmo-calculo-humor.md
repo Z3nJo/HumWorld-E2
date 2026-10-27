@@ -1,5 +1,7 @@
 # ADR-001 — Algoritmo de cálculo del humor
 
+> **Enmienda geográfica (27-10-2026).** La fórmula de sentimiento no cambia. Desde la migración `20261027_01`, el conjunto geográfico de una noticia se obtiene de `NOTICIA_PAIS → PAIS`, no exclusivamente de su canal. Una noticia puede pertenecer a varios países; se cuenta una sola vez por país y una sola vez por continente, aunque mencione varios países del mismo continente. Solo una clasificación válida sin país usa `CANAL.continente` como respaldo. Por tanto, esta enmienda sustituye C-09 y las reglas H-3/H-4 que describían navegación exclusiva por canal. `fecha_analisis` y la clasificación geográfica tienen ciclos y versiones independientes.
+
 | Campo | Valor |
 |---|---|
 | **ID** | ADR-001 |

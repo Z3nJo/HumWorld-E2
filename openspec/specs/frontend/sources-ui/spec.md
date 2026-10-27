@@ -67,3 +67,8 @@ La interfaz SHALL soportar creación, edición, activación/desactivación y des
 ### Requirement: Tratamiento robusto de errores de API
 
 La interfaz SHALL procesar respuestas de error del backend (400, 404, 500) y parsear listas de validación de Pydantic concatenando los mensajes legibles. Si ocurre un error 400 por duplicidad, el mensaje permanece visible en toast y el drawer no se cierra para evitar pérdida de datos.
+
+#### Scenario: Conservar el formulario ante un error de validación
+- **WHEN** una operación recibe un error 400 por duplicidad con uno o más mensajes de validación
+- **THEN** la interfaz muestra los mensajes legibles concatenados en un toast
+- **AND** conserva abierto el drawer con los datos ingresados

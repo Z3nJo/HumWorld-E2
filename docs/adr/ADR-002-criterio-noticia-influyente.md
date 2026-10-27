@@ -1,5 +1,7 @@
 # ADR-002 — Criterio de "noticia influyente"
 
+> **Enmienda geográfica (27-10-2026).** El orden, el valor absoluto, la deduplicación por URL y el límite de diez noticias no cambian. Los filtros `continente` y `pais` seleccionan candidatas mediante `NOTICIA_PAIS → PAIS`; una noticia clasificada sin país usa el continente de su canal. Los campos `canal`, `continente` y `pais` de cada elemento de respuesta siguen describiendo la fuente editorial por compatibilidad. Esta enmienda sustituye C-05, la definición anterior de candidata e I-4 cuando remiten al país del canal.
+
 | Campo | Valor |
 |---|---|
 | **ID** | ADR-002 |

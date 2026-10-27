@@ -1,5 +1,7 @@
 # MOD-01 — Modelo inicial de datos (E/R preliminar)
 
+> **Revisión geográfica (27-10-2026).** El modelo vigente añade `PAIS(codigo_iso2, nombre_es, nombre_en, continente)`, `PAIS_ALIAS(id_alias, alias, alias_normalizado, tipo, idioma, codigo_pais, activo, version_catalogo)` y `NOTICIA_PAIS(id_noticia, codigo_pais, origen, id_alias, campo)`. `NOTICIA` incorpora `fecha_clasificacion_geografica` y `version_clasificador_geografico`. `CANAL` conserva país/continente como procedencia editorial y respaldo, pero R-M4 deja de definir la pertenencia temática. `NOTICIA_PAIS` admite múltiples países, conserva evidencia de menciones y distingue `mencion` de `fuente`; una clasificación válida sin filas representa “sin país”. Las FK y restricciones exactas están en la migración `20261027_01`.
+
 | Campo | Valor |
 |---|---|
 | **Identificador** | `MOD-01` |

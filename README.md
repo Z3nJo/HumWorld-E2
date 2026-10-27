@@ -16,6 +16,7 @@ Funcionalidades principales:
 - Captura automática mediante *cron* de periodicidad configurable, más actualización manual bajo demanda.
 - Diccionario de términos evaluables con CRUD completo vía API REST e interfaz de usuario.
 - Cálculo y persistencia del valor de humor por noticia, en español e inglés.
+- Atribución geográfica versionada por países mencionados, con catálogo local reproducible y respaldo por fuente.
 - Dashboards: mapa mundial con selector de fecha, nube de palabras influyentes y listado de noticias más influyentes.
 - Purgado automático y manual de noticias según un parámetro de caducidad configurable.
 
@@ -147,6 +148,8 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 - **Sprint 3 — Interfaz de usuario y dashboards: cerrado.** Se entregaron los 41 puntos comprometidos: E2-H01-UI, T-DASH-01, E3-H01, E3-H03, E4-H04, ADR-002, `QA-S3`, `INT-S3` y `DOC-S3`.
 
 El sistema cuenta con el motor de sentimiento en español e inglés formalizado en ADR-001, con cálculo y persistencia del humor por noticia en PostgreSQL, desglose de términos en `NOTICIA_TERMINO`, léxico curado reproducible de 30 pares de conceptos, CRUD de diccionario en `/api/v1/dictionary`, endpoint `POST /api/v1/sentiment` para análisis puntual y purgado periódico de noticias caducadas. La suite cuenta con 168 pruebas y 97,62 % de cobertura (CI y revalidación local del 28 de septiembre de 2026), con verificación contra PostgreSQL 16 real.
+
+La pertenencia temática se resuelve mediante `NOTICIA_PAIS → PAIS`: admite múltiples países por noticia, conserva la evidencia del alias, versiona la clasificación y evita duplicaciones en los agregados. El canal sigue representando la procedencia editorial y solo actúa como respaldo cuando el texto no menciona un país.
 
 Desde el Sprint 3 cuenta además con una interfaz React/Vite: dashboard con mapa mundial por continente y país, evolución diaria y nube de palabras (`/dashboard`), gestión del diccionario (`/dictionary`) y panel de administración de fuentes, canales y parámetros (`/fuentes`, `/parametros`), sobre los endpoints `/api/v1/dashboards` y `/api/v1/channels`. En CI sobre `main` (16 de octubre de 2026) la suite backend tiene 242 pruebas y 97,82 % de cobertura, y la suite frontend, 136 pruebas.
 
