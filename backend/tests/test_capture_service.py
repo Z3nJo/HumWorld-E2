@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 
-from app.models import Channel, News, RssSource
+from app.models import Channel, CountryAlias, News, RssSource
 from app.services.capture import FeedEntry, NewsCaptureService
 
 
@@ -28,6 +28,9 @@ class FakeCaptureRepository:
         self.persisted: list[tuple[int, list[Mapping[str, object]], datetime]] = []
         self._pending_rows: list[Mapping[str, object]] = []
         self._next_news_id = 1
+        self.geographic_results = []
+        self.pending_geographic = []
+        self.catalog_version = "test-v1"
 
     def list_active_sources(self) -> list[RssSource]:
         return [
@@ -61,11 +64,45 @@ class FakeCaptureRepository:
         news.valor_humor = result.valor_humor
         news.fecha_analisis = analyzed_at
 
+    def load_geographic_catalog(self, language: str):
+        return (
+            self.catalog_version,
+            [
+                CountryAlias(
+                    id_alias=1,
+                    alias="Chile" if language == "es" else "Chile",
+                    alias_normalizado="chile",
+                    tipo="pais",
+                    idioma=language,
+                    codigo_pais="CL",
+                    activo=True,
+                    version_catalogo=self.catalog_version,
+                )
+            ],
+            ["CL"],
+        )
+
+    def persist_geographic_attribution(self, news, result, classified_at, version):
+        news.fecha_clasificacion_geografica = classified_at
+        news.version_clasificador_geografico = version
+        self.geographic_results.append((news.id_noticia, result, classified_at, version))
+
     def update_source_capture(self, source_id: int, captured_at: datetime) -> None:
         self.persisted.append((source_id, self._pending_rows, captured_at))
 
     def claim_pending_news(self, limit: int):
         return []
+
+    def claim_pending_geographic_news(self, limit: int, version: str, language: str):
+        return [
+            item
+            for item in self.pending_geographic
+            if item.idioma == language
+            and (
+                item.fecha_clasificacion_geografica is None
+                or item.version_clasificador_geografico != version
+            )
+        ][:limit]
 
     def commit(self) -> None:
         self._pending_rows = []
@@ -80,6 +117,7 @@ def source(
     active: bool = True,
     channel_active: bool = True,
     language: str = "es",
+    country: str | None = None,
 ) -> RssSource:
     return RssSource(
         id_fuente=source_id,
@@ -87,6 +125,7 @@ def source(
             id_canal=source_id,
             nombre=f"Canal {source_id}",
             continente="America",
+            pais=country,
             activo=channel_active,
         ),
         nombre=f"Fuente {source_id}",
@@ -232,3 +271,91 @@ def test_rejects_unknown_selected_source() -> None:
         assert "99" in str(error)
     else:
         raise AssertionError("Expected CaptureSourceNotFoundError")
+
+
+def test_capture_attributes_mentions_before_source_fallback() -> None:
+    active = source(1, country="CL")
+    repository = FakeCaptureRepository([active])
+    report = NewsCaptureService(
+        repository,
+        FakeFeedClient(
+            {active.url_feed: [entry("one", "https://example.com/one", title="Chile avanza")]}
+        ),
+        clock=lambda: CAPTURED_AT,
+    ).capture_active_sources()
+    result = repository.geographic_results[0][1]
+    assert report.inserted == 1
+    assert [(item.codigo_pais, item.origen, item.campo) for item in result.countries] == [
+        ("CL", "mencion", "titulo")
+    ]
+
+
+def test_pending_geography_does_not_recalculate_existing_sentiment() -> None:
+    active = source(1, country="CL")
+    repository = FakeCaptureRepository([active])
+    news = News(
+        id_noticia=9,
+        id_fuente=1,
+        fuente=active,
+        guid_origen="old",
+        titulo="Sin mención",
+        descripcion=None,
+        url="https://example.com/old",
+        idioma="es",
+        valor_humor="0.500",
+        fecha_analisis=CAPTURED_AT,
+    )
+    repository.pending_geographic = [news]
+    processed = NewsCaptureService(
+        repository, FakeFeedClient({}), clock=lambda: CAPTURED_AT
+    ).process_pending_geographic_news(language="es")
+    assert processed == 1
+    assert str(news.valor_humor) == "0.500"
+    assert news.fecha_analisis == CAPTURED_AT
+    assert repository.geographic_results[0][1].countries[0].origen == "fuente"
+
+
+def test_geographic_backfill_is_idempotent_and_reclassifies_new_version() -> None:
+    active = source(1, country="CL")
+    repository = FakeCaptureRepository([active])
+    news = News(
+        id_noticia=10,
+        id_fuente=1,
+        fuente=active,
+        guid_origen="old-v",
+        titulo="Sin mención",
+        descripcion=None,
+        url="https://example.com/old-v",
+        idioma="es",
+    )
+    repository.pending_geographic = [news]
+    first_service = NewsCaptureService(repository, FakeFeedClient({}), clock=lambda: CAPTURED_AT)
+    assert first_service.process_pending_geographic_news(language="es") == 1
+    assert first_service.process_pending_geographic_news(language="es") == 0
+    repository.catalog_version = "test-v2"
+    second_service = NewsCaptureService(repository, FakeFeedClient({}), clock=lambda: CAPTURED_AT)
+    assert second_service.process_pending_geographic_news(language="es") == 1
+    assert news.version_clasificador_geografico == "test-v2"
+
+
+def test_geographic_failure_rolls_back_one_source_and_continues() -> None:
+    class FailingGeographyRepository(FakeCaptureRepository):
+        def persist_geographic_attribution(self, news, result, classified_at, version):
+            if news.id_fuente == 1:
+                raise RuntimeError("fallo geográfico")
+            super().persist_geographic_attribution(news, result, classified_at, version)
+
+    failed = source(1, country="CL")
+    healthy = source(2, language="en", country="CL")
+    repository = FailingGeographyRepository([failed, healthy])
+    client = FakeFeedClient(
+        {
+            failed.url_feed: [entry("failed", "https://example.com/failed")],
+            healthy.url_feed: [entry("healthy", "https://example.com/healthy")],
+        }
+    )
+    report = NewsCaptureService(repository, client, clock=lambda: CAPTURED_AT).capture_active_sources()
+    assert report.failed_sources == 1
+    assert report.sources[0].error == "fallo geográfico"
+    assert report.sources[1].inserted == 1
+    assert [item[0] for item in repository.persisted] == [2]

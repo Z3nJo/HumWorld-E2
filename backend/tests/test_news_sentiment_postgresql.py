@@ -15,6 +15,7 @@ from app.database import get_db
 from app.main import app
 from app.models import Channel, Configuration, News, NewsTerm, RssSource, Term
 from app.repositories import ConfigurationRepository, NewsCaptureRepository
+from app.seeds.geography import load_catalog, seed_geography
 from app.seeds.sentiment import (
     SENTIMENT_LEXICON,
     seed_sentiment_configuration,
@@ -39,6 +40,8 @@ def engine():
     with database_engine.connect() as connection:
         assert connection.scalar(text("SELECT 1")) == 1
     assert "noticia_termino" in inspect(database_engine).get_table_names()
+    with Session(database_engine) as session:
+        seed_geography(session, load_catalog())
     yield database_engine
     database_engine.dispose()
 

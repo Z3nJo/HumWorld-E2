@@ -14,6 +14,7 @@ from app.database import get_db
 from app.main import app
 from app.models import Channel, News, NewsTerm, RssSource, Term
 from app.repositories import NewsCaptureRepository
+from app.seeds.geography import load_catalog, seed_geography
 from app.services.capture import FeedEntry, NewsCaptureService
 
 pytestmark = pytest.mark.integration
@@ -50,6 +51,8 @@ def engine(database_url: str):
     assert {"canal", "fuente_rss", "noticia", "configuracion"} <= set(
         inspect(database_engine).get_table_names()
     )
+    with Session(database_engine) as session:
+        seed_geography(session, load_catalog())
     yield database_engine
     database_engine.dispose()
 
