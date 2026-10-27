@@ -75,10 +75,14 @@ def test_news_model_matches_mod_01_constraints() -> None:
         "fecha_registro",
         "valor_humor",
         "fecha_analisis",
+        "fecha_clasificacion_geografica",
+        "version_clasificador_geografico",
     }
     assert table.c.fecha_registro.nullable is False
     assert table.c.valor_humor.nullable is True
     assert table.c.fecha_analisis.nullable is True
+    assert table.c.fecha_clasificacion_geografica.nullable is True
+    assert table.c.version_clasificador_geografico.nullable is True
     source_fk = next(iter(table.c.id_fuente.foreign_keys))
     assert source_fk.ondelete == "CASCADE"
     assert any(
