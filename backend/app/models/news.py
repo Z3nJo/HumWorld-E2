@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 if TYPE_CHECKING:
+    from app.models.geography import NewsCountry
     from app.models.source import RssSource
 
 
@@ -37,6 +38,11 @@ class News(Base):
             "ix_noticia_pendiente_analisis",
             "id_noticia",
             postgresql_where=text("fecha_analisis IS NULL"),
+        ),
+        Index(
+            "ix_noticia_clasificacion_geografica",
+            "fecha_clasificacion_geografica",
+            "version_clasificador_geografico",
         ),
         CheckConstraint(
             "valor_humor BETWEEN -1 AND 1",
@@ -72,5 +78,14 @@ class News(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    fecha_clasificacion_geografica: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    version_clasificador_geografico: Mapped[str | None] = mapped_column(
+        String(80), nullable=True
+    )
 
     fuente: Mapped["RssSource"] = relationship(back_populates="noticias")
+    paises: Mapped[list["NewsCountry"]] = relationship(
+        back_populates="noticia", passive_deletes=True
+    )

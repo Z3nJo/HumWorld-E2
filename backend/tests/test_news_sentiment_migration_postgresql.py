@@ -26,35 +26,22 @@ def test_sentiment_migration_preserves_compatible_news_and_rejects_invalid_data(
             connection.execute(
                 text("TRUNCATE noticia, fuente_rss, canal RESTART IDENTITY CASCADE")
             )
-        with Session(engine) as session:
-            source = RssSource(
-                canal=Channel(nombre="Canal legado", continente="America"),
-                nombre="Feed legado",
-                url_feed="https://example.com/legacy-sentiment.xml",
-                categoria_iptc="society",
-                idioma="es",
+        with engine.begin() as connection:
+            channel_id = connection.scalar(
+                text("INSERT INTO canal (nombre, continente, activo) VALUES ('Canal legado', 'America', true) RETURNING id_canal")
             )
-            session.add_all(
-                [
-                    News(
-                        fuente=source,
-                        guid_origen="compatible",
-                        titulo="Titular válido",
-                        url="https://example.com/compatible",
-                        idioma="es",
-                        valor_humor=Decimal("0.5"),
-                    ),
-                    News(
-                        fuente=source,
-                        guid_origen="invalid",
-                        titulo="Titular inválido",
-                        url="https://example.com/invalid",
-                        idioma="es",
-                        valor_humor=Decimal("1.2"),
-                    ),
-                ]
+            source_id = connection.scalar(
+                text("INSERT INTO fuente_rss (id_canal, nombre, url_feed, categoria_iptc, idioma, activa) VALUES (:channel, 'Feed legado', 'https://example.com/legacy-sentiment.xml', 'society', 'es', true) RETURNING id_fuente"),
+                {"channel": channel_id},
             )
-            session.commit()
+            connection.execute(
+                text(
+                    "INSERT INTO noticia (id_fuente, guid_origen, titulo, url, idioma, valor_humor) VALUES "
+                    "(:source, 'compatible', 'Titular válido', 'https://example.com/compatible', 'es', 0.5), "
+                    "(:source, 'invalid', 'Titular inválido', 'https://example.com/invalid', 'es', 1.2)"
+                ),
+                {"source": source_id},
+            )
 
         with pytest.raises(ValueError, match="corregirlas antes"):
             command.upgrade(config, "head")

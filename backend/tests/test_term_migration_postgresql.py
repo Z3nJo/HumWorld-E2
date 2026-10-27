@@ -54,7 +54,7 @@ def test_term_migration_supports_downgrade_and_upgrade() -> None:
         }
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == (
-                "20260924_01"
+                "20261027_01"
             )
     finally:
         command.upgrade(config, "head")
