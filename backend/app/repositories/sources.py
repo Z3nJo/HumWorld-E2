@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Channel, RssSource
+from app.models import Channel, Country, RssSource
 
 
 class DuplicateRecordError(Exception):
@@ -21,6 +21,9 @@ class SourceRepository:
 
     def get_channel_by_name(self, name: str) -> Channel | None:
         return self._session.scalar(select(Channel).where(Channel.nombre == name))
+
+    def get_country(self, country_code: str) -> Country | None:
+        return self._session.get(Country, country_code)
 
     def get_source(self, source_id: int) -> RssSource | None:
         statement = (

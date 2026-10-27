@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from typing import Protocol
 
-from app.models import Channel, RssSource
+from app.models import Channel, Country, RssSource
 from app.models.domains import Continent, IptcCategory, Language
 from app.repositories.sources import DuplicateRecordError
 from app.validation import normalize_country, normalize_site_url
@@ -46,6 +46,8 @@ class SourceRepositoryProtocol(Protocol):
     def get_channel(self, channel_id: int) -> Channel | None: ...
 
     def get_channel_by_name(self, name: str) -> Channel | None: ...
+
+    def get_country(self, country_code: str) -> Country | None: ...
 
     def get_source(self, source_id: int) -> RssSource | None: ...
 
@@ -110,6 +112,16 @@ class SourceService:
                     site_url = normalize_site_url(channel.url_sitio)
                 except ValueError as error:
                     raise SourceValidationError(str(error)) from error
+                if country is not None:
+                    catalog_country = self._repository.get_country(country)
+                    if catalog_country is None:
+                        raise SourceValidationError(
+                            "El país no está soportado por el catálogo"
+                        )
+                    if catalog_country.continente != channel.continente.value:
+                        raise SourceValidationError(
+                            "El país no pertenece al continente declarado"
+                        )
                 return self._repository.create_channel_with_sources(
                     {
                         "nombre": channel.nombre,

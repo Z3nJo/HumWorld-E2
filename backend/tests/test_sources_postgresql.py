@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import normalize_database_url
 from app.database import get_db
 from app.main import app
+from app.seeds.geography import load_catalog, seed_geography
 
 pytestmark = pytest.mark.integration
 
@@ -29,6 +30,8 @@ def engine(database_url: str):
     with database_engine.connect() as connection:
         assert connection.scalar(text("SELECT 1")) == 1
     assert {"canal", "fuente_rss"} <= set(inspect(database_engine).get_table_names())
+    with Session(database_engine) as session:
+        seed_geography(session, load_catalog())
     yield database_engine
     database_engine.dispose()
 
