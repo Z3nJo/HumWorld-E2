@@ -25,9 +25,12 @@ def client():
         )
         connection.execute(text("CREATE TABLE canal (id_canal INT, nombre TEXT, continente TEXT, pais TEXT)"))
         connection.execute(text("CREATE TABLE fuente_rss (id_fuente INT, id_canal INT)"))
-        connection.execute(text("CREATE TABLE noticia (id_noticia INT, id_fuente INT, titulo TEXT, url TEXT, fecha_registro DATETIME, valor_humor NUMERIC)"))
+        connection.execute(text("CREATE TABLE pais (codigo_iso2 TEXT, continente TEXT)"))
+        connection.execute(text("CREATE TABLE noticia (id_noticia INT, id_fuente INT, titulo TEXT, url TEXT, fecha_registro DATETIME, valor_humor NUMERIC, fecha_clasificacion_geografica DATETIME)"))
+        connection.execute(text("CREATE TABLE noticia_pais (id_noticia INT, codigo_pais TEXT, origen TEXT)"))
         connection.execute(text("INSERT INTO canal VALUES (1, 'Chile', 'America', 'CL'), (2, 'España', 'Europa', 'ES')"))
         connection.execute(text("INSERT INTO fuente_rss VALUES (1, 1), (2, 2)"))
+        connection.execute(text("INSERT INTO pais VALUES ('CL', 'America'), ('ES', 'Europa')"))
         items = [
             (1, 1, '2026-10-01 00:00:00+00:00', -0.9),
             (2, 1, '2026-10-01 23:59:59+00:00', 0.3),
@@ -40,11 +43,15 @@ def client():
         items.extend((index, 2, '2026-10-02 12:00:00+00:00', 0.5) for index in range(8, 20))
         items.append((20, 2, '2026-10-03 12:00:00+00:00', 0.5))
         for news_id, source_id, instant, humor in items:
-            connection.execute(text("INSERT INTO noticia VALUES (:id, :source, :title, :url, :instant, :humor)"),
+            connection.execute(text("INSERT INTO noticia VALUES (:id, :source, :title, :url, :instant, :humor, :instant)"),
                                dict(id=news_id, source=source_id, title=f"Noticia {news_id}",
                                     url=f"https://example.com/{news_id}",
                                     instant=datetime.fromisoformat(instant).strftime("%Y-%m-%d %H:%M:%S.%f"),
                                     humor=humor))
+            connection.execute(
+                text("INSERT INTO noticia_pais VALUES (:id, :country, 'fuente')"),
+                {"id": news_id, "country": "CL" if source_id == 1 else "ES"},
+            )
         connection.commit()
     with Session(engine) as session:
         service = DashboardService(DashboardRepository(session), SimpleNamespace(

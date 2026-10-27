@@ -141,20 +141,37 @@ def test_openapi_documents_sentiment_endpoint_and_schemas() -> None:
 def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
     schema = app.openapi()
     schemas = schema["components"]["schemas"]
-    operations = [
-        schema["paths"]["/api/v1/dashboards"]["get"],
-        schema["paths"]["/api/v1/dashboards/nube-palabras"]["get"],
-    ]
+    operations = {
+        "/api/v1/dashboards": {"fecha_desde", "fecha_hasta", "continente", "pais"},
+        "/api/v1/dashboards/geografia": {"fecha_desde", "fecha_hasta"},
+        "/api/v1/dashboards/evolucion": {"fecha_desde", "fecha_hasta", "continente", "pais"},
+        "/api/v1/dashboards/nube-palabras": {"fecha_desde", "fecha_hasta", "continente", "pais"},
+        "/api/v1/dashboards/noticias-influyentes": {"fecha_desde", "fecha_hasta", "continente", "pais"},
+    }
 
-    for operation in operations:
-        assert {item["name"] for item in operation["parameters"]} == {
-            "fecha_desde",
-            "fecha_hasta",
-            "continente",
-            "pais",
-        }
+    for path, expected_parameters in operations.items():
+        operation = schema["paths"][path]["get"]
+        assert {item["name"] for item in operation["parameters"]} == expected_parameters
         assert operation["responses"].keys() >= {"200", "400", "500"}
         assert "422" not in operation["responses"]
+
+    assert set(schemas["InfluentialNewsItemResponse"]["properties"]) == {
+        "id_noticia",
+        "titulo",
+        "url",
+        "canal",
+        "continente",
+        "pais",
+        "fecha_registro",
+        "valor_humor",
+    }
+    assert set(schemas["DashboardEvolutionResponse"]["properties"]) == {
+        "fecha_desde",
+        "fecha_hasta",
+        "continente",
+        "pais",
+        "dias",
+    }
 
     assert schemas.keys() >= {
         "DashboardAggregateResponse",
@@ -177,6 +194,8 @@ def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
         "aporte_total",
         "frecuencia",
     }
+
+
 def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/dictionary"]
