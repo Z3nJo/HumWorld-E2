@@ -102,6 +102,7 @@ def _pending_news(session: Session, source: RssSource, slug: str) -> News:
         titulo="Ucrania informa",
         url=f"https://example.com/{slug}",
         idioma="es",
+        fecha_registro=NOW,
         valor_humor=Decimal("0.400"),
         fecha_analisis=NOW,
     )
@@ -179,6 +180,7 @@ def test_vertical_capture_backfill_channel_correction_and_dashboard(engine) -> N
         for item in captured:
             item.valor_humor = Decimal("0.500")
             item.fecha_analisis = NOW
+            item.fecha_registro = NOW
         historical_source = _source(session, "historical", "America", "CL")
         historical = _pending_news(session, historical_source, "historical")
         session.commit()
