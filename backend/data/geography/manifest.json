@@ -1,10 +1,10 @@
 {
   "capitals_always_included": true,
-  "catalog_version": "2026-10-27.v1",
+  "catalog_version": "2026-10-27.v2",
   "city_population_threshold": 100000,
   "counts": {
-    "aliases": 14924,
-    "ambiguous_aliases_excluded": 171,
+    "aliases": 15908,
+    "ambiguous_aliases_excluded": 178,
     "capitals_from_rest_countries": 248,
     "countries": 249
   },
@@ -28,7 +28,7 @@
     },
     {
       "name": "geography-curation.v1.json",
-      "sha256": "d35cd6df64cdf29927fb2c95036a187b821d44f3f9bfc3035172331920a463e6"
+      "sha256": "8bccc37a03133bb37c0a8c148991e9f28e4425fc5961b90c79d618d8800eeb45"
     },
     {
       "name": "alternateNamesV2.zip",
