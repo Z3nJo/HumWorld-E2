@@ -1,5 +1,6 @@
 import { http } from '../../../shared/api/httpClient';
 import type {
+  CaptureResult,
   Channel,
   ChannelSummary,
   Continent,
@@ -12,6 +13,8 @@ import type {
   Source,
 } from '../domain/source';
 import type {
+  CaptureRequestDto,
+  CaptureResponseDto,
   ChannelDto,
   ChannelPatchDto,
   SourceBatchCreateDto,
@@ -172,3 +175,15 @@ export async function deleteChannel(id: number): Promise<void> {
   await http.delete(`/api/v1/channels/${id}`);
 }
 
+
+export async function captureSources(sourceIds?: number[]): Promise<CaptureResult> {
+  const body: CaptureRequestDto | undefined = sourceIds
+    ? { source_ids: sourceIds }
+    : undefined;
+  const dto = await http.post<CaptureResponseDto>('/api/v1/sources/capture', body);
+  return {
+    inserted: dto.inserted,
+    failedSources: dto.failed_sources,
+    skippedSourceIds: dto.skipped_source_ids,
+  };
+}

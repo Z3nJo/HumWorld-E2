@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { captureSources } from '../../features/sources/infrastructure/sourcesApi';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useSources } from '../../features/sources/application/useSources';
 import type {
+  CaptureResult,
   ChannelWithSources,
   Continent,
   CreateSourceBatchInput,
@@ -43,6 +45,26 @@ export const SourcesPage = () => {
     null,
   );
   const [deactivating, setDeactivating] = useState(false);
+
+  // Manual capture
+  const [capturing, setCapturing] = useState(false);
+
+  const runCapture = async (sourceIds?: number[]) => {
+    setCapturing(true);
+    try {
+      const res: CaptureResult = await captureSources(sourceIds);
+      const msg = `Captura finalizada: ${res.inserted} noticias insertadas, ${res.failedSources} fuentes fallidas, ${res.skippedSourceIds.length} fuentes omitidas`;
+      addToast(msg, res.failedSources > 0 ? 'error' : 'success');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al ejecutar la captura';
+      addToast(msg, 'error');
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  const handleCaptureChannel = (channel: ChannelWithSources) =>
+    runCapture(channel.sources.filter((c) => c.active).map((c) => c.id));
 
   // Count channels and feeds for visible groups
   const totalFeeds = channelGroups.reduce((acc, g) => acc + g.sources.length, 0);
@@ -184,9 +206,14 @@ export const SourcesPage = () => {
             </span>
           </div>
 
-          <button className="btn pri" onClick={handleOpenCreateDrawer}>
-            + Nueva fuente
-          </button>
+          <div className="row">
+            <button className="btn" onClick={() => runCapture()} disabled={capturing}>
+              {capturing ? 'Capturando…' : 'Capturar ahora'}
+            </button>
+            <button className="btn pri" onClick={handleOpenCreateDrawer}>
+              + Nueva fuente
+            </button>
+          </div>
         </div>
 
         {loading && (
@@ -218,6 +245,8 @@ export const SourcesPage = () => {
             onToggleGroupActive={handleToggleChannelActive}
             onEditChannel={handleOpenEditDrawer}
             onDeleteChannel={(channel) => setDeactivatingChannel(channel)}
+            onCaptureChannel={handleCaptureChannel}
+            capturing={capturing}
           />
         )}
       </div>

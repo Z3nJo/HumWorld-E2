@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { http } from '../../../shared/api/httpClient';
 import {
+  captureSources,
   createSources,
   deleteChannel,
   deleteSource,
@@ -160,5 +161,28 @@ describe('sourcesApi', () => {
 
     await deleteChannel(1);
     expect(http.delete).toHaveBeenCalledWith('/api/v1/channels/1');
+  });
+
+  it('captureSources sends no body for global capture and maps the response', async () => {
+    vi.mocked(http.post).mockResolvedValueOnce({
+      sources: [],
+      skipped_source_ids: [7, 8],
+      inserted: 5,
+      failed_sources: 1,
+    });
+    const res = await captureSources();
+    expect(http.post).toHaveBeenCalledWith('/api/v1/sources/capture', undefined);
+    expect(res).toEqual({ inserted: 5, failedSources: 1, skippedSourceIds: [7, 8] });
+  });
+
+  it('captureSources sends source_ids when provided', async () => {
+    vi.mocked(http.post).mockResolvedValueOnce({
+      sources: [],
+      skipped_source_ids: [],
+      inserted: 0,
+      failed_sources: 0,
+    });
+    await captureSources([1, 2]);
+    expect(http.post).toHaveBeenCalledWith('/api/v1/sources/capture', { source_ids: [1, 2] });
   });
 });

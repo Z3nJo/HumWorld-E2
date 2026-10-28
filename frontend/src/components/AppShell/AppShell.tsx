@@ -44,12 +44,6 @@ export const AppShell = () => {
           >
             Parámetros<span>/config</span>
           </NavLink>
-          <NavLink
-            to="/operaciones"
-            className={({ isActive }) => (isActive ? 'on' : '')}
-          >
-            Captura y borrado<span>manual</span>
-          </NavLink>
         </nav>
 
 

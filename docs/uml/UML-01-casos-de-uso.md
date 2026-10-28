@@ -104,12 +104,13 @@ flowchart LR
 | CU-06 | Filtrar por periodo, continente y país | Visitante | `T-DASH-01` | Parámetros `fecha_desde`, `fecha_hasta`, `continente`, `pais` |
 | CU-07 | Gestionar el diccionario de términos | Administrador | `E2-H01-API`, `E2-H01-UI` | Ruta `/dictionary`; `GET`, `POST /api/v1/dictionary`; `GET`, `PUT`, `PATCH`, `DELETE /api/v1/dictionary/{term_id}` |
 | CU-08 | Gestionar canales y fuentes RSS | Administrador | `E1-H01`, `E4-H04` | Ruta `/fuentes`; `GET`, `POST /api/v1/sources`; `GET`, `PUT`, `PATCH`, `DELETE /api/v1/sources/{source_id}`; `GET /api/v1/channels`; `GET`, `PUT`, `PATCH`, `DELETE /api/v1/channels/{channel_id}` |
-| CU-09 | Capturar noticias bajo demanda | Administrador | `E1-H05` | `POST /api/v1/sources/capture` (solo API; sin pantalla) |
+| CU-09 | Capturar noticias bajo demanda | Administrador | `E1-H05` | Ruta `/fuentes`; `POST /api/v1/sources/capture` |
 | CU-10 | Configurar parámetros generales | Administrador | `E1-H04`, `E4-H01`, `E4-H04` | Ruta `/parametros`; `GET`, `PUT /api/v1/config` |
 | CU-11 | Analizar el humor de un texto puntual | Administrador | `E2-H04` | `POST /api/v1/sentiment` (solo API; sin persistencia) |
 | CU-12 | Capturar noticias periódicamente | Planificador | `E1-H03` | Trabajo `rss-news-capture` |
 | CU-13 | Calcular el humor de las noticias | — (incluido) | `E2-H02`, `E2-H03` (algoritmo en `ADR-001`) | `NewsCaptureService._analyze_news` y `process_pending_news` |
 | CU-14 | Purgar noticias caducadas | Planificador | `E4-H02` | Trabajo `news-purging` (retención `noticias_caducidad_dias`) |
+| CU-14 (manual) | Purgar noticias caducadas bajo demanda | Administrador | `E4-H03` | Ruta `/parametros`; `DELETE /api/v1/news` |
 
 ---
 
@@ -133,7 +134,7 @@ flowchart LR
 | `/config` | CU-10 | Implementado |
 | `/sentiment` | CU-11 | Implementado solo `POST` |
 | `/dashboards` | CU-02 a CU-06 | Implementado |
-| `/news` | — | Sin endpoint propio. El listado de noticias influyentes vive en `/dashboards/noticias-influyentes` y el purgado es un trabajo interno |
+| `/news` | — | Sin endpoint propio. El listado de noticias influyentes vive en `/dashboards/noticias-influyentes` y el purgado automático es un trabajo interno y el manual se lanza desde `/parametros` |
 
 ---
 

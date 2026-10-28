@@ -69,3 +69,20 @@ export interface SourcePatchDto {
   idioma?: string;
   activa?: boolean;
 }
+
+export interface CaptureRequestDto {
+  source_ids: number[];
+}
+
+export interface CaptureResponseDto {
+  sources: Array<{
+    source_id: number;
+    inserted: number;
+    duplicates: number;
+    invalid: number;
+    error: string | null;
+  }>;
+  skipped_source_ids: number[];
+  inserted: number;
+  failed_sources: number;
+}

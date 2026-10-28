@@ -154,3 +154,9 @@ export interface PatchSourceInput {
   language?: Language;
   active?: boolean;
 }
+
+export interface CaptureResult {
+  inserted: number;
+  failedSources: number;
+  skippedSourceIds: number[];
+}
