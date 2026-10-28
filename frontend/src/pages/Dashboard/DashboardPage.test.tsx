@@ -238,6 +238,9 @@ describe("DashboardPage", () => {
       fecha_desde: expect.any(String), fecha_hasta: expect.any(String),
     });
     expect(mockedFetchDashboard).toHaveBeenLastCalledWith(expect.objectContaining({ pais: 'CL' }));
+    await waitFor(() => expect(fetchInfluentialNews).toHaveBeenLastCalledWith(expect.objectContaining({
+      continente: 'America', pais: 'CL',
+    })));
   });
 
   // Summary card
@@ -324,11 +327,13 @@ describe("DashboardPage", () => {
       fecha_registro: '2026-10-16T00:00:00Z', valor_humor: -0.9,
     }] });
     render(<DashboardPage />);
-    const link = await screen.findByRole('link', { name: 'Noticia destacada real' });
+    const title = (await screen.findAllByText('Noticia destacada real'))[0];
+    expect(title.closest('li')).toHaveTextContent('−0,90');
+    fireEvent.click(title);
+    const link = screen.getByRole('link', { name: /noticia original/i });
     expect(link).toHaveAttribute('href', 'https://example.com/news/1');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(link.closest('li')).toHaveTextContent('Canal Chile');
-    expect(link.closest('li')).toHaveTextContent('−0,90');
     expect(screen.queryByText('Sin noticias evaluables')).not.toBeInTheDocument();
   });
 
@@ -345,7 +350,14 @@ describe("DashboardPage", () => {
     expect(mockedFetchDashboard).toHaveBeenCalledWith(expect.objectContaining({
       fecha_desde: today, fecha_hasta: today,
     }));
+    expect(fetchInfluentialNews).toHaveBeenLastCalledWith(expect.objectContaining({
+      fecha_desde: today, fecha_hasta: today,
+    }));
     fireEvent.click(screen.getByText(/7 d.as/));
+    await waitFor(() => expect(fetchInfluentialNews).toHaveBeenLastCalledWith(expect.objectContaining({
+      fecha_desde: new Date(Date.parse(today) - 6 * 864e5).toISOString().slice(0, 10),
+      fecha_hasta: today,
+    })));
     await waitFor(() => expect(mockedFetchDashboard).toHaveBeenLastCalledWith(expect.objectContaining({
       fecha_desde: new Date(Date.parse(today) - 6 * 864e5).toISOString().slice(0, 10),
       fecha_hasta: today,
