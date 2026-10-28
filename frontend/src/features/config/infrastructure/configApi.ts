@@ -28,3 +28,7 @@ export async function updateConfig(config: RuntimeConfig): Promise<RuntimeConfig
   const dto = await http.put<ConfigResponseDto>('/api/v1/config', payload);
   return mapConfigFromDto(dto);
 }
+
+export async function purgeExpiredNews(): Promise<void> {
+  await http.delete('/api/v1/news');
+}

@@ -8,6 +8,9 @@ interface ConfigCardsProps {
   onChangeExpirationDays: (value: number) => void;
   errors: ConfigFormErrors;
   disabled?: boolean;
+  onPurge?: () => void;
+  purgeDisabled?: boolean;
+  purgeHint?: string;
 }
 
 export const ConfigCards = ({
@@ -18,6 +21,9 @@ export const ConfigCards = ({
   onChangeExpirationDays,
   errors,
   disabled = false,
+  onPurge,
+  purgeDisabled = false,
+  purgeHint,
 }: ConfigCardsProps) => (
   <div className="opgrid">
     <div className="card">
@@ -73,6 +79,15 @@ export const ConfigCards = ({
             </span>
           )}
         </label>
+
+        {onPurge && (
+          <div className="row" style={{ gap: '8px' }}>
+            <button className="params-btn" onClick={onPurge} disabled={purgeDisabled}>
+              Purgar ahora
+            </button>
+            {purgeHint && <span className="help">{purgeHint}</span>}
+          </div>
+        )}
       </div>
     </div>
 
