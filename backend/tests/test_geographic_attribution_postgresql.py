@@ -220,7 +220,9 @@ def test_vertical_capture_backfill_channel_correction_and_dashboard(engine) -> N
             spain_news.id_noticia,
             argentina_news.id_noticia,
         }
-        assert next(item for item in influential if item.id_noticia == spain_news.id_noticia).pais == "ES"
+        spain_item = next(item for item in influential if item.id_noticia == spain_news.id_noticia)
+        assert spain_item.pais == "ES"
+        assert spain_item.paises_atribuidos == ("CL",)
 
     with Session(engine) as restarted_session:
         assert restarted_session.scalar(select(NewsCountry).where(NewsCountry.id_noticia == historical.id_noticia)) is not None

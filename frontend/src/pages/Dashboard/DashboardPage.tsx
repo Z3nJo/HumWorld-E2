@@ -37,6 +37,8 @@ function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+const REGION_NAMES = new Intl.DisplayNames(['es'], { type: 'region' });
+
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 export const DashboardPage: React.FC = () => {
@@ -444,6 +446,9 @@ export const DashboardPage: React.FC = () => {
                             {item.titulo}
                           </a>
                           <div className="meta">{item.canal} · {item.pais || item.continente} · <span className="mono">{formatHumor(item.valor_humor)}</span></div>
+                          {item.paises_atribuidos?.length ? (
+                            <div className="meta">Sobre: {item.paises_atribuidos.map((code) => REGION_NAMES.of(code) ?? code).join(', ')}</div>
+                          ) : null}
                         </li>
                       ))}
                     </ol>

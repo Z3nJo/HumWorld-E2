@@ -338,6 +338,10 @@ class InfluentialNewsItemResponse(BaseModel):
     pais: str | None
     fecha_registro: datetime
     valor_humor: Decimal
+    paises_atribuidos: list[str] = Field(
+        default_factory=list,
+        description="Paises atribuidos a la noticia (ISO-3166 alfa-2); pais/continente describen la fuente",
+    )
 
 
 class InfluentialNewsResponse(BaseModel):

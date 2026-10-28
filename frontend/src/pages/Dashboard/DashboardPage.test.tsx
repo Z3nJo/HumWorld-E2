@@ -332,6 +332,18 @@ describe("DashboardPage", () => {
     expect(screen.queryByText('Sin noticias evaluables')).not.toBeInTheDocument();
   });
 
+  it("shows the countries attributed to each ranked news item", async () => {
+    vi.mocked(fetchInfluentialNews).mockResolvedValue({ noticias: [{
+      id_noticia: 2, titulo: 'Noticia sobre Brasil', url: 'https://example.com/news/2',
+      canal: 'Canal EEUU', continente: 'America', pais: 'US',
+      fecha_registro: '2026-10-16T00:00:00Z', valor_humor: 0.5, paises_atribuidos: ['BR', 'AR'],
+    }] });
+    render(<DashboardPage />);
+    const item = (await screen.findByRole('link', { name: 'Noticia sobre Brasil' })).closest('li');
+    expect(item).toHaveTextContent('Canal EEUU');
+    expect(item).toHaveTextContent('Sobre: Brasil, Argentina');
+  });
+
   it("uses current UTC dates and real daily counts without duplicating range totals", async () => {
     const today = new Date().toISOString().slice(0, 10);
     vi.mocked(fetchEvolution).mockResolvedValue({ fecha_desde: today, fecha_hasta: today, dias: [{
