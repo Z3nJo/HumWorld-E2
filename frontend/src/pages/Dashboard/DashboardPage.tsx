@@ -6,11 +6,11 @@ import { DashboardMap } from '../../features/dashboard/presentation/DashboardMap
 import { DashboardTimeline, type TimelinePoint } from '../../features/dashboard/presentation/DashboardTimeline';
 import { DashboardSummary } from '../../features/dashboard/presentation/DashboardSummary';
 import { DashboardWordCloud } from '../../features/dashboard/presentation/DashboardWordCloud';
+import { InfluentialNewsList } from '../../features/dashboard/presentation/InfluentialNewsList';
 import {
   COUNTRIES_DATA,
   COUNTRIES_BY_ISO,
   CONTINENT_ORDER,
-  formatHumor,
 } from '../../features/dashboard/domain/countries';
 import '../../features/dashboard/presentation/Dashboard.css';
 
@@ -430,29 +430,7 @@ export const DashboardPage: React.FC = () => {
                 mode={cloudMode}
                 onToggleMode={setCloudMode}
               />
-              <div className="card">
-                <div className="ch">
-                  <h2>Noticias más influyentes</h2>
-                  <small>Top 10 por |valor_humor| · {scopeTitle}</small>
-                </div>
-                <div className="cb">
-                  {news?.noticias.length ? (
-                    <ol className="influential-news">
-                      {news.noticias.map((item) => (
-                        <li key={item.id_noticia}>
-                          <a href={/^https?:\/\//i.test(item.url) ? item.url : undefined} target="_blank" rel="noopener noreferrer">
-                            {item.titulo}
-                          </a>
-                          <div className="meta">{item.canal} · {item.pais || item.continente} · <span className="mono">{formatHumor(item.valor_humor)}</span></div>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : <div className="empty">
-                    <b>Sin noticias evaluables</b>
-                    Prueba otro día con datos o amplía el ámbito.
-                  </div>}
-                </div>
-              </div>
+              <InfluentialNewsList news={news?.noticias ?? []} scopeTitle={scopeTitle} />
             </div>
           </>
         )}
