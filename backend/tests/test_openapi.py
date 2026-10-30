@@ -164,6 +164,7 @@ def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
         "pais",
         "fecha_registro",
         "valor_humor",
+        "paises_atribuidos",
     }
     assert set(schemas["DashboardEvolutionResponse"]["properties"]) == {
         "fecha_desde",

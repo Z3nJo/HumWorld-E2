@@ -43,6 +43,7 @@ class InfluentialNewsRecord:
     pais: str | None
     fecha_registro: datetime
     valor_humor: Decimal
+    paises_atribuidos: tuple[str, ...] = ()
 
 
 class DashboardRepository:
@@ -125,9 +126,20 @@ class DashboardRepository:
             candidates.c.fecha_registro.desc(),
             candidates.c.id_noticia.asc(),
         ).limit(10)
+        rows = self._session.execute(statement).all()
+        countries: dict[int, list[str]] = {}
+        for news_id, code in self._session.execute(
+            select(NewsCountry.id_noticia, NewsCountry.codigo_pais)
+            .where(NewsCountry.id_noticia.in_([row.id_noticia for row in rows]))
+            .order_by(NewsCountry.codigo_pais)
+        ):
+            countries.setdefault(news_id, []).append(code)
         return [
-            InfluentialNewsRecord(**row._mapping)
-            for row in self._session.execute(statement)
+            InfluentialNewsRecord(
+                **row._mapping,
+                paises_atribuidos=tuple(countries.get(row.id_noticia, ())),
+            )
+            for row in rows
         ]
 
     def aggregate_countries(

@@ -59,6 +59,8 @@ export interface InfluentialNews {
   pais: string | null;
   fecha_registro: string;
   valor_humor: number;
+  /** ISO codes of the countries the news is attributed to; `pais`/`continente` describe the source. */
+  paises_atribuidos?: string[];
 }
 
 export interface InfluentialNewsData {

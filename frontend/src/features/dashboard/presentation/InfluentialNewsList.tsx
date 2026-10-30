@@ -21,6 +21,8 @@ const dateFormat = new Intl.DateTimeFormat('es-CL', {
   hourCycle: 'h23',
 });
 
+const regionNames = new Intl.DisplayNames(['es'], { type: 'region' });
+
 function sourceRegion(item: InfluentialNews): string {
   if (item.pais) return COUNTRIES_BY_ISO[item.pais]?.es ?? item.pais;
   return CONTINENT_ORDER.find((c) => c.key === item.continente)?.label ?? item.continente;
@@ -58,6 +60,16 @@ export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, 
                     <dd>{dateFormat.format(new Date(item.fecha_registro))} UTC</dd>
                     <dt>Fuente</dt>
                     <dd>{item.canal} · {sourceRegion(item)}</dd>
+                    {item.paises_atribuidos?.length ? (
+                      <>
+                        <dt>Sobre</dt>
+                        <dd>
+                          {item.paises_atribuidos
+                            .map((code) => regionNames.of(code) ?? code)
+                            .join(', ')}
+                        </dd>
+                      </>
+                    ) : null}
                     <dt>Original</dt>
                     <dd>
                       {href ? (

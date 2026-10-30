@@ -96,6 +96,7 @@ def test_influential_news_orders_by_absolute_score_and_respects_filters(client):
     assert news[0]["valor_humor"] == "-0.900"
     assert news[0]["canal"] == "Chile"
     assert news[0]["url"] == "https://example.com/1"
+    assert news[0]["paises_atribuidos"] == ["CL"]
 
 
 @pytest.mark.parametrize("path", ["evolucion", "noticias-influyentes"])

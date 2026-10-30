@@ -60,6 +60,16 @@ describe('InfluentialNewsList', () => {
     expect(screen.getByText(/Canal Uno · ZZ/)).toBeInTheDocument();
   });
 
+  it('shows attributed countries in the expanded detail', async () => {
+    const user = userEvent.setup();
+    render(<InfluentialNewsList scopeTitle="Global" news={[
+      item({ paises_atribuidos: ['BR', 'AR'] }),
+    ]} />);
+    await user.click(screen.getAllByText('Titular uno')[0]);
+    expect(screen.getByText('Sobre')).toBeInTheDocument();
+    expect(screen.getByText('Brasil, Argentina')).toBeInTheDocument();
+  });
+
   it('does not render a link for non-navigable URLs', () => {
     render(<InfluentialNewsList scopeTitle="Global" news={[item({ url: 'javascript:alert(1)' })]} />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
