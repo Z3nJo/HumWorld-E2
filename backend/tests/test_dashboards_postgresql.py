@@ -326,6 +326,31 @@ def test_influential_news_deduplicates_before_limit_with_ties_and_range(engine) 
         assert len({record.url for record in records}) == 10
 
 
+def test_influential_news_orders_ties_by_date_desc_then_id_asc_and_empty(engine) -> None:
+    start = datetime(2026, 9, 1, tzinfo=UTC)
+    end = start + timedelta(days=2)
+    with Session(engine, expire_on_commit=False) as session:
+        source = _source(session, "order", "America", "CL")
+        weaker = _news(session, source, "weaker", start + timedelta(hours=5), Decimal("0.500"))
+        older = _news(session, source, "older", start + timedelta(hours=1), Decimal("-0.900"))
+        newer = _news(session, source, "newer", start + timedelta(hours=2), Decimal("0.900"))
+        same_a = _news(session, source, "same-a", start + timedelta(hours=3), Decimal("0.900"))
+        same_b = _news(session, source, "same-b", start + timedelta(hours=3), Decimal("-0.900"))
+        session.commit()
+
+        repository = DashboardRepository(session)
+        records = repository.influential_news(
+            start_at=start, end_at=end, continent="America", country="CL",
+        )
+        assert [r.id_noticia for r in records] == [
+            same_a.id_noticia, same_b.id_noticia, newer.id_noticia,
+            older.id_noticia, weaker.id_noticia,
+        ]
+        assert repository.influential_news(
+            start_at=start, end_at=end, continent="Europa", country=None,
+        ) == []
+
+
 def test_service_represents_empty_scope_and_threshold_boundaries(engine) -> None:
     instant = datetime(2026, 9, 1, 12, tzinfo=UTC)
     with Session(engine) as session:

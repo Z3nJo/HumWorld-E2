@@ -164,10 +164,11 @@ Cada elemento SHALL incluir `id_noticia`, `titulo`, `url`, `canal`, `continente`
 - **THEN** la noticia participa en el resultado por su atribución geográfica
 - **AND** sus campos `continente` y `pais` conservan la geografía del canal
 
-#### Scenario: Mantener las respuestas existentes
+#### Scenario: Mantener la compatibilidad de las respuestas existentes
 - **WHEN** un consumidor vigente consulta cualquiera de los endpoints del dashboard después del cambio de atribución
-- **THEN** recibe los mismos campos y tipos publicados antes del cambio
-- **AND** no se agregan campos o rutas destinados al frontend
+- **THEN** los campos existentes conservan sus nombres, tipos y semántica publicada
+- **AND** `paises_atribuidos` es el único campo aditivo del ranking de noticias influyentes
+- **AND** no se agregan ni modifican rutas o parámetros destinados al frontend
 
 ### Requirement: Validación y publicación del contrato
 El sistema MUST responder `400` cuando una operación con rango obligatorio omita cualquiera de las fechas, una fecha no tenga formato válido, `fecha_desde` sea posterior a `fecha_hasta`, `continente` esté fuera del dominio admitido, `pais` no tenga exactamente dos letras o se informe `pais` sin `continente`. Las cinco operaciones del dashboard, sus parámetros, respuestas y errores SHALL estar publicados en OpenAPI.
