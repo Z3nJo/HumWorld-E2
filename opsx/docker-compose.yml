@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-humworld}
       POSTGRES_USER: ${POSTGRES_USER:-humworld}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-humworld}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el entorno privado}
     ports:
       - "5432:5432"
     volumes:
@@ -21,7 +21,7 @@ services:
       context: ../backend
     container_name: humworld-backend
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://humworld:humworld@postgres:5432/humworld}
+      DATABASE_URL: ${DATABASE_URL:?Define DATABASE_URL en el entorno privado}
       CAPTURE_SCHEDULER_ENABLED: ${CAPTURE_SCHEDULER_ENABLED:-true}
     ports:
       - "3000:3000"

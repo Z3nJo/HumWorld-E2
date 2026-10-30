@@ -6,11 +6,13 @@ API REST de HumWorld desarrollada con Python 3.12, FastAPI, SQLAlchemy 2.0, Alem
 
 La variable obligatoria `DATABASE_URL` admite tanto la URL generica de la infraestructura como el dialecto explicito de psycopg 3:
 
-```bash
-DATABASE_URL=postgresql://humworld:humworld@localhost:5432/humworld
-```
+Para desarrollo local, copiar `backend/.env.example` a `backend/.env` y completar
+`DATABASE_URL` con credenciales privadas y host `localhost`. Para Docker, usar el
+`.env` de la raíz con host `postgres`. Consultar la [guía de provisión y rotación](../docs/operations/postgresql-credentials.md).
 
-El backend normaliza internamente `postgresql://` a `postgresql+psycopg://`. Puede copiarse `.env.example` como `.env` para desarrollo local.
+El backend normaliza internamente `postgresql://` a `postgresql+psycopg://`.
+No existe una contraseña de respaldo. Los comandos Docker siguientes se ejecutan
+desde la raíz con `--env-file .env`.
 
 ## Dashboard: evolución diaria y noticias influyentes
 
@@ -83,7 +85,7 @@ DW (`DE`) y ABC (`AU`) si está vacío, y respeta cualquier país ya asignado.
 Después de actualizar el backend, repítalo para completar los canales existentes:
 
 ```powershell
-docker compose -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
+docker compose --env-file .env -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
 ```
 
 ## API de fuentes RSS
@@ -188,8 +190,8 @@ ejecuta primero las migraciones y este seed local idempotente, antes de arrancar
 Uvicorn y el scheduler. El mismo diagnóstico queda registrado en sus logs:
 
 ```powershell
-docker compose -f opsx/docker-compose.yml up --build -d
-docker compose -f opsx/docker-compose.yml logs backend
+docker compose --env-file .env -f opsx/docker-compose.yml up --build -d
+docker compose --env-file .env -f opsx/docker-compose.yml logs backend
 ```
 
 La captura reconoce aliases locales con prioridad título → descripción y usa el
@@ -204,7 +206,7 @@ En un despliegue Docker, ejecute el backfill de forma explícita después de que
 el backend esté saludable:
 
 ```powershell
-docker compose -f opsx/docker-compose.yml exec backend python scripts/backfill_geography.py --version 2026-10-27.v1 --batch-size 100
+docker compose --env-file .env -f opsx/docker-compose.yml exec backend python scripts/backfill_geography.py --version 2026-10-27.v2 --batch-size 100
 ```
 
 El comando es reanudable e idempotente para la misma versión. Cambiar de versión
@@ -319,8 +321,8 @@ restantes. Los identificadores inexistentes responden `404`.
 Desde la raiz del repositorio:
 
 ```bash
-docker compose -f opsx/docker-compose.yml up --build -d
-docker compose -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
+docker compose --env-file .env -f opsx/docker-compose.yml up --build -d
+docker compose --env-file .env -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
 ```
 
 Configure temporalmente un minuto mediante `PUT /api/v1/config` y observe el
@@ -330,14 +332,14 @@ backend durante dos ciclos:
 curl -X PUT http://localhost:3000/api/v1/config \
   -H "Content-Type: application/json" \
   -d '{"captura_periodicidad_minutos":1,"noticias_caducidad_dias":30}'
-docker compose -f opsx/docker-compose.yml logs -f backend
+docker compose --env-file .env -f opsx/docker-compose.yml logs -f backend
 ```
 
 Compruebe las noticias, fechas y duplicados desde PostgreSQL:
 
 ```bash
-docker compose -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT count(*) AS noticias, count(DISTINCT (id_fuente, guid_origen)) AS unicas FROM noticia;"
-docker compose -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT id_fuente, activa, fecha_ultima_captura FROM fuente_rss ORDER BY id_fuente;"
+docker compose --env-file .env -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT count(*) AS noticias, count(DISTINCT (id_fuente, guid_origen)) AS unicas FROM noticia;"
+docker compose --env-file .env -f opsx/docker-compose.yml exec postgres psql -U humworld -d humworld -c "SELECT id_fuente, activa, fecha_ultima_captura FROM fuente_rss ORDER BY id_fuente;"
 ```
 
 Después de la prueba puede restablecer la periodicidad a `60` mediante el mismo

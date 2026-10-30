@@ -11,7 +11,17 @@ on:
       - develop
 
 jobs:
+  credentials-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PostgreSQL secret availability
+        env:
+          CI_POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: python3 opsx/ci_database_env.py --check
+
   docker-compose-check:
+    needs: credentials-check
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -19,7 +29,7 @@ jobs:
         env:
           POSTGRES_DB: humworld_test
           POSTGRES_USER: humworld
-          POSTGRES_PASSWORD: humworld
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
@@ -27,9 +37,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://humworld:humworld@localhost:5432/humworld_test
 
     steps:
       - name: Checkout
@@ -40,11 +47,23 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Prepare masked database connections
+        env:
+          CI_POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: python opsx/ci_database_env.py
+
       - name: Validate Docker Compose configuration
-        run: docker compose -f opsx/docker-compose.yml config
+        env:
+          DATABASE_URL: ${{ env.COMPOSE_DATABASE_URL }}
+        run: docker compose -f opsx/docker-compose.yml config --quiet
 
       - name: Validate generated OpenSpec contracts
         run: python opsx/sync_contracts.py --check
+
+      - name: Verify credential configuration
+        env:
+          RUN_DOCKER_CREDENTIAL_TESTS: "1"
+        run: python -m unittest discover -s opsx/tests -v
 
       - name: Install backend Python dependencies
         shell: bash
@@ -133,4 +152,6 @@ jobs:
           pnpm test
 
       - name: Build Docker services
+        env:
+          DATABASE_URL: ${{ env.COMPOSE_DATABASE_URL }}
         run: docker compose -f opsx/docker-compose.yml build
