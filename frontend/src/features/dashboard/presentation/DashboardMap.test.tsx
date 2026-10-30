@@ -9,11 +9,13 @@ const atlas = {
     { type: 'Polygon', properties: { name: 'Chile' }, arcs: [[0]] },
     { type: 'Polygon', properties: { name: 'Argentina' }, arcs: [[1]] },
     { type: 'Polygon', properties: { name: 'Spain' }, arcs: [[2]] },
+    { type: 'Polygon', properties: { name: 'Russia' }, arcs: [[3]] },
   ] } },
   arcs: [
     [[-76, -50], [-76, -20], [-70, -20], [-70, -50], [-76, -50]],
     [[-68, -50], [-68, -25], [-55, -25], [-55, -50], [-68, -50]],
     [[-8, 37], [-8, 43], [0, 43], [0, 37], [-8, 37]],
+    [[30, 50], [30, 70], [170, 70], [170, 50], [30, 50]],
   ],
 };
 
@@ -37,5 +39,15 @@ describe('DashboardMap geography context', () => {
     rerender(<DashboardMap {...props} pais="CL" />);
     await waitFor(() => expect(container.querySelector('[data-country="CL"]')).toHaveAttribute('stroke-width', '1.8'));
     expect(['CL', 'AR', 'ES'].map((iso) => container.querySelector(`[data-country="${iso}"]`)?.getAttribute('fill'))).toEqual(fills);
+  });
+
+  it('draws Russia once per continent, clipped at the Urals', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => atlas }));
+    const { container } = render(<DashboardMap aggregates={[]} continent={null} pais={null}
+      onSelectContinent={vi.fn()} onSelectCountry={vi.fn()} />);
+    await waitFor(() => expect(container.querySelectorAll('[clip-path]')).toHaveLength(2));
+    expect([...container.querySelectorAll('[clip-path]')].map((p) => p.getAttribute('clip-path')))
+      .toEqual(['url(#clip-ru-eu)', 'url(#clip-ru-as)']);
+    expect(container.querySelectorAll('clipPath')).toHaveLength(2);
   });
 });

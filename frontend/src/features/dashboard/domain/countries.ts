@@ -59,7 +59,6 @@ export const CONTINENT_ANCHORS: Record<Continent, [number, number]> = {
 };
 
 export const CONTINENT_OVERRIDES: Record<string, Continent> = {
-  Russia: 'Europa',
   Turkey: 'Asia',
   Georgia: 'Asia',
   Armenia: 'Asia',

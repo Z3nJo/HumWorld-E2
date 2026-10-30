@@ -16,6 +16,7 @@ import type { Topology, GeometryCollection } from 'topojson-specification';
 export interface CountryProperties {
   name: string;
   cont?: Continent;
+  clip?: string;
 }
 
 export type CountryFeature = Feature<Geometry, CountryProperties>;
@@ -29,6 +30,12 @@ const colorScale = d3
   .range(['#bf4f22', '#e2a383', '#e6e0d2', '#9cc4a8', '#357050'])
   .interpolate(d3.interpolateLab)
   .clamp(true);
+
+// Russia spans two continents: its geometry is drawn twice, each copy clipped to its side of the Urals (~60°E).
+const RUSSIA_PARTS = [
+  { cont: 'Europa', clip: 'clip-ru-eu', boxes: [[[18, 30], [60, 85]]] },
+  { cont: 'Asia', clip: 'clip-ru-as', boxes: [[[60, 30], [180, 85]], [[-180, 30], [-160, 85]]] },
+] as const;
 
 function determineContinent(feature: CountryFeature): Continent {
   const name = feature.properties?.name;
@@ -80,6 +87,11 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           feat.features.forEach((f: CountryFeature) => {
             f.properties.cont = determineContinent(f);
           });
+          feat.features = feat.features.flatMap((f: CountryFeature) =>
+            f.properties.name === 'Russia'
+              ? RUSSIA_PARTS.map(({ cont, clip }) => ({ ...f, properties: { ...f.properties, cont, clip } }))
+              : [f]
+          );
           cachedWorld = feat;
         } catch {
           if (!isCancelled && el) {
@@ -126,6 +138,11 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('aria-label', 'Mapa de humor por continente y país');
 
       const defs = svg.append('defs');
+
+      RUSSIA_PARTS.forEach(({ clip, boxes }) => {
+        const cp = defs.append('clipPath').attr('id', clip);
+        boxes.forEach((extent) => cp.append('path').attr('d', path(d3.geoGraticule().extent(extent as [[number, number], [number, number]]).outline())));
+      });
 
       // Pattern without data (hatch)
       const hp = defs
@@ -184,6 +201,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('class', 'clickable')
         .attr('data-country', (f: CountryFeature) => TOPO_TO_ISO[f.properties.name] || '')
         .attr('d', path)
+        .attr('clip-path', (f: CountryFeature) => (f.properties.clip ? `url(#${f.properties.clip})` : null))
         .attr('fill', getFill)
         .attr('stroke', (f: CountryFeature) => {
           const iso = TOPO_TO_ISO[f.properties.name];
@@ -258,6 +276,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         )
         .join('path')
         .attr('d', path)
+        .attr('clip-path', (f: CountryFeature) => (f.properties.clip ? `url(#${f.properties.clip})` : null))
         .attr('fill', 'url(#hpr)')
         .attr('stroke', '#1c1f26')
         .attr('stroke-dasharray', '3 2')
