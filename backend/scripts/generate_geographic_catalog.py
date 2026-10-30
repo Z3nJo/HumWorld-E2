@@ -7,7 +7,9 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import sys
+import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +31,7 @@ CONTINENTS = {
 }
 NON_ISO_REST_CODES = frozenset({"XK"})
 TYPE_ORDER = {"pais": 0, "gentilicio": 1, "ciudad": 2}
+OUTPUT_ROOT = PROJECT_ROOT / "data" / "geography"
 
 
 class CatalogGenerationError(ValueError):
@@ -308,13 +311,67 @@ def generate(
     return catalog, manifest
 
 
+def validate_output_path(path: Path) -> Path:
+    """Resolve destinations inside the fixed geographic output directory."""
+    try:
+        # Keep the lexical root anchored to the installed backend. Resolving an
+        # externally redirected root must not authorize its external target.
+        expected_root = PROJECT_ROOT / "data" / "geography"
+        root = OUTPUT_ROOT.resolve()
+        if root != expected_root or OUTPUT_ROOT != expected_root:
+            raise CatalogGenerationError("La raíz de salida geográfica está redirigida")
+        if root.exists() and not root.is_dir():
+            raise CatalogGenerationError("La raíz de salida debe ser un directorio")
+        destination = path.resolve()
+        if destination == root or not destination.is_relative_to(root):
+            raise CatalogGenerationError("La salida debe estar dentro de data/geography del backend")
+        if destination.is_dir():
+            raise CatalogGenerationError("La salida debe ser un archivo, no un directorio")
+        for parent in destination.parents:
+            if parent == root:
+                break
+            if parent.exists() and not parent.is_dir():
+                raise CatalogGenerationError("Un padre de la salida no es un directorio")
+        return destination
+    except (OSError, RuntimeError, ValueError) as error:
+        if isinstance(error, CatalogGenerationError):
+            raise
+        raise CatalogGenerationError("No se puede validar la ruta de salida geográfica") from error
+
+
+def validate_output_paths(catalog_path: Path, manifest_path: Path) -> tuple[Path, Path]:
+    catalog = validate_output_path(catalog_path)
+    manifest = validate_output_path(manifest_path)
+    if catalog == manifest or (
+        catalog.exists() and manifest.exists() and catalog.samefile(manifest)
+    ):
+        raise CatalogGenerationError("Catálogo y manifiesto deben usar archivos distintos")
+    if catalog in manifest.parents or manifest in catalog.parents:
+        raise CatalogGenerationError("Una salida no puede ser el directorio padre de la otra")
+    return catalog, manifest
+
+
 def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    destination = validate_output_path(path)
+    serialized = json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    # Recheck after mkdir and before publishing; the output tree is operator-owned.
+    destination = validate_output_path(destination)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", newline="\n", dir=destination.parent,
+            prefix=".geography-", suffix=".json.tmp", delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(serialized)
+        checked = validate_output_path(destination)
+        if checked != destination:
+            raise CatalogGenerationError("La ruta de salida cambió durante la generación")
+        os.replace(temporary_path, destination)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def main() -> None:
@@ -326,14 +383,20 @@ def main() -> None:
     parser.add_argument("--catalog-output", type=Path, required=True)
     parser.add_argument("--manifest-output", type=Path, required=True)
     arguments = parser.parse_args()
-    catalog, manifest = generate(
-        arguments.rest_countries,
-        arguments.geonames_cities,
-        arguments.curation,
-        alternate_names_path=arguments.geonames_alternate_names,
-    )
-    write_json(arguments.catalog_output, catalog)
-    write_json(arguments.manifest_output, manifest)
+    try:
+        catalog_output, manifest_output = validate_output_paths(
+            arguments.catalog_output, arguments.manifest_output,
+        )
+        catalog, manifest = generate(
+            arguments.rest_countries,
+            arguments.geonames_cities,
+            arguments.curation,
+            alternate_names_path=arguments.geonames_alternate_names,
+        )
+        write_json(catalog_output, catalog)
+        write_json(manifest_output, manifest)
+    except (CatalogGenerationError, OSError) as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":
