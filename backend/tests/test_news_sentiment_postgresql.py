@@ -18,6 +18,7 @@ from app.repositories import ConfigurationRepository, NewsCaptureRepository
 from app.seeds.geography import load_catalog, seed_geography
 from app.seeds.sentiment import (
     SENTIMENT_LEXICON,
+    SENTIMENT_TERMS,
     seed_sentiment_configuration,
     seed_sentiment_terms,
 )
@@ -182,7 +183,17 @@ def test_lexicon_seed_is_idempotent_and_preserves_admin_changes(engine) -> None:
 
         terms = list(session.scalars(select(Term)).all())
         by_identity = {(term.palabra, term.idioma): term for term in terms}
-        assert len(terms) == 60
+        expected = {
+            (word, language): Decimal(raw_value)
+            for word, language, raw_value in SENTIMENT_TERMS
+        }
+        assert len(terms) == len(expected) == 8_000
+        assert set(by_identity) == set(expected)
+        assert all(term.activo is True for term in terms)
+        assert all(
+            by_identity[identity].valor == value
+            for identity, value in expected.items()
+        )
         for spanish, english, raw_value in SENTIMENT_LEXICON:
             spanish_term = by_identity[(spanish, "es")]
             english_term = by_identity[(english, "en")]
@@ -197,7 +208,7 @@ def test_lexicon_seed_is_idempotent_and_preserves_admin_changes(engine) -> None:
         edited_id = edited.id_termino
 
         seed_sentiment_terms(session)
-        assert session.scalar(select(func.count()).select_from(Term)) == 60
+        assert session.scalar(select(func.count()).select_from(Term)) == len(expected)
         preserved = session.get(Term, edited_id)
         assert preserved is not None
         assert preserved.valor == Decimal("2")
