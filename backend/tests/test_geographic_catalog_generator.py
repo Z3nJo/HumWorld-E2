@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts import generate_geographic_catalog as generator
 from scripts.generate_geographic_catalog import (
     CatalogGenerationError,
     generate,
@@ -50,7 +51,9 @@ def _inputs(tmp_path: Path, *, collision: bool = False) -> tuple[Path, Path, Pat
     return rest, cities, curation
 
 
-def test_generator_is_deterministic_filters_and_omits_iso_aliases(tmp_path: Path) -> None:
+def test_generator_is_deterministic_filters_and_omits_iso_aliases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
     inputs = _inputs(tmp_path)
     first = generate(*inputs)
     second = generate(*inputs)
@@ -62,8 +65,12 @@ def test_generator_is_deterministic_filters_and_omits_iso_aliases(tmp_path: Path
     assert any(item["alias_normalizado"] == "santiago" for item in catalog["aliases"])
     assert manifest["city_population_threshold"] == 100000
 
-    one = tmp_path / "one.json"
-    two = tmp_path / "two.json"
+    root = tmp_path / "backend"
+    output = root / "data" / "geography"
+    monkeypatch.setattr(generator, "PROJECT_ROOT", root)
+    monkeypatch.setattr(generator, "OUTPUT_ROOT", output)
+    one = output / "one.json"
+    two = output / "two.json"
     write_json(one, catalog)
     write_json(two, second[0])
     assert one.read_bytes() == two.read_bytes()
