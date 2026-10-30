@@ -30,6 +30,8 @@ Thumbs.db
 .vscode/
 
 # Database/runtime files
+backend/data/geography/sources/*
+!backend/data/geography/sources/README.md
 *.sqlite
 *.sqlite3
 *.db

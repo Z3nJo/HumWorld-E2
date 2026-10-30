@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_session_factory
 from app.models import Channel, Country, CountryAlias
+from app.services.geographic_input_paths import GeographicInputPathError, validate_geographic_input
 
 DEFAULT_CATALOG = Path(__file__).resolve().parents[2] / "data" / "geography" / "catalog.json"
 
@@ -30,6 +31,7 @@ class GeographicSeedResult:
 
 
 def load_catalog(path: Path = DEFAULT_CATALOG) -> dict:
+    path = validate_geographic_input(path)
     with path.open(encoding="utf-8") as source:
         catalog = json.load(source)
     if not catalog.get("version") or not catalog.get("countries") or not catalog.get("aliases"):
@@ -132,8 +134,12 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--diagnose-channels", action="store_true")
     arguments = parser.parse_args()
+    try:
+        catalog = load_catalog(arguments.catalog)
+    except (GeographicInputPathError, GeographicSeedConflictError, OSError, json.JSONDecodeError) as error:
+        parser.error(str(error))
     with get_session_factory()() as session:
-        result = seed_geography(session, load_catalog(arguments.catalog))
+        result = seed_geography(session, catalog)
         diagnostics = diagnose_channels(session) if arguments.diagnose_channels else []
     print(
         f"Catálogo {result.version}: {result.countries} países, "

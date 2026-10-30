@@ -8,9 +8,9 @@ La generación necesita copias locales de las fuentes; no se ejecuta durante el 
 
 ```powershell
 python scripts/generate_geographic_catalog.py `
-  --rest-countries ruta/rest-countries.json `
-  --geonames-cities ruta/cities15000.txt `
-  --geonames-alternate-names ruta/alternateNamesV2.zip `
+  --rest-countries data/geography/sources/rest-countries.json `
+  --geonames-cities data/geography/sources/cities15000.txt `
+  --geonames-alternate-names data/geography/sources/alternateNamesV2.zip `
   --curation data/geography/geography-curation.v1.json `
   --catalog-output data/geography/catalog.json `
   --manifest-output data/geography/manifest.json
@@ -43,4 +43,23 @@ El árbol de salida debe permanecer controlado por el operador durante la ejecuc
 esta protección no es un sandbox contra modificaciones concurrentes de directorios.
 
 Para exportar a otra ubicación, generar primero dentro del ámbito y después copiar
-los resultados explícitamente. Las fuentes de entrada no cambian en esta corrección.
+los resultados explícitamente.
+
+## Entradas autorizadas
+
+Ejecutar el comando desde `backend/` y copiar previamente REST Countries y GeoNames
+a `data/geography/sources` (se admiten subdirectorios). La curación y el catálogo
+del seed deben estar en `data/geography`. Las raíces se anclan al backend instalado;
+no hay argumentos ni variables de entorno para ampliarlas. Se admiten rutas
+absolutas internas y relativas al directorio de trabajo. Los datasets descargados
+se excluyen de Git y de la imagen Docker habitual.
+
+Las entradas deben existir y ser archivos regulares. Se rechazan rutas externas,
+directorios hermanos con prefijo común, enlaces que escapen del ámbito y raíces
+redirigidas. Todas las entradas del generador se validan antes de la primera
+lectura; un catálogo inválido se rechaza antes de iniciar el seed. El arranque
+Docker conserva `data/geography/catalog.json` y no necesita los datasets fuente.
+
+El operador debe controlar el árbol durante la ejecución. La validación no es un
+sandbox frente a intercambios concurrentes de directorios o hard links externos,
+ni demuestra la autenticidad del contenido de fuentes autorizadas.
