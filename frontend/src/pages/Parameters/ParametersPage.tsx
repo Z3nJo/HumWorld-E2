@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useConfig } from '../../features/config/application/useConfig';
+import { purgeExpiredNews } from '../../features/config/infrastructure/configApi';
 import { ConfigCards } from '../../features/config/presentation/ConfigCards';
+import { PurgeNewsModal } from '../../features/config/presentation/PurgeNewsModal';
 import { useToast } from '../../hooks/useToast';
 import './ParametersPage.css';
 
@@ -22,6 +25,23 @@ export const ParametersPage = () => {
   } = useConfig();
 
   const { toasts, addToast, removeToast } = useToast();
+
+  const [purgeOpen, setPurgeOpen] = useState(false);
+  const [purging, setPurging] = useState(false);
+
+  const handleConfirmPurge = async () => {
+    setPurging(true);
+    try {
+      await purgeExpiredNews();
+      addToast('Se purgaron las noticias caducadas', 'success');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al purgar las noticias';
+      addToast(msg, 'error');
+    } finally {
+      setPurging(false);
+      setPurgeOpen(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -81,6 +101,9 @@ export const ParametersPage = () => {
               onChangeExpirationDays={setNewsExpirationDays}
               errors={formErrors}
               disabled={saving}
+              onPurge={() => setPurgeOpen(true)}
+              purgeDisabled={isDirty || saving}
+              purgeHint={isDirty ? 'Guarda o descarta los cambios antes de purgar.' : undefined}
             />
 
             <div className="row actions" style={{ justifyContent: 'flex-end', gap: '10px' }}>
@@ -95,6 +118,13 @@ export const ParametersPage = () => {
           </>
         )}
       </div>
+      <PurgeNewsModal
+        open={purgeOpen}
+        expirationDays={draftConfig?.newsExpirationDays ?? 0}
+        onClose={() => setPurgeOpen(false)}
+        onConfirm={handleConfirmPurge}
+        loading={purging}
+      />
     </>
   );
 };

@@ -169,4 +169,83 @@ describe('ParametersPage', () => {
     expect(screen.getByRole('button', { name: 'Guardar parámetros' })).toBeDisabled();
     expect(screen.getByText('Debe ser un entero mayor o igual a 1')).toBeInTheDocument();
   });
+
+  describe('manual purge', () => {
+    const renderLoaded = async () => {
+      vi.mocked(configApi.fetchConfig).mockResolvedValueOnce(initialConfig);
+      render(<ParametersPage />);
+      await waitFor(() =>
+        expect(screen.getByLabelText(/Caducidad de noticias/i)).toHaveValue(30),
+      );
+    };
+
+    it('asks for confirmation and does not purge on cancel', async () => {
+      const user = userEvent.setup();
+      await renderLoaded();
+
+      await user.click(screen.getByRole('button', { name: 'Purgar ahora' }));
+      expect(screen.getByText(/más de 30 días/)).toBeInTheDocument();
+      expect(configApi.purgeExpiredNews).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+      expect(configApi.purgeExpiredNews).not.toHaveBeenCalled();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('purges on confirm and shows a success toast without a count', async () => {
+      const user = userEvent.setup();
+      vi.mocked(configApi.purgeExpiredNews).mockResolvedValueOnce(undefined);
+      await renderLoaded();
+
+      await user.click(screen.getByRole('button', { name: 'Purgar ahora' }));
+      await user.click(screen.getByRole('button', { name: 'Purgar noticias' }));
+
+      expect(await screen.findByText('Se purgaron las noticias caducadas')).toBeInTheDocument();
+      expect(configApi.purgeExpiredNews).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('is disabled with pending changes', async () => {
+      const user = userEvent.setup();
+      await renderLoaded();
+
+      const input = screen.getByLabelText(/Caducidad de noticias/i);
+      await user.clear(input);
+      await user.type(input, '10');
+
+      expect(screen.getByRole('button', { name: 'Purgar ahora' })).toBeDisabled();
+      expect(screen.getByText(/Guarda o descarta los cambios/)).toBeInTheDocument();
+    });
+
+    it('disables confirmation while purging', async () => {
+      const user = userEvent.setup();
+      let resolve!: () => void;
+      vi.mocked(configApi.purgeExpiredNews).mockReturnValueOnce(
+        new Promise<void>((r) => {
+          resolve = r;
+        }),
+      );
+      await renderLoaded();
+
+      await user.click(screen.getByRole('button', { name: 'Purgar ahora' }));
+      await user.click(screen.getByRole('button', { name: 'Purgar noticias' }));
+
+      expect(screen.getByRole('button', { name: 'Purgando...' })).toBeDisabled();
+      resolve();
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    });
+
+    it('shows an error toast on failure and allows retrying', async () => {
+      const user = userEvent.setup();
+      vi.mocked(configApi.purgeExpiredNews).mockRejectedValueOnce(new Error('Falla del servidor'));
+      await renderLoaded();
+
+      await user.click(screen.getByRole('button', { name: 'Purgar ahora' }));
+      await user.click(screen.getByRole('button', { name: 'Purgar noticias' }));
+
+      expect(await screen.findByText('Falla del servidor')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Caducidad de noticias/i)).toHaveValue(30);
+      expect(screen.getByRole('button', { name: 'Purgar ahora' })).toBeEnabled();
+    });
+  });
 });
