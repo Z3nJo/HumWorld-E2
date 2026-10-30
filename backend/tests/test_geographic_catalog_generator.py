@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from scripts import generate_geographic_catalog as generator
+from app.services import geographic_input_paths
 from scripts.generate_geographic_catalog import (
     CatalogGenerationError,
     generate,
@@ -12,9 +13,12 @@ from scripts.generate_geographic_catalog import (
 
 
 def _inputs(tmp_path: Path, *, collision: bool = False) -> tuple[Path, Path, Path]:
-    rest = tmp_path / "rest.json"
-    cities = tmp_path / "cities.txt"
-    curation = tmp_path / "curation.json"
+    geography = tmp_path / "backend" / "data" / "geography"
+    sources = geography / "sources"
+    sources.mkdir(parents=True, exist_ok=True)
+    rest = sources / "rest.json"
+    cities = sources / "cities.txt"
+    curation = geography / "curation.json"
     rest.write_text(
         json.dumps(
             [
@@ -55,6 +59,7 @@ def test_generator_is_deterministic_filters_and_omits_iso_aliases(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     inputs = _inputs(tmp_path)
+    monkeypatch.setattr(geographic_input_paths, "BACKEND_ROOT", tmp_path / "backend")
     first = generate(*inputs)
     second = generate(*inputs)
     assert first == second
@@ -76,6 +81,7 @@ def test_generator_is_deterministic_filters_and_omits_iso_aliases(
     assert one.read_bytes() == two.read_bytes()
 
 
-def test_generator_fails_on_unresolved_collision(tmp_path: Path) -> None:
+def test_generator_fails_on_unresolved_collision(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(geographic_input_paths, "BACKEND_ROOT", tmp_path / "backend")
     with pytest.raises(CatalogGenerationError, match="ambiguos"):
         generate(*_inputs(tmp_path, collision=True))

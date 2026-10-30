@@ -20,6 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.services.text_normalization import normalize_text
+from app.services.geographic_input_paths import GeographicInputPathError, validate_geographic_input
 
 CONTINENTS = {
     "Africa": "Africa",
@@ -51,6 +52,7 @@ class Alias:
 
 
 def checksum(path: Path) -> str:
+    path = validate_geographic_input(path)
     digest = hashlib.sha256()
     with path.open("rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
@@ -59,12 +61,14 @@ def checksum(path: Path) -> str:
 
 
 def read_json(path: Path) -> Any:
+    path = validate_geographic_input(path)
     with path.open(encoding="utf-8") as source:
         return json.load(source)
 
 
 @contextlib.contextmanager
 def open_text_source(path: Path):
+    path = validate_geographic_input(path)
     if path.suffix.casefold() != ".zip":
         with path.open(encoding="utf-8") as source:
             yield source
@@ -150,6 +154,12 @@ def generate(
     *,
     alternate_names_path: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    # Validate all inputs before reading the first, including optional sources.
+    rest_countries_path = validate_geographic_input(rest_countries_path, source=True)
+    geonames_cities_path = validate_geographic_input(geonames_cities_path, source=True)
+    curation_path = validate_geographic_input(curation_path)
+    if alternate_names_path is not None:
+        alternate_names_path = validate_geographic_input(alternate_names_path, source=True)
     rest_data = read_json(rest_countries_path)
     curation = read_json(curation_path)
     version = str(curation.get("catalog_version", "")).strip()
@@ -395,7 +405,7 @@ def main() -> None:
         )
         write_json(catalog_output, catalog)
         write_json(manifest_output, manifest)
-    except (CatalogGenerationError, OSError) as error:
+    except (CatalogGenerationError, GeographicInputPathError, OSError) as error:
         parser.error(str(error))
 
 
