@@ -79,16 +79,21 @@ Los subdirectorios de `backend/` se crean conforme avanzan las historias; su cor
 
 **Requisitos:** Docker y Docker Compose.
 
+Antes del primer arranque, copiar `.env.example` a `.env` en la raíz y completar
+las credenciales privadas siguiendo [la guía de PostgreSQL](docs/operations/postgresql-credentials.md).
+En instalaciones existentes, seguir primero la sección de rotación: cambiar `.env`
+no modifica la contraseña del rol almacenada en el volumen.
+
 Levantar el entorno desde la raiz del repositorio:
 
 ```bash
-docker compose -f opsx/docker-compose.yml up --build
+docker compose --env-file .env -f opsx/docker-compose.yml up --build
 ```
 
 Detenerlo:
 
 ```bash
-docker compose -f opsx/docker-compose.yml down
+docker compose --env-file .env -f opsx/docker-compose.yml down
 ```
 
 El backend aplica las migraciones al iniciar. Swagger queda disponible en `http://localhost:3000/api/docs`.
