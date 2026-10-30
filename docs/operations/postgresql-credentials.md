@@ -55,10 +55,21 @@ Si el valor publicado se reutilizó en otro entorno, rotarlo allí también.
 
    ```powershell
    docker compose --env-file .env -f opsx/docker-compose.yml stop backend
-   docker compose --env-file .env -f opsx/docker-compose.yml exec postgres pg_dump -U humworld -d humworld -Fc -f /tmp/humworld-before-rotation.dump
-   docker compose --env-file .env -f opsx/docker-compose.yml cp postgres:/tmp/humworld-before-rotation.dump ./.env.rotation-backup.dump
+   docker compose --env-file .env -f opsx/docker-compose.yml exec --user postgres postgres mktemp -d /var/lib/postgresql/data/rotation-backup.XXXXXXXX
    ```
 
+   `mktemp` devuelve un directorio privado nuevo con permisos `0700`, dentro de los
+   datos de PostgreSQL. Sustituir `<directorio-privado>` por esa ruta en los comandos
+   siguientes (no usar literalmente el marcador):
+
+   ```powershell
+   docker compose --env-file .env -f opsx/docker-compose.yml exec --user postgres postgres pg_dump -U humworld -d humworld -Fc -f <directorio-privado>/backup.dump
+   docker compose --env-file .env -f opsx/docker-compose.yml exec --user postgres postgres pg_restore --list <directorio-privado>/backup.dump
+   docker compose --env-file .env -f opsx/docker-compose.yml cp postgres:<directorio-privado>/backup.dump ./.env.rotation-backup.dump
+   ```
+
+   En PowerShell, reemplazar las rutas completas antes de ejecutar y entrecomillarlas.
+   No publicar el listado del respaldo: puede incluir nombres de objetos internos.
    El respaldo local coincide con `.env.*` y queda ignorado por Git. Protegerlo como
    dato privado y verificar que se creó correctamente antes de continuar. Si se cambió
    el usuario/base por defecto, ajustar los argumentos correspondientes.
@@ -94,6 +105,13 @@ Si el valor publicado se reutilizó en otro entorno, rotarlo allí también.
    No restaurar la contraseña publicada ni ejecutar `down -v`. El respaldo se restaura
    únicamente ante pérdida de datos verificada. Retirar el respaldo temporal del
    contenedor después de verificar la copia privada, según la política del operador.
+
+El asistente `opsx/rotate_local_database.py` evita archivos temporales dentro del
+contenedor: transmite el dump binario a un archivo local creado con exclusividad y
+permisos `0600` en Unix, y comprueba el archivo mediante `pg_restore --list` por stdin.
+En Windows la protección adicional depende de las ACL del directorio privado del
+usuario. No reutiliza ni sobrescribe rutas existentes. No volver a ejecutarlo si ya
+existe `.env`; para ese caso seguir la rotación interactiva anterior.
 
 ## Evidencia SNQ-04
 

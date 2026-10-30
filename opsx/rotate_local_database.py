@@ -36,6 +36,23 @@ def environment(info):
     return dict(item.split('=', 1) for item in info['Config']['Env'] if '=' in item)
 
 
+def create_private_backup(user, database, backup):
+    """Stream the archive into an exclusively created private local file."""
+    descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, 'wb') as stream:
+        dumped = subprocess.run(
+            ['docker', 'exec', 'humworld-postgres', 'pg_dump', '-U', user,
+             '-d', database, '-Fc'], stdout=stream, stderr=subprocess.PIPE)
+    if dumped.returncode or backup.stat().st_size == 0:
+        raise RuntimeError('Database backup failed; backend remains paused.')
+    with backup.open('rb') as stream:
+        validated = subprocess.run(
+            ['docker', 'exec', '-i', 'humworld-postgres', 'pg_restore', '--list'],
+            stdin=stream, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if validated.returncode:
+        raise RuntimeError('Backup validation failed; backend remains paused.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--confirm', action='store_true')
@@ -61,7 +78,6 @@ def main():
     scheduler = backend_env.get('CAPTURE_SCHEDULER_ENABLED', 'true')
     stamp = datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')
     backup = ROOT / f'.env.rotation-backup-{stamp}.dump'
-    temporary_backup = f'/tmp/humworld-rotation-{stamp}.dump'
     compose = ['docker', 'compose', '--env-file', str(target), '-f',
                str(ROOT / 'opsx/docker-compose.yml')]
 
@@ -82,14 +98,7 @@ def main():
     before = query(COUNTS)
     if before.returncode:
         raise RuntimeError('Cannot record reference counts; backend remains paused.')
-    run(['docker', 'exec', 'humworld-postgres', 'pg_dump', '-U', user, '-d', database,
-         '-Fc', '-f', temporary_backup], label='Database backup')
-    run(['docker', 'exec', 'humworld-postgres', 'pg_restore', '--list', temporary_backup],
-        label='Validate backup index')
-    run(['docker', 'cp', f'humworld-postgres:{temporary_backup}', str(backup)],
-        label='Copy private backup')
-    if not backup.is_file() or backup.stat().st_size == 0:
-        raise RuntimeError('Backup missing or empty; backend remains paused.')
+    create_private_backup(user, database, backup)
     connection = (f'postgresql://{quote(user, safe="")}:{new_password}@postgres:5432/'
                   f'{quote(database, safe="")}')
     # Save new credentials before changing the role, so recovery remains possible.
@@ -132,8 +141,6 @@ def main():
         with urlopen(path, timeout=10) as response:
             if response.status != 200:
                 raise RuntimeError('Integrated HTTP smoke check failed.')
-    run(['docker', 'exec', 'humworld-postgres', 'rm', '-f', '--', temporary_backup],
-        label='Remove copied temporary dump from container')
     resumed_env = dict(paused_env)
     resumed_env['CAPTURE_SCHEDULER_ENABLED'] = scheduler
     run([*compose, 'up', '-d', '--force-recreate', '--no-deps', 'backend'],

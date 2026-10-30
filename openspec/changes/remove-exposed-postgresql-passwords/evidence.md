@@ -82,3 +82,18 @@ La base real no se utilizó para ejecutar pruebas destructivas de purga/captura.
   y el estado de las dos incidencias `secrets:S6698` (tarea 4.4).
 
 No se declara SNQ-04 completada con pruebas locales solamente.
+
+## Corrección de python:S5443 en PR #93
+
+El análisis de la PR identificó la ruta predecible del dump en un directorio temporal
+compartido. Se eliminó ese archivo intermedio: el asistente ahora transmite el dump
+binario a un archivo local exclusivo (`O_EXCL`, `0600` en Unix) y valida por stdin.
+No se añadieron exclusiones ni cambios de severidad en Sonar.
+
+Pasaron 12 comprobaciones de credenciales/Compose y respaldo, incluidas cuatro
+pruebas nuevas de streaming binario, rechazo de sobrescritura, fallo de dump y fallo
+de validación. La prueba de rotación desechable se omitió en esta repetición porque
+no cambia la lógica de contraseña. Un respaldo real se creó y validó por streaming
+con `pg_restore`; se eliminó únicamente el archivo de esa prueba. No se rotó de nuevo
+la base ni se modificaron sus registros. Falta confirmar el resultado del nuevo
+análisis de Sonar sobre el commit de esta corrección.

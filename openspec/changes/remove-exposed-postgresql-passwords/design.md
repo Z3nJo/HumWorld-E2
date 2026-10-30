@@ -46,6 +46,13 @@ Cambiar `POSTGRES_PASSWORD` no altera roles de un volumen ya inicializado. Antes
 
 Se recrearán los contenedores con la nueva configuración conservando `postgres_data`. La validación debe abrir una conexión TCP nueva con la contraseña nueva y comprobar que la anterior ya no autentica; una conexión local de socket no demuestra esta rotación. Se compararán datos representativos antes y después. No se usará `down -v` ni se destruirá el volumen para resolver una discrepancia.
 
+El asistente transmite `pg_dump` directamente a un archivo local creado con
+`O_CREAT | O_EXCL` y modo `0600` (en Windows se aplican las ACL del usuario). No crea
+archivos en directorios temporales compartidos del contenedor. Valida el archivo
+mediante stdin de `pg_restore --list`; si falla el dump o su validación, detiene la
+rotación. El procedimiento manual usa un directorio `0700` creado por `mktemp`
+dentro del almacenamiento privado de PostgreSQL.
+
 ### 4. Evidencia y alcance de la revisión de secretos
 
 La revisión localizará credenciales literales del mismo recorrido en archivos activos, plantillas y ejemplos de conexión, evitando reproducirlas en los artefactos nuevos. Las verificaciones automáticas no contendrán la antigua contraseña como fixture. La protección existente de Git se validará con `git check-ignore` sobre archivos locales y se comprobará que la plantilla permanezca versionable.
