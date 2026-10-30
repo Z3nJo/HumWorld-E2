@@ -132,9 +132,9 @@ El sistema SHALL exponer `GET /api/v1/dashboards/evolucion` con los filtros opci
 - **THEN** el endpoint responde `400`
 
 ### Requirement: Ranking de noticias influyentes
-El sistema SHALL exponer `GET /api/v1/dashboards/noticias-influyentes` con rango obligatorio y filtros geográficos opcionales. SHALL considerar solamente noticias evaluables, deduplicar las candidatas por URL exacta conservando la de menor `fecha_registro` y luego menor `id_noticia`, ordenar las representantes por `ABS(valor_humor)` descendente, `fecha_registro` descendente e `id_noticia` ascendente, y devolver como máximo 10.
+El sistema SHALL exponer `GET /api/v1/dashboards/noticias-influyentes` con rango obligatorio y filtros geográficos opcionales. SHALL considerar solamente noticias evaluables, deduplicar las candidatas por URL exacta conservando la de menor `fecha_registro` y luego menor `id_noticia`, ordenar las representantes por `ABS(valor_humor)` descendente, `fecha_registro` descendente e `id_noticia` ascendente, y devolver como máximo 10. La pertenencia de las candidatas al ranking y la aplicación de los filtros `continente` y `pais` SHALL resolverse mediante las atribuciones geográficas persistidas de cada noticia, no mediante la geografía de su canal.
 
-Cada elemento SHALL incluir `id_noticia`, `titulo`, `url`, `canal`, `continente`, `pais`, `fecha_registro` y `valor_humor` con signo.
+Cada elemento SHALL incluir `id_noticia`, `titulo`, `url`, `canal`, `continente`, `pais`, `fecha_registro` y `valor_humor` con signo. Los campos singulares `canal`, `continente` y `pais` SHALL continuar describiendo la fuente editorial y no la atribución por mención. Las rutas, parámetros y formas de respuesta del endpoint SHALL conservarse sin cambios, de modo que los consumidores vigentes incorporen los datos atribuidos sin modificaciones en el frontend.
 
 #### Scenario: Ordenar por intensidad y desempatar
 - **WHEN** varias noticias representantes cumplen el rango y los filtros
@@ -153,6 +153,16 @@ Cada elemento SHALL incluir `id_noticia`, `titulo`, `url`, `canal`, `continente`
 #### Scenario: Consultar un ámbito sin candidatas
 - **WHEN** ninguna noticia evaluable coincide con el rango y los filtros
 - **THEN** el endpoint responde `200` con `noticias: []`
+
+#### Scenario: Filtrar por un país atribuido distinto del país del canal
+- **WHEN** se filtra el ranking por un país mencionado distinto del país del canal
+- **THEN** la noticia participa en el resultado por su atribución geográfica
+- **AND** sus campos `continente` y `pais` conservan la geografía del canal
+
+#### Scenario: Mantener las respuestas existentes
+- **WHEN** un consumidor vigente consulta cualquiera de los endpoints del dashboard después del cambio de atribución
+- **THEN** recibe los mismos campos y tipos publicados antes del cambio
+- **AND** no se agregan campos o rutas destinados al frontend
 
 ### Requirement: Validación y publicación del contrato
 El sistema MUST responder `400` cuando una operación con rango obligatorio omita cualquiera de las fechas, una fecha no tenga formato válido, `fecha_desde` sea posterior a `fecha_hasta`, `continente` esté fuera del dominio admitido, `pais` no tenga exactamente dos letras o se informe `pais` sin `continente`. Las cinco operaciones del dashboard, sus parámetros, respuestas y errores SHALL estar publicados en OpenAPI.
