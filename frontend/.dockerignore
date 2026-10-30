@@ -1,4 +1,16 @@
-node_modules
-dist
-.git
-*.log
+# Private configuration and keys, including inside src/ and public/.
+**/.env
+**/.env.*
+**/.npmrc
+**/*.pem
+**/*.key
+
+# Host dependencies, generated output and repository metadata.
+**/node_modules
+**/dist
+**/.git
+**/coverage
+**/test-results
+**/playwright-report
+**/*.log
+**/*.log.*
