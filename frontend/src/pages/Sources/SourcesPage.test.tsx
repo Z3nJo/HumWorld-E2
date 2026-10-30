@@ -363,4 +363,88 @@ describe('SourcesPage', () => {
       expect(nameInput).toHaveValue('El País');
     });
   });
+
+  describe('manual capture', () => {
+    const captureOk = { inserted: 5, failedSources: 0, skippedSourceIds: [9] };
+
+    it('captures all sources and shows the summary toast', async () => {
+      vi.mocked(sourcesApi.captureSources).mockResolvedValue(captureOk);
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+      await waitFor(() =>
+        expect(
+          screen.getByText(/5 noticias insertadas, 0 fuentes fallidas, 1 fuentes omitidas/),
+        ).toBeInTheDocument(),
+      );
+      expect(sourcesApi.captureSources).toHaveBeenCalledWith(undefined);
+    });
+
+    it('disables capture actions while the request is pending', async () => {
+      let resolve!: (v: typeof captureOk) => void;
+      vi.mocked(sourcesApi.captureSources).mockReturnValue(
+        new Promise((r) => {
+          resolve = r;
+        }),
+      );
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+      expect(screen.getByRole('button', { name: 'Capturando…' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Capturar El País' })).toBeDisabled();
+
+      resolve(captureOk);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Capturar ahora' })).toBeEnabled(),
+      );
+    });
+
+    it('captures only the active RSS channels of a source', async () => {
+      vi.mocked(sourcesApi.captureSources).mockResolvedValue(captureOk);
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar El País' }));
+
+      await waitFor(() => expect(sourcesApi.captureSources).toHaveBeenCalledWith([101]));
+    });
+
+    it('disables per-source capture for inactive sources', async () => {
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('NPR')).toBeInTheDocument());
+
+      expect(screen.getByRole('button', { name: 'Capturar NPR' })).toBeDisabled();
+    });
+
+    it('uses the error style when sources failed', async () => {
+      vi.mocked(sourcesApi.captureSources).mockResolvedValue({
+        inserted: 1,
+        failedSources: 2,
+        skippedSourceIds: [],
+      });
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+      const toast = await screen.findByText(/2 fuentes fallidas/);
+      expect(toast.closest('[class*="error"]')).not.toBeNull();
+    });
+
+    it('shows an error toast and keeps the table when the request fails', async () => {
+      vi.mocked(sourcesApi.captureSources).mockRejectedValue(new Error('Fallo de red'));
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+      expect(await screen.findByText('Fallo de red')).toBeInTheDocument();
+      expect(screen.getByText('El País')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Capturar ahora' })).toBeEnabled();
+    });
+  });
 });

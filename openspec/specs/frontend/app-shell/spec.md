@@ -8,7 +8,7 @@ Layout base de la aplicación HumWorld: sidebar de navegación con secciones An�
 
 ### Requirement: Sidebar de navegación
 
-La aplicación SHALL renderizar un sidebar lateral fijo con el nombre de la aplicación, el subtítulo descriptivo y dos secciones de navegación: "Análisis" con el enlace al Dashboard y "Administración" con los enlaces a Fuentes y canales, Diccionario, Parámetros y Captura y borrado. El ítem activo MUST distinguirse visualmente del resto.
+La aplicación SHALL renderizar un sidebar lateral fijo con el nombre de la aplicación, el subtítulo descriptivo y dos secciones de navegación: "Análisis" con el enlace al Dashboard y "Administración" con los enlaces a Fuentes y canales, Diccionario y Parámetros. El ítem activo MUST distinguirse visualmente del resto.
 
 #### Scenario: Navegar al diccionario desde el sidebar
 - **WHEN** el usuario pulsa el ítem "Diccionario" en el sidebar

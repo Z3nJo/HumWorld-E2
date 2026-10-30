@@ -11,6 +11,8 @@ interface SourceTableProps {
   onToggleGroupActive: (groupId: number) => void;
   onEditChannel?: (channel: ChannelWithSources) => void;
   onDeleteChannel?: (channel: ChannelWithSources) => void;
+  onCaptureChannel?: (channel: ChannelWithSources) => void;
+  capturing?: boolean;
 }
 
 export const SourceTable = ({
@@ -21,6 +23,8 @@ export const SourceTable = ({
   onToggleGroupActive,
   onEditChannel,
   onDeleteChannel,
+  onCaptureChannel,
+  capturing = false,
 }: SourceTableProps) => {
   if (channelGroups.length === 0) {
     return (
@@ -94,6 +98,16 @@ export const SourceTable = ({
                     ></button>
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button
+                      className="btn ghost sm"
+                      onClick={() => onCaptureChannel?.(s)}
+                      disabled={
+                        capturing || !s.active || !s.sources.some((c) => c.active)
+                      }
+                      aria-label={`Capturar ${s.name}`}
+                    >
+                      Capturar
+                    </button>
                     <button
                       className="btn ghost sm"
                       onClick={() => onEditChannel?.(s)}
