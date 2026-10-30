@@ -35,6 +35,32 @@ pnpm run build
 pnpm run test
 ```
 
+## Empaquetado Docker
+
+El contexto de construcción es `frontend/`. El Dockerfile copia explícitamente
+`package.json`, `pnpm-lock.yaml`, `index.html`, `vite.config.ts`,
+`eslint.config.js`, los tres archivos `tsconfig*.json`, `src/` y `public/`.
+Las dependencias se instalan dentro de la imagen con el lockfile. La imagen
+conserva los recursos para ejecutar Vite, build, lint y las pruebas.
+
+`.dockerignore` excluye configuraciones `.env` y `.env.*` (también
+`.env.example`), `.npmrc`, claves `.pem` y `.key`, metadatos Git, dependencias
+locales, compilaciones previas, cobertura, informes de pruebas y logs. Las
+exclusiones cubren también archivos anidados en `src/` y `public/`.
+No se deben escribir credenciales en el código fuente ni en recursos públicos.
+
+Docker recibe su configuración mediante variables del entorno: Compose pasa
+`VITE_API_TARGET=http://backend:3000` para el proxy `/api`. No necesita copiar un
+`.env` a la imagen. Las variables `VITE_*` pueden quedar expuestas al navegador;
+no deben contener secretos. El uso local de archivos `.env` fuera de Docker
+permanece disponible.
+
+Para añadir un archivo raíz o directorio nuevo necesario para la aplicación,
+añadir su copia explícita al Dockerfile y revisar las exclusiones. Reconstruir
+la imagen y verificar build, lint, pruebas, recursos públicos y el proxy antes
+de sustituir el contenedor en uso. Los archivos raíz no seleccionados no se
+incorporan automáticamente a la imagen.
+
 ## Plantilla Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
