@@ -53,7 +53,12 @@ class CiCredentialsTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertTrue(all(line.startswith('::add-mask::')
                                 for line in result.stdout.splitlines()))
-            values = dict(line.split('=', 1) for line in target.read_text().splitlines())
+            raw_values = dict(line.split('=', 1) for line in target.read_text().splitlines())
+            values = {
+                key: ci_env.workflow_unescape(value)
+                for key, value in raw_values.items()
+            }
+            self.assertIn('%25', raw_values['POSTGRES_PASSWORD'])
             self.assertEqual(urlsplit(values['DATABASE_URL']).hostname, 'localhost')
             self.assertEqual(urlsplit(values['COMPOSE_DATABASE_URL']).hostname, 'postgres')
             self.assertTrue(values['POSTGRES_PASSWORD'] == password)
