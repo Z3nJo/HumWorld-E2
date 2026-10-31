@@ -14,6 +14,15 @@ def workflow_escape(value: str) -> str:
     return value.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
 
 
+def workflow_unescape(value: str) -> str:
+    """Inverse of GitHub Actions environment-file decoding."""
+    return value.replace('%0D', '\r').replace('%0A', '\n').replace('%25', '%')
+
+
+def write_github_env(stream, key: str, value: str) -> None:
+    stream.write(f'{key}={workflow_escape(value)}\n')
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -37,10 +46,11 @@ def main() -> int:
     for value in (password, quote(password, safe=''), runner_url, compose_url):
         print(f'::add-mask::{workflow_escape(value)}', flush=True)
     with Path(env_path).open('a', encoding='utf-8') as stream:
-        stream.write(f'DATABASE_URL={runner_url}\n')
-        stream.write(f'COMPOSE_DATABASE_URL={compose_url}\n')
-        stream.write(f'POSTGRES_PASSWORD={password}\n')
-        stream.write('POSTGRES_USER=humworld\nPOSTGRES_DB=humworld_test\n')
+        write_github_env(stream, 'DATABASE_URL', runner_url)
+        write_github_env(stream, 'COMPOSE_DATABASE_URL', compose_url)
+        write_github_env(stream, 'POSTGRES_PASSWORD', password)
+        write_github_env(stream, 'POSTGRES_USER', 'humworld')
+        write_github_env(stream, 'POSTGRES_DB', 'humworld_test')
     return 0
 
 

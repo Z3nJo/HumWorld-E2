@@ -53,9 +53,7 @@ jobs:
         run: python opsx/ci_database_env.py
 
       - name: Validate Docker Compose configuration
-        env:
-          DATABASE_URL: ${{ env.COMPOSE_DATABASE_URL }}
-        run: docker compose -f opsx/docker-compose.yml config --quiet
+        run: DATABASE_URL="$COMPOSE_DATABASE_URL" docker compose -f opsx/docker-compose.yml config --quiet
 
       - name: Validate generated OpenSpec contracts
         run: python opsx/sync_contracts.py --check
@@ -76,6 +74,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r backend/requirements.txt
           python -m pip install pytest pytest-cov
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
@@ -122,6 +125,7 @@ jobs:
           fi
 
           test_file="$(find backend -maxdepth 3 \( -name 'test_*.py' -o -name '*_test.py' \) | head -n 1)"
+
           if [ ! -d backend/tests ] && [ -z "$test_file" ]; then
             echo "No backend pytest test surface found; skipping backend tests until tests exist."
             exit 0
@@ -129,10 +133,6 @@ jobs:
 
           cd backend
           pytest --cov=. --cov-report=term-missing --cov-fail-under=80
-
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
-        with:
-          package_json_file: frontend/package.json
 
       - name: Frontend tests
         shell: bash
@@ -151,7 +151,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm test
 
+      - name: Frontend build
+        working-directory: frontend
+        run: pnpm run build
+
       - name: Build Docker services
-        env:
-          DATABASE_URL: ${{ env.COMPOSE_DATABASE_URL }}
-        run: docker compose -f opsx/docker-compose.yml build
+        run: DATABASE_URL="$COMPOSE_DATABASE_URL" docker compose -f opsx/docker-compose.yml build
