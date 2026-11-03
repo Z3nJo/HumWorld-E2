@@ -93,9 +93,9 @@ export const DashboardWordCloud: React.FC<DashboardWordCloudProps> = ({
                       fontWeight: t > 0.5 ? 500 : 400,
                       fontStyle: w.idioma === 'en' ? 'italic' : 'normal',
                     }}
-                    title={`${w.termino} · Σ|aporte| ${w.peso.toFixed(
+                    title={`${w.termino} · influencia ${w.peso.toFixed(
                       2
-                    )} · Σaporte ${formatHumor(w.aporte_total)} · ${w.frecuencia} apariciones`}
+                    )} · aporte al humor ${formatHumor(w.aporte_total)} · ${w.frecuencia} apariciones`}
                   >
                     {w.termino}
                   </span>
@@ -110,7 +110,7 @@ export const DashboardWordCloud: React.FC<DashboardWordCloudProps> = ({
                 paddingTop: '10px',
               }}
             >
-              <span>Tamaño: Σ|aporte_humor| · color: signo · cursiva: inglés</span>
+              <span>Tamaño: influencia · color: positivo o negativo · cursiva: inglés</span>
               <span>
                 <span style={{ color: 'var(--neg)' }}>■</span> negativo{' '}
                 <span style={{ color: 'var(--pos)' }}>■</span> positivo
@@ -118,14 +118,19 @@ export const DashboardWordCloud: React.FC<DashboardWordCloudProps> = ({
             </div>
           </>
         ) : (
+          <>
           <table className="t">
             <thead>
               <tr>
                 <th>Término</th>
                 <th>Idioma</th>
-                <th className="num">Σ|aporte|</th>
-                <th className="num">Σ aporte</th>
-                <th className="num">Frec.</th>
+                <th className="num" title="Cuánto pesa el término en el humor, sin importar si suma o resta">
+                  Influencia
+                </th>
+                <th className="num" title="Cuánto suma (+) o resta (−) el término al humor">
+                  Aporte al humor
+                </th>
+                <th className="num" title="Veces que aparece en las noticias">Apariciones</th>
               </tr>
             </thead>
             <tbody>
@@ -154,6 +159,11 @@ export const DashboardWordCloud: React.FC<DashboardWordCloudProps> = ({
               ))}
             </tbody>
           </table>
+          <p className="help" style={{ marginTop: '10px' }}>
+            Influencia: cuánto pesa el término en el humor, sin importar el signo. Aporte al humor:
+            cuánto lo sube (+) o lo baja (−).
+          </p>
+          </>
         )}
       </div>
     </div>
