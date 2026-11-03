@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.schemas import (
     DashboardAggregateResponse,
+    DashboardGlobalAggregateResponse,
     DashboardResponse,
     ErrorResponse,
     InfluentialTermResponse,
@@ -35,6 +36,15 @@ def get_dashboard_service(
     )
 
 
+def _global_response(result) -> DashboardGlobalAggregateResponse | None:
+    item = result.global_aggregate
+    if item is None:
+        return None
+    return DashboardGlobalAggregateResponse(
+        humor=item.humor, noticias=item.news_count, suficiente=item.sufficient,
+    )
+
+
 @dashboard_router.get(
     "/geografia", response_model=DashboardResponse,
     summary="Humor y noticias por continente y pais para el mapa",
@@ -55,6 +65,7 @@ def get_geography(
             continente=item.continent, pais=item.country, humor=item.humor,
             noticias=item.news_count, suficiente=item.sufficient,
         ) for item in result.aggregates],
+        agregado_global=_global_response(result),
     )
 
 
@@ -129,6 +140,7 @@ def get_dashboard(
             )
             for item in result.aggregates
         ],
+        agregado_global=_global_response(result),
     )
 
 

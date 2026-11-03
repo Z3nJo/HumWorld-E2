@@ -88,6 +88,7 @@ def test_dashboard_endpoint_serializes_period_filters_and_aggregates() -> None:
                     "suficiente": True,
                 }
             ],
+            "agregado_global": None,
         }
         assert service.calls[0][1]["country"] == "cl"
     finally:
@@ -136,6 +137,10 @@ class NeverCalledRepository:
     def aggregate(self, **filters: object) -> list[object]:
         self.calls += 1
         return []
+
+    def aggregate_global(self, **filters: object) -> tuple[None, int]:
+        self.calls += 1
+        return None, 0
 
     def influential_terms(self, **filters: object) -> list[object]:
         self.calls += 1

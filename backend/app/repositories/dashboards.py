@@ -167,6 +167,25 @@ class DashboardRepository:
             for row in self._session.execute(statement)
         ]
 
+    def aggregate_global(
+        self, *, start_at: datetime, end_at: datetime,
+    ) -> tuple[Decimal | None, int]:
+        # IN over ids: a news attributed to several continents counts once.
+        membership = self._continent_membership()
+        row = self._session.execute(
+            select(
+                func.avg(News.valor_humor).label("humor"),
+                func.count(News.id_noticia).label("news_count"),
+            ).where(
+                News.fecha_registro >= start_at,
+                News.fecha_registro < end_at,
+                News.valor_humor.is_not(None),
+                News.id_noticia.in_(select(membership.c.id_noticia)),
+            )
+        ).one()
+        humor = Decimal(row.humor) if row.humor is not None else None
+        return humor, int(row.news_count)
+
     def aggregate(
         self,
         *,

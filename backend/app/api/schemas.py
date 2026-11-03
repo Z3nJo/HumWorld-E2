@@ -287,12 +287,22 @@ class DashboardAggregateResponse(BaseModel):
     suficiente: bool
 
 
+class DashboardGlobalAggregateResponse(BaseModel):
+    humor: Decimal | None
+    noticias: int = Field(ge=0)
+    suficiente: bool
+
+
 class DashboardResponse(BaseModel):
     fecha_desde: date
     fecha_hasta: date
     continente: Continent | None
     pais: str | None
     agregados: list[DashboardAggregateResponse]
+    agregado_global: DashboardGlobalAggregateResponse | None = Field(
+        default=None,
+        description="Solo sin filtros geograficos; cuenta cada noticia una vez aunque pertenezca a varios continentes",
+    )
 
 
 class InfluentialTermResponse(BaseModel):

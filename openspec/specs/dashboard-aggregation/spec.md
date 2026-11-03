@@ -68,6 +68,18 @@ Cada elemento de `agregados` SHALL incluir `continente`, `pais`, `humor`, `notic
 - **WHEN** el número de noticias evaluables alcanza o supera `humor.minimo_noticias_agregacion`
 - **THEN** el agregado contiene `suficiente: true`
 
+### Requirement: Agregado global sin duplicados
+Cuando la consulta del dashboard o del mapa no incluya filtros `continente` ni `pais`, la respuesta SHALL incluir `agregado_global` con `humor`, `noticias` y `suficiente`. El sistema MUST contar cada noticia evaluable una sola vez aunque pertenezca a varios continentes, y `suficiente` SHALL comparar `noticias` contra el valor vigente de `humor.minimo_noticias_agregacion`. Con filtros geográficos, `agregado_global` SHALL ser nulo.
+
+#### Scenario: Noticia atribuida a dos continentes
+- **WHEN** una noticia evaluable está atribuida a países de dos continentes dentro del rango
+- **THEN** aporta una unidad a cada agregado continental
+- **AND** aporta una sola unidad a `agregado_global.noticias`
+
+#### Scenario: Respetar el mínimo configurado
+- **WHEN** `humor.minimo_noticias_agregacion` vale 5 y el global tiene 4 noticias evaluables
+- **THEN** `agregado_global.suficiente` es `false`
+
 ### Requirement: Consulta de términos influyentes
 El sistema SHALL exponer `GET /api/v1/dashboards/nube-palabras` con los mismos parámetros `fecha_desde`, `fecha_hasta`, `continente` y `pais` definidos para el dashboard. La respuesta `200` SHALL informar el periodo solicitado, los filtros aplicados y una lista `terminos` de hasta 32 elementos.
 
