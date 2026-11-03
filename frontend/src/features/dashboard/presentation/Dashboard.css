@@ -7,6 +7,43 @@
   min-width: 0;
 }
 
+.dash-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  animation: dash-in 0.35s ease-out;
+}
+
+/* The map keeps its own zoom; the data panels dim softly while the new scope loads. */
+.dash-content > :not(.grid2),
+.dash-content > .grid2 > :not(:first-child) {
+  transition: opacity 0.25s ease;
+}
+
+.dash-content[aria-busy='true'] > :not(.grid2),
+.dash-content[aria-busy='true'] > .grid2 > :not(:first-child) {
+  opacity: 0.55;
+}
+
+@keyframes dash-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-content {
+    animation: none;
+  }
+
+  .dash-content > :not(.grid2),
+  .dash-content > .grid2 > :not(:first-child) {
+    transition: none;
+  }
+}
+
 /* ── Shared UI primitives ──────────────────────────── */
 .card {
   background: var(--card);

@@ -439,6 +439,18 @@ describe("DashboardPage", () => {
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
+  it("keeps the dashboard mounted and refetches only scoped data when the scope changes", async () => {
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByText(/Am.rica/));
+    const geographyCalls = vi.mocked(fetchGeography).mock.calls.length;
+    mockedFetchDashboard.mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(await screen.findByText(/^.frica$/));
+    await screen.findByText(/Pa.ses de .frica/);
+    expect(document.querySelectorAll(".sk")).toHaveLength(0);
+    expect(document.querySelector(".dash-content")).toHaveAttribute("aria-busy", "true");
+    expect(fetchGeography).toHaveBeenCalledTimes(geographyCalls);
+  });
+
   // Error state
   it("shows error message and retry button when API fails", async () => {
     mockedFetchDashboard.mockRejectedValue(new Error("500 Internal Server Error"));
