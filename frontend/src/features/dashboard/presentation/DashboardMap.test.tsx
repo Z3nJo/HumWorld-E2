@@ -66,6 +66,52 @@ describe('DashboardMap geography context', () => {
     expect(container.querySelectorAll('clipPath')).toHaveLength(2);
   });
 
+  it('zooms to the selected continent', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => atlas }));
+    const props = { aggregates: [], pais: null, onSelectContinent: vi.fn(), onSelectCountry: vi.fn() };
+    const { container, rerender } = render(<DashboardMap {...props} continent={null} />);
+    await waitFor(() => expect(container.querySelector('[data-country="ES"]')).toBeInTheDocument());
+    const world = container.querySelector('[data-country="ES"]')!.getAttribute('d');
+    rerender(<DashboardMap {...props} continent="Europa" />);
+    await waitFor(() => expect(container.querySelector('[data-country="ES"]')!.getAttribute('d')).not.toBe(world));
+  });
+
+  it('eases country colors to the new day instead of snapping', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => atlas }));
+    const day = (humor: number): DashboardAggregate[] => [
+      { continente: 'America', pais: 'CL', humor, noticias: 4, suficiente: true },
+    ];
+    const props = { continent: 'America' as const, pais: null, onSelectContinent: vi.fn(), onSelectCountry: vi.fn() };
+    const fill = (c: HTMLElement) => c.querySelector('[data-country="CL"]')?.getAttribute('fill');
+    const target = render(<DashboardMap {...props} aggregates={day(-0.5)} />);
+    await waitFor(() => expect(fill(target.container)).toBeTruthy());
+    const { container, rerender } = render(<DashboardMap {...props} aggregates={day(0.5)} />);
+    await waitFor(() => expect(fill(container)).toBeTruthy());
+    const before = fill(container);
+    rerender(<DashboardMap {...props} aggregates={day(-0.5)} />);
+    expect(fill(container)).toBe(before);
+    await waitFor(() => expect(fill(container)).toBe(fill(target.container)));
+  });
+
+  it('skips color and zoom animations when the user prefers reduced motion', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => atlas }));
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    const day = (humor: number): DashboardAggregate[] => [
+      { continente: 'America', pais: 'CL', humor, noticias: 4, suficiente: true },
+    ];
+    const props = { pais: null, onSelectContinent: vi.fn(), onSelectCountry: vi.fn() };
+    const fill = (c: HTMLElement) => c.querySelector('[data-country="CL"]')?.getAttribute('fill');
+    const target = render(<DashboardMap {...props} continent="America" aggregates={day(-0.5)} />);
+    await waitFor(() => expect(fill(target.container)).toBeTruthy());
+    const { container, rerender } = render(<DashboardMap {...props} continent="America" aggregates={day(0.5)} />);
+    await waitFor(() => expect(fill(container)).toBeTruthy());
+    rerender(<DashboardMap {...props} continent="America" aggregates={day(-0.5)} />);
+    expect(fill(container)).toBe(fill(target.container));
+    rerender(<DashboardMap {...props} continent={null} aggregates={day(-0.5)} />);
+    expect(container.querySelector('svg > g[font-family]')).not.toHaveAttribute('opacity');
+    expect(container.querySelector('svg > g')).not.toHaveAttribute('transform');
+  });
+
   it('omits the label of a country colliding with one that has more news, unless selected', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => atlas }));
     const aggregates: DashboardAggregate[] = [

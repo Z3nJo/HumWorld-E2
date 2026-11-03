@@ -28,6 +28,8 @@ export function useDashboard(
   const [evolution, setEvolution] = useState<DashboardEvolutionData | null>(null);
   const [news, setNews] = useState<InfluentialNewsData | null>(null);
   const requestId = useRef(0);
+  // Geography only depends on the dates: reusing it keeps the map from redrawing mid-zoom on scope changes.
+  const geoCache = useRef<{ key: string; data: DashboardData } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,14 +39,17 @@ export function useDashboard(
     setError(null);
     try {
       const params = { fecha_desde: fechaDesde, fecha_hasta: fechaHasta, continente, pais };
+      const geoKey = `${fechaDesde}|${fechaHasta}`;
+      const cached = geoCache.current?.key === geoKey ? geoCache.current.data : null;
       const [d, t, e, n, g] = await Promise.all([
         fetchDashboard(params),
         fetchInfluentialTerms(params),
         fetchEvolution({ ...params, fecha_desde: timelineFrom, fecha_hasta: timelineTo }),
         fetchInfluentialNews(params),
-        fetchGeography({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta }),
+        cached ?? fetchGeography({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta }),
       ]);
       if (id !== requestId.current) return;
+      geoCache.current = { key: geoKey, data: g };
       setData(d);
       setGeography(g);
       setTerms(t);

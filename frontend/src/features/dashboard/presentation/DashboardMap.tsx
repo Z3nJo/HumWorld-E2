@@ -7,6 +7,7 @@ import {
   countryName,
   TOPO_TO_ISO,
   CONTINENT_ANCHORS,
+  CONTINENT_EXTENTS,
   CONTINENT_OVERRIDES,
   formatHumor,
 } from '../domain/countries';
@@ -71,6 +72,8 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
+  // Projection of the previous render, so the new view can start where the old one ended.
+  const prevView = useRef<{ scale: number; translate: [number, number]; w: number } | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -124,9 +127,29 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           [2, 2],
           [w - 2, h - 2],
         ],
-        { type: 'Sphere' }
+        continent ? d3.geoGraticule().extent(CONTINENT_EXTENTS[continent]).outline() : { type: 'Sphere' }
       );
       const path = d3.geoPath(proj);
+
+      // Both views are the same projection at a different scale/offset: start the new drawing
+      // transformed to look like the previous view and ease it to identity (a zoom, no redraw jump).
+      const prev = prevView.current;
+      const scale = proj.scale();
+      const translate = proj.translate();
+      prevView.current = { scale, translate, w };
+      const k = prev && prev.w === w ? prev.scale / scale : 1;
+      // Reduced motion: zoom and colors jump straight to the final view.
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      const animate = k !== 1 && !!prev && !reduceMotion;
+
+      // Previous fills by feature index (the feature order is stable), so the new colors can ease in.
+      const prevFills = reduceMotion
+        ? []
+        : d3
+            .select(el)
+            .selectAll<SVGPathElement, unknown>('path.clickable')
+            .nodes()
+            .map((node) => node.getAttribute('fill'));
 
       d3.select(el).selectAll('svg').remove();
 
@@ -138,6 +161,20 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('aria-label', 'Mapa de humor por continente y país');
 
       const defs = svg.append('defs');
+      const view = svg.append('g');
+      if (animate && prev) {
+        // attrTween on numbers: the default transform interpolation needs SVG DOM APIs jsdom lacks.
+        const from = [prev.translate[0] - translate[0] * k, prev.translate[1] - translate[1] * k, k];
+        const mix = d3.interpolateArray(from, [0, 0, 1]);
+        view
+          .transition()
+          .duration(700)
+          .ease(d3.easeCubicInOut)
+          .attrTween('transform', () => (t) => {
+            const [x, y, z] = mix(t);
+            return `translate(${x},${y}) scale(${z})`;
+          });
+      }
 
       RUSSIA_PARTS.forEach(({ clip, boxes }) => {
         const cp = defs.append('clipPath').attr('id', clip);
@@ -166,10 +203,10 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
       pp.append('rect').attr('width', 2.2).attr('height', 6).attr('fill', '#fff').attr('opacity', 0.85);
 
       // Sphere base
-      svg.append('path').datum<d3.GeoPermissibleObjects>({ type: 'Sphere' }).attr('d', path).attr('fill', '#f0ece3').attr('stroke', '#d9d2c3');
+      view.append('path').datum<d3.GeoPermissibleObjects>({ type: 'Sphere' }).attr('d', path).attr('fill', '#f0ece3').attr('stroke', '#d9d2c3');
 
       // Graticule
-      svg
+      view
         .append('path')
         .datum<d3.GeoPermissibleObjects>(d3.geoGraticule10())
         .attr('d', path)
@@ -192,8 +229,16 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
 
       const tip = d3.select(tipRef.current);
 
+      // Hatch patterns cannot be interpolated, so only color-to-color changes start from the old fill.
+      const isColor = (fill: string | null | undefined): fill is string => !!fill && !fill.startsWith('url(');
+      const startFill = (f: CountryFeature, i: number): string => {
+        const from = prevFills[i];
+        const to = getFill(f);
+        return isColor(from) && isColor(to) ? from : to;
+      };
+
       // Country paths
-      svg
+      const countries = view
         .append('g')
         .selectAll('path')
         .data(world.features)
@@ -202,7 +247,7 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('data-country', (f: CountryFeature) => TOPO_TO_ISO[f.properties.name] || '')
         .attr('d', path)
         .attr('clip-path', (f: CountryFeature) => (f.properties.clip ? `url(#${f.properties.clip})` : null))
-        .attr('fill', getFill)
+        .attr('fill', startFill)
         .attr('stroke', (f: CountryFeature) => {
           const iso = TOPO_TO_ISO[f.properties.name];
           return pais && iso === pais ? '#1c1f26' : '#fcfbf7';
@@ -257,8 +302,15 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           }
         });
 
+      countries
+        .filter((f: CountryFeature, i: number) => startFill(f, i) !== getFill(f))
+        .transition()
+        .duration(500)
+        .ease(d3.easeCubicOut)
+        .attr('fill', getFill);
+
       // Provisional overlay pattern
-      svg
+      view
         .append('g')
         .attr('pointer-events', 'none')
         .selectAll('path')
@@ -291,6 +343,8 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
         .attr('stroke', '#fcfbf7')
         .attr('stroke-width', 3.5)
         .attr('stroke-linejoin', 'round');
+      // Labels sit at final positions, so they wait for the zoom to land.
+      if (animate) lab.attr('opacity', 0).transition().delay(450).duration(300).attr('opacity', 1);
 
       if (continent) {
         // Show labels for countries with data in this continent

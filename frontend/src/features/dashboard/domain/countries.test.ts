@@ -3,6 +3,7 @@ import atlas from 'world-atlas/countries-110m.json';
 import {
   TOPO_TO_ISO,
   CONTINENT_ORDER,
+  CONTINENT_EXTENTS,
   countryName,
   formatHumor,
   formatNumber,
@@ -45,5 +46,14 @@ describe('dashboard countries and helpers', () => {
       'Europa',
       'Oceania',
     ]);
+  });
+
+  it('has a non-inverted extent for every continent', () => {
+    const boxes = Object.values(CONTINENT_EXTENTS);
+    expect(boxes).toHaveLength(6);
+    boxes.forEach(([[lonMin, latMin], [lonMax, latMax]]) => {
+      expect(lonMin).toBeLessThan(lonMax);
+      expect(latMin).toBeLessThan(latMax);
+    });
   });
 });

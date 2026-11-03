@@ -218,6 +218,17 @@ export const CONTINENT_ANCHORS: Record<Continent, [number, number]> = {
   Antartida: [20, -80],
 };
 
+// Geographic box [[lonMin, latMin], [lonMax, latMax]] the map zooms to when a continent is selected.
+// A box, not the countries' bounds: France (Guiana) and Russia would stretch Europe across the world.
+export const CONTINENT_EXTENTS: Record<Continent, [[number, number], [number, number]]> = {
+  America: [[-170, -58], [-30, 75]],
+  Europa: [[-25, 34], [45, 72]],
+  Africa: [[-20, -36], [52, 38]],
+  Asia: [[25, -12], [180, 78]],
+  Oceania: [[110, -50], [180, 0]],
+  Antartida: [[-180, -90], [180, -60]],
+};
+
 export const CONTINENT_OVERRIDES: Record<string, Continent> = {
   Turkey: 'Asia',
   Georgia: 'Asia',

@@ -307,8 +307,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading state skeleton */}
-        {loading ? (
+        {/* Skeleton only on first load; later loads update the mounted view so the map can animate. */}
+        {loading && !data ? (
           <div className="grid2">
             <div className="card">
               <div className="cb" style={{ padding: '16px' }}>
@@ -334,7 +334,7 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <>
+          <div className="dash-content" aria-busy={loading}>
             {/* Map & Summary Row */}
             <div className="grid2">
               <div className="card" data-ann="GET /dashboards · T-DASH-01 · E3-H01">
@@ -425,7 +425,7 @@ export const DashboardPage: React.FC = () => {
               />
               <InfluentialNewsList news={news?.noticias ?? []} scopeTitle={scopeTitle} />
             </div>
-          </>
+          </div>
         )}
       </div>
     </>
