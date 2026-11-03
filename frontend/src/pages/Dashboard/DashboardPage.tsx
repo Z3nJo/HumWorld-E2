@@ -8,9 +8,9 @@ import { DashboardSummary } from '../../features/dashboard/presentation/Dashboar
 import { DashboardWordCloud } from '../../features/dashboard/presentation/DashboardWordCloud';
 import { InfluentialNewsList } from '../../features/dashboard/presentation/InfluentialNewsList';
 import {
-  COUNTRIES_DATA,
-  COUNTRIES_BY_ISO,
   CONTINENT_ORDER,
+  continentCountries,
+  countryName,
 } from '../../features/dashboard/domain/countries';
 import '../../features/dashboard/presentation/Dashboard.css';
 
@@ -36,6 +36,7 @@ function formatDateShort(d: Date): string {
 function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
+
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -64,15 +65,18 @@ export const DashboardPage: React.FC = () => {
   );
 
   const scopeTitle = pais
-    ? COUNTRIES_BY_ISO[pais]?.es || pais
+    ? countryName(pais)
     : continent
     ? CONTINENT_ORDER.find((c) => c.key === continent)?.label || continent
     : 'Global';
 
   // Available countries for current continent
+  // Countries with news in the window; the selected one stays listed when it has none.
   const availableCountries = useMemo(() => {
-    return continent ? COUNTRIES_DATA.filter((c) => c.cont === continent) : [];
-  }, [continent]);
+    if (!continent) return [];
+    const codes = continentCountries(geography?.agregados ?? [], continent).map((a) => a.pais!);
+    return pais && !codes.includes(pais) ? [...codes, pais] : codes;
+  }, [geography, continent, pais]);
 
   // Find aggregate for the active scope
   const scopeAggregate = useMemo(() => {
@@ -83,20 +87,10 @@ export const DashboardPage: React.FC = () => {
     if (continent) {
       return data.agregados.find((a) => a.continente === continent && !a.pais) || null;
     }
-    // Global aggregate (sum of aggregates or continent averages)
-    const validAggs = data.agregados.filter((a) => !a.pais && a.noticias > 0);
-    if (!validAggs.length) return null;
-    const totalNews = validAggs.reduce((acc, a) => acc + a.noticias, 0);
-    const weightedHumor =
-      validAggs.reduce((acc, a) => acc + (a.humor ?? 0) * a.noticias, 0) /
-      (totalNews || 1);
-    return {
-      continente: 'America' as Continent,
-      pais: null,
-      humor: totalNews > 0 ? weightedHumor : null,
-      noticias: totalNews,
-      suficiente: totalNews >= 3,
-    };
+    // Global comes from the API: deduplicated by news and using the configured minimum.
+    const global = data.agregado_global;
+    if (!global || global.noticias === 0) return null;
+    return { continente: 'America' as Continent, pais: null, ...global };
   }, [data, continent, pais]);
 
   // Each point comes from the daily API, independently of the selected window.
@@ -158,7 +152,7 @@ export const DashboardPage: React.FC = () => {
                   {pais && (
                     <>
                       <span>›</span>
-                      <span className="crumb-cur">{COUNTRIES_BY_ISO[pais]?.es || pais}</span>
+                      <span className="crumb-cur">{countryName(pais)}</span>
                     </>
                   )}
                 </div>
@@ -214,14 +208,14 @@ export const DashboardPage: React.FC = () => {
                     {availableCountries.length ? (
                       <>
                         <option value="">Todos los países ({availableCountries.length})</option>
-                        {availableCountries.map((c) => (
-                          <option key={c.iso} value={c.iso}>
-                            {c.es}
+                        {availableCountries.map((iso) => (
+                          <option key={iso} value={iso}>
+                            {countryName(iso)}
                           </option>
                         ))}
                       </>
                     ) : (
-                      <option>Sin países con fuentes</option>
+                      <option>Sin países con noticias</option>
                     )}
                   </select>
                 )}
@@ -313,8 +307,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading state skeleton */}
-        {loading ? (
+        {/* Skeleton only on first load; later loads update the mounted view so the map can animate. */}
+        {loading && !data ? (
           <div className="grid2">
             <div className="card">
               <div className="cb" style={{ padding: '16px' }}>
@@ -340,7 +334,7 @@ export const DashboardPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <>
+          <div className="dash-content" aria-busy={loading}>
             {/* Map & Summary Row */}
             <div className="grid2">
               <div className="card" data-ann="GET /dashboards · T-DASH-01 · E3-H01">
@@ -389,7 +383,6 @@ export const DashboardPage: React.FC = () => {
                     <i className="pr" />
                     Provisional · &lt; 3 noticias
                   </div>
-                  <span className="prop">DD-10 · DD-11</span>
                 </div>
               </div>
 
@@ -432,7 +425,7 @@ export const DashboardPage: React.FC = () => {
               />
               <InfluentialNewsList news={news?.noticias ?? []} scopeTitle={scopeTitle} />
             </div>
-          </>
+          </div>
         )}
       </div>
     </>

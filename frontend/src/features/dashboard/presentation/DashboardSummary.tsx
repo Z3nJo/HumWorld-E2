@@ -3,8 +3,9 @@ import * as d3 from 'd3';
 import type { DashboardAggregate } from '../domain/dashboard';
 import type { Continent } from '../../sources/domain/source';
 import {
-  COUNTRIES_DATA,
   CONTINENT_ORDER,
+  continentCountries,
+  countryName,
   formatHumor,
   formatNumber,
 } from '../domain/countries';
@@ -53,18 +54,15 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({
 
   // Sub-items for table
   const subItems = continent
-    ? COUNTRIES_DATA.filter((c) => c.cont === continent).map((c) => {
-        const found = aggregates.find((a) => a.pais === c.iso);
-        return {
-          key: c.iso,
-          label: c.es,
-          humor: found?.humor ?? null,
-          noticias: found?.noticias ?? 0,
-          suficiente: found?.suficiente ?? false,
-          isSelected: pais === c.iso,
-          type: 'pais' as const,
-        };
-      })
+    ? continentCountries(aggregates, continent).map((a) => ({
+        key: a.pais!,
+        label: countryName(a.pais!),
+        humor: a.humor,
+        noticias: a.noticias,
+        suficiente: a.suficiente,
+        isSelected: pais === a.pais,
+        type: 'pais' as const,
+      }))
     : CONTINENT_ORDER.map((c) => {
         const found = aggregates.find((a) => a.continente === c.key && !a.pais);
         return {
@@ -138,14 +136,15 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({
         )}
 
         <dl className="kv">
-          <dt>humor</dt>
-          <dd>{humor == null ? 'null' : humor.toFixed(4)}</dd>
-          <dt>noticias</dt>
-          <dd>{formatNumber(noticias)} evaluables</dd>
-          <dt>suficiente</dt>
+          <dt>Noticias analizadas</dt>
+          <dd>{formatNumber(noticias)}</dd>
+          <dt>Confiabilidad</dt>
           <dd>
-            {String(suficiente)}
-            {state === 'prov' ? ` · mínimo ${minAggregationCount}` : ''}
+            {state === 'nd'
+              ? 'Sin noticias para calcular'
+              : suficiente
+              ? `Suficiente (al menos ${minAggregationCount} noticias)`
+              : `Provisional (menos de ${minAggregationCount} noticias)`}
           </dd>
         </dl>
 
@@ -217,7 +216,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({
             ) : (
               <tr>
                 <td colSpan={4} className="help">
-                  Sin países con fuentes registradas.
+                  Sin países con noticias en este periodo.
                 </td>
               </tr>
             )}

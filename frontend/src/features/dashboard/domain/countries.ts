@@ -1,44 +1,204 @@
 import type { Continent } from '../../sources/domain/source';
+import type { DashboardAggregate } from './dashboard';
 
-export interface CountryInfo {
-  iso: string;
-  topo: string;
-  es: string;
-  cont: Continent;
-  lang: 'es' | 'en';
+const REGION_NAMES = new Intl.DisplayNames(['es'], { type: 'region' });
+
+export function countryName(iso: string): string {
+  try {
+    return REGION_NAMES.of(iso) ?? iso;
+  } catch {
+    return iso;
+  }
 }
 
-export const COUNTRIES_DATA: CountryInfo[] = [
-  { iso: 'CL', topo: 'Chile', es: 'Chile', cont: 'America', lang: 'es' },
-  { iso: 'AR', topo: 'Argentina', es: 'Argentina', cont: 'America', lang: 'es' },
-  { iso: 'MX', topo: 'Mexico', es: 'México', cont: 'America', lang: 'es' },
-  { iso: 'CO', topo: 'Colombia', es: 'Colombia', cont: 'America', lang: 'es' },
-  { iso: 'BR', topo: 'Brazil', es: 'Brasil', cont: 'America', lang: 'en' },
-  { iso: 'US', topo: 'United States of America', es: 'Estados Unidos', cont: 'America', lang: 'en' },
-  { iso: 'ES', topo: 'Spain', es: 'España', cont: 'Europa', lang: 'es' },
-  { iso: 'GB', topo: 'United Kingdom', es: 'Reino Unido', cont: 'Europa', lang: 'en' },
-  { iso: 'FR', topo: 'France', es: 'Francia', cont: 'Europa', lang: 'en' },
-  { iso: 'DE', topo: 'Germany', es: 'Alemania', cont: 'Europa', lang: 'en' },
-  { iso: 'IT', topo: 'Italy', es: 'Italia', cont: 'Europa', lang: 'en' },
-  { iso: 'CN', topo: 'China', es: 'China', cont: 'Asia', lang: 'en' },
-  { iso: 'JP', topo: 'Japan', es: 'Japón', cont: 'Asia', lang: 'en' },
-  { iso: 'IN', topo: 'India', es: 'India', cont: 'Asia', lang: 'en' },
-  { iso: 'SG', topo: 'Singapore', es: 'Singapur', cont: 'Asia', lang: 'en' },
-  { iso: 'KR', topo: 'South Korea', es: 'Corea del Sur', cont: 'Asia', lang: 'en' },
-  { iso: 'ZA', topo: 'South Africa', es: 'Sudáfrica', cont: 'Africa', lang: 'en' },
-  { iso: 'NG', topo: 'Nigeria', es: 'Nigeria', cont: 'Africa', lang: 'en' },
-  { iso: 'KE', topo: 'Kenya', es: 'Kenia', cont: 'Africa', lang: 'en' },
-  { iso: 'EG', topo: 'Egypt', es: 'Egipto', cont: 'Africa', lang: 'en' },
-  { iso: 'AU', topo: 'Australia', es: 'Australia', cont: 'Oceania', lang: 'en' },
-];
+// Country aggregates of a continent, by Spanish name: the countries come from the API, not a fixed list.
+export function continentCountries(aggregates: DashboardAggregate[], continent: Continent): DashboardAggregate[] {
+  return aggregates
+    .filter((a) => a.pais && a.continente === continent)
+    .sort((a, b) => countryName(a.pais!).localeCompare(countryName(b.pais!), 'es'));
+}
 
-export const COUNTRIES_BY_ISO: Record<string, CountryInfo> = Object.fromEntries(
-  COUNTRIES_DATA.map((c) => [c.iso, c])
-);
-
-export const TOPO_TO_ISO: Record<string, string> = Object.fromEntries(
-  COUNTRIES_DATA.map((c) => [c.topo, c.iso])
-);
+// world-atlas@2.0.2 countries-110m feature name -> ISO-3166 alpha-2, generated against
+// backend/data/geography/catalog.json; disputed areas map to the country that contains them.
+export const TOPO_TO_ISO: Record<string, string> = {
+  Afghanistan: 'AF',
+  Albania: 'AL',
+  Algeria: 'DZ',
+  Angola: 'AO',
+  Antarctica: 'AQ',
+  Argentina: 'AR',
+  Armenia: 'AM',
+  Australia: 'AU',
+  Austria: 'AT',
+  Azerbaijan: 'AZ',
+  Bahamas: 'BS',
+  Bangladesh: 'BD',
+  Belarus: 'BY',
+  Belgium: 'BE',
+  Belize: 'BZ',
+  Benin: 'BJ',
+  Bhutan: 'BT',
+  Bolivia: 'BO',
+  'Bosnia and Herz.': 'BA',
+  Botswana: 'BW',
+  Brazil: 'BR',
+  Brunei: 'BN',
+  Bulgaria: 'BG',
+  'Burkina Faso': 'BF',
+  Burundi: 'BI',
+  Cambodia: 'KH',
+  Cameroon: 'CM',
+  Canada: 'CA',
+  'Central African Rep.': 'CF',
+  Chad: 'TD',
+  Chile: 'CL',
+  China: 'CN',
+  Colombia: 'CO',
+  Congo: 'CG',
+  'Costa Rica': 'CR',
+  Croatia: 'HR',
+  Cuba: 'CU',
+  Cyprus: 'CY',
+  Czechia: 'CZ',
+  "Côte d'Ivoire": 'CI',
+  'Dem. Rep. Congo': 'CD',
+  Denmark: 'DK',
+  Djibouti: 'DJ',
+  'Dominican Rep.': 'DO',
+  Ecuador: 'EC',
+  Egypt: 'EG',
+  'El Salvador': 'SV',
+  'Eq. Guinea': 'GQ',
+  Eritrea: 'ER',
+  Estonia: 'EE',
+  Ethiopia: 'ET',
+  'Falkland Is.': 'FK',
+  Fiji: 'FJ',
+  Finland: 'FI',
+  'Fr. S. Antarctic Lands': 'TF',
+  France: 'FR',
+  Gabon: 'GA',
+  Gambia: 'GM',
+  Georgia: 'GE',
+  Germany: 'DE',
+  Ghana: 'GH',
+  Greece: 'GR',
+  Greenland: 'GL',
+  Guatemala: 'GT',
+  Guinea: 'GN',
+  'Guinea-Bissau': 'GW',
+  Guyana: 'GY',
+  Haiti: 'HT',
+  Honduras: 'HN',
+  Hungary: 'HU',
+  Iceland: 'IS',
+  India: 'IN',
+  Indonesia: 'ID',
+  Iran: 'IR',
+  Iraq: 'IQ',
+  Ireland: 'IE',
+  Israel: 'IL',
+  Italy: 'IT',
+  Jamaica: 'JM',
+  Japan: 'JP',
+  Jordan: 'JO',
+  Kazakhstan: 'KZ',
+  Kenya: 'KE',
+  Kosovo: 'XK',
+  Kuwait: 'KW',
+  Kyrgyzstan: 'KG',
+  Laos: 'LA',
+  Latvia: 'LV',
+  Lebanon: 'LB',
+  Lesotho: 'LS',
+  Liberia: 'LR',
+  Libya: 'LY',
+  Lithuania: 'LT',
+  Luxembourg: 'LU',
+  Macedonia: 'MK',
+  Madagascar: 'MG',
+  Malawi: 'MW',
+  Malaysia: 'MY',
+  Mali: 'ML',
+  Mauritania: 'MR',
+  Mexico: 'MX',
+  Moldova: 'MD',
+  Mongolia: 'MN',
+  Montenegro: 'ME',
+  Morocco: 'MA',
+  Mozambique: 'MZ',
+  Myanmar: 'MM',
+  'N. Cyprus': 'CY',
+  Namibia: 'NA',
+  Nepal: 'NP',
+  Netherlands: 'NL',
+  'New Caledonia': 'NC',
+  'New Zealand': 'NZ',
+  Nicaragua: 'NI',
+  Niger: 'NE',
+  Nigeria: 'NG',
+  'North Korea': 'KP',
+  Norway: 'NO',
+  Oman: 'OM',
+  Pakistan: 'PK',
+  Palestine: 'PS',
+  Panama: 'PA',
+  'Papua New Guinea': 'PG',
+  Paraguay: 'PY',
+  Peru: 'PE',
+  Philippines: 'PH',
+  Poland: 'PL',
+  Portugal: 'PT',
+  'Puerto Rico': 'PR',
+  Qatar: 'QA',
+  Romania: 'RO',
+  Russia: 'RU',
+  Rwanda: 'RW',
+  'S. Sudan': 'SS',
+  'Saudi Arabia': 'SA',
+  Senegal: 'SN',
+  Serbia: 'RS',
+  'Sierra Leone': 'SL',
+  Slovakia: 'SK',
+  Slovenia: 'SI',
+  'Solomon Is.': 'SB',
+  Somalia: 'SO',
+  Somaliland: 'SO',
+  'South Africa': 'ZA',
+  'South Korea': 'KR',
+  Spain: 'ES',
+  'Sri Lanka': 'LK',
+  Sudan: 'SD',
+  Suriname: 'SR',
+  Sweden: 'SE',
+  Switzerland: 'CH',
+  Syria: 'SY',
+  Taiwan: 'TW',
+  Tajikistan: 'TJ',
+  Tanzania: 'TZ',
+  Thailand: 'TH',
+  'Timor-Leste': 'TL',
+  Togo: 'TG',
+  'Trinidad and Tobago': 'TT',
+  Tunisia: 'TN',
+  Turkey: 'TR',
+  Turkmenistan: 'TM',
+  Uganda: 'UG',
+  Ukraine: 'UA',
+  'United Arab Emirates': 'AE',
+  'United Kingdom': 'GB',
+  'United States of America': 'US',
+  Uruguay: 'UY',
+  Uzbekistan: 'UZ',
+  Vanuatu: 'VU',
+  Venezuela: 'VE',
+  Vietnam: 'VN',
+  'W. Sahara': 'EH',
+  Yemen: 'YE',
+  Zambia: 'ZM',
+  Zimbabwe: 'ZW',
+  eSwatini: 'SZ',
+};
 
 export const CONTINENT_ORDER: { key: Continent; label: string }[] = [
   { key: 'Africa', label: 'África' },
@@ -56,6 +216,17 @@ export const CONTINENT_ANCHORS: Record<Continent, [number, number]> = {
   Asia: [92, 46],
   Oceania: [134, -25],
   Antartida: [20, -80],
+};
+
+// Geographic box [[lonMin, latMin], [lonMax, latMax]] the map zooms to when a continent is selected.
+// A box, not the countries' bounds: France (Guiana) and Russia would stretch Europe across the world.
+export const CONTINENT_EXTENTS: Record<Continent, [[number, number], [number, number]]> = {
+  America: [[-170, -58], [-30, 75]],
+  Europa: [[-25, 34], [45, 72]],
+  Africa: [[-20, -36], [52, 38]],
+  Asia: [[25, -12], [180, 78]],
+  Oceania: [[110, -50], [180, 0]],
+  Antartida: [[-180, -90], [180, -60]],
 };
 
 export const CONTINENT_OVERRIDES: Record<string, Continent> = {

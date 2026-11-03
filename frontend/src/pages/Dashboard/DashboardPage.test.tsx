@@ -243,6 +243,24 @@ describe("DashboardPage", () => {
     })));
   });
 
+  it("lists the countries with data in the selected continent from the geography aggregates", async () => {
+    vi.mocked(fetchGeography).mockResolvedValue({
+      ...mockDashboardResponse,
+      agregados: [
+        { continente: "Africa", pais: null, humor: 0.7, noticias: 1, suficiente: false },
+        { continente: "Africa", pais: "SN", humor: 0.7, noticias: 1, suficiente: false },
+      ],
+    });
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByText(/^.frica$/));
+    await screen.findByText(/Pa.ses de .frica/);
+    const table = screen.getByRole("table", { name: /Humor por pa.s/ });
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(within(table).getByText("Senegal").closest("tr")).toHaveTextContent("+0,70");
+    const select = screen.getByLabelText(/Pa.s/) as HTMLSelectElement;
+    expect([...select.options].map((o) => o.textContent)).toEqual(["Todos los países (1)", "Senegal"]);
+  });
+
   // Summary card
   it("renders the summary card title Global by default", async () => {
     render(<DashboardPage />);
@@ -250,6 +268,20 @@ describe("DashboardPage", () => {
       const heading = screen.getByRole("heading", { name: "Global" });
       expect(heading).toBeInTheDocument();
     });
+  });
+
+  it("uses the API global aggregate (deduplicated, configured minimum) instead of summing continents", async () => {
+    // Continents sum to 77 (45 + 30 + 2); the deduplicated global is 60.
+    mockedFetchDashboard.mockResolvedValue({
+      ...mockDashboardResponse,
+      agregado_global: { humor: 0.01, noticias: 60, suficiente: false },
+    });
+    render(<DashboardPage />);
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Global" })).toBeInTheDocument();
+    });
+    const label = await screen.findByText("Noticias analizadas");
+    expect(label.nextElementSibling).toHaveTextContent(/^60$/);
   });
 
   it("renders continent table rows inside summary card", async () => {
@@ -405,6 +437,18 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     const skeletons = document.querySelectorAll(".sk");
     expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the dashboard mounted and refetches only scoped data when the scope changes", async () => {
+    render(<DashboardPage />);
+    fireEvent.click(await screen.findByText(/Am.rica/));
+    const geographyCalls = vi.mocked(fetchGeography).mock.calls.length;
+    mockedFetchDashboard.mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(await screen.findByText(/^.frica$/));
+    await screen.findByText(/Pa.ses de .frica/);
+    expect(document.querySelectorAll(".sk")).toHaveLength(0);
+    expect(document.querySelector(".dash-content")).toHaveAttribute("aria-busy", "true");
+    expect(fetchGeography).toHaveBeenCalledTimes(geographyCalls);
   });
 
   // Error state

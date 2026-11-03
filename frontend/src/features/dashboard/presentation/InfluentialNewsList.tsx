@@ -1,6 +1,6 @@
 import React from 'react';
 import type { InfluentialNews } from '../domain/dashboard';
-import { CONTINENT_ORDER, COUNTRIES_BY_ISO, formatHumor } from '../domain/countries';
+import { CONTINENT_ORDER, countryName, formatHumor } from '../domain/countries';
 import { humorPolarity, safeNewsUrl, type Polarity } from '../domain/news';
 
 interface InfluentialNewsListProps {
@@ -24,7 +24,7 @@ const dateFormat = new Intl.DateTimeFormat('es-CL', {
 const regionNames = new Intl.DisplayNames(['es'], { type: 'region' });
 
 function sourceRegion(item: InfluentialNews): string {
-  if (item.pais) return COUNTRIES_BY_ISO[item.pais]?.es ?? item.pais;
+  if (item.pais) return countryName(item.pais);
   return CONTINENT_ORDER.find((c) => c.key === item.continente)?.label ?? item.continente;
 }
 
