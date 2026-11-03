@@ -4,7 +4,7 @@ import * as topojson from 'topojson-client';
 import type { DashboardAggregate } from '../domain/dashboard';
 import type { Continent } from '../../sources/domain/source';
 import {
-  COUNTRIES_BY_ISO,
+  countryName,
   TOPO_TO_ISO,
   CONTINENT_ANCHORS,
   CONTINENT_OVERRIDES,
@@ -219,9 +219,8 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
           const d = getDatum(f);
           const [x, y] = d3.pointer(e, el);
           const iso = TOPO_TO_ISO[f.properties.name];
-          const countryName = iso ? COUNTRIES_BY_ISO[iso]?.es : f.properties.name;
           const isSameContinent = continent === f.properties.cont;
-          const label = isSameContinent ? (countryName || f.properties.name) : ((f.properties.cont ?? '') as string);
+          const label = isSameContinent ? (iso ? countryName(iso) : f.properties.name) : ((f.properties.cont ?? '') as string);
 
           tip
             .style('display', 'block')
@@ -295,18 +294,22 @@ export const DashboardMap: React.FC<DashboardMapProps> = ({
 
       if (continent) {
         // Show labels for countries with data in this continent
-        const contCountries = aggregates.filter(
-          (a) => a.pais && COUNTRIES_BY_ISO[a.pais]?.cont === continent
-        );
+        // Selected country first, then by news count; skip a label that collides with one already drawn.
+        const contCountries = aggregates
+          .filter((a) => a.pais && a.continente === continent)
+          .sort((a, b) => Number(b.pais === pais) - Number(a.pais === pais) || b.noticias - a.noticias);
+        const drawn: [number, number][] = [];
 
         contCountries.forEach((p) => {
           if (!p.pais) return;
-          const info = COUNTRIES_BY_ISO[p.pais];
-          if (!info) return;
-          const feat = world.features.find((f: CountryFeature) => f.properties.name === info.topo);
+          const feat = world.features.find(
+            (f: CountryFeature) => TOPO_TO_ISO[f.properties.name] === p.pais && f.properties.cont === continent
+          );
           if (!feat) return;
           const centroid = path.centroid(feat);
           if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return;
+          if (drawn.some(([x, y]) => Math.abs(x - centroid[0]) < 40 && Math.abs(y - centroid[1]) < 30)) return;
+          drawn.push([centroid[0], centroid[1]]);
 
           const g = lab.append('g').attr('transform', `translate(${centroid[0]},${centroid[1]})`);
           g.append('text')

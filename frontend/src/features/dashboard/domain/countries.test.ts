@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import atlas from 'world-atlas/countries-110m.json';
 import {
-  COUNTRIES_DATA,
-  COUNTRIES_BY_ISO,
   TOPO_TO_ISO,
   CONTINENT_ORDER,
+  countryName,
   formatHumor,
   formatNumber,
 } from './countries';
@@ -22,12 +22,18 @@ describe('dashboard countries and helpers', () => {
     expect(formatNumber(0)).toBe('0');
   });
 
-  it('has consistent metadata mapping between ISO and TopoJSON names', () => {
-    expect(COUNTRIES_DATA.length).toBeGreaterThan(15);
-    expect(COUNTRIES_BY_ISO['CL']?.es).toBe('Chile');
-    expect(COUNTRIES_BY_ISO['CL']?.cont).toBe('America');
+  it('maps every country drawn by the world atlas to its ISO-3166 alpha-2 code', () => {
+    const names = atlas.objects.countries.geometries.map((g) => g.properties.name);
+    expect(names.filter((name) => !/^[A-Z]{2}$/.test(TOPO_TO_ISO[name] ?? ''))).toEqual([]);
     expect(TOPO_TO_ISO['Chile']).toBe('CL');
-    expect(TOPO_TO_ISO['Spain']).toBe('ES');
+    expect(TOPO_TO_ISO['Senegal']).toBe('SN');
+    expect(TOPO_TO_ISO['Dem. Rep. Congo']).toBe('CD');
+  });
+
+  it('names any ISO country in Spanish, falling back to the code', () => {
+    expect(countryName('SN')).toBe('Senegal');
+    expect(countryName('CL')).toBe('Chile');
+    expect(countryName('X')).toBe('X');
   });
 
   it('contains all 6 continents in order', () => {

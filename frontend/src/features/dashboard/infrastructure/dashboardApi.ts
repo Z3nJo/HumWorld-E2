@@ -16,6 +16,7 @@ interface DashboardResponseDto {
   continente: string | null;
   pais: string | null;
   agregados: DashboardAggregateDto[];
+  agregado_global?: { humor: string | null; noticias: number; suficiente: boolean } | null;
 }
 
 interface InfluentialTermDto {
@@ -52,6 +53,9 @@ function mapDashboard(dto: DashboardResponseDto): DashboardData {
     continente: dto.continente as Continent | null,
     pais: dto.pais,
     agregados: dto.agregados.map(mapAggregate),
+    agregado_global: dto.agregado_global
+      ? { ...dto.agregado_global, humor: dto.agregado_global.humor !== null ? parseFloat(dto.agregado_global.humor) : null }
+      : null,
   };
 }
 

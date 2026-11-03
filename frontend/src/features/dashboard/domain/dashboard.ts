@@ -16,6 +16,13 @@ export interface DashboardData {
   continente: Continent | null;
   pais: string | null;
   agregados: DashboardAggregate[];
+  agregado_global?: DashboardGlobalAggregate | null;
+}
+
+export interface DashboardGlobalAggregate {
+  humor: number | null;
+  noticias: number;
+  suficiente: boolean;
 }
 
 export interface InfluentialTerm {

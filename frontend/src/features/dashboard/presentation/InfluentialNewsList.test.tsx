@@ -55,9 +55,9 @@ describe('InfluentialNewsList', () => {
     expect(screen.getByText(/Canal Uno · Europa/)).toBeInTheDocument();
   });
 
-  it('falls back to the ISO code outside the visual catalog', () => {
-    render(<InfluentialNewsList scopeTitle="Global" news={[item({ pais: 'ZZ' })]} />);
-    expect(screen.getByText(/Canal Uno · ZZ/)).toBeInTheDocument();
+  it('falls back to the ISO code when the region has no name', () => {
+    render(<InfluentialNewsList scopeTitle="Global" news={[item({ pais: 'QQ' })]} />);
+    expect(screen.getByText(/Canal Uno · QQ/)).toBeInTheDocument();
   });
 
   it('shows attributed countries in the expanded detail', async () => {
