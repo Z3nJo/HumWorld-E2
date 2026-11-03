@@ -28,7 +28,7 @@ La interfaz SHALL conservar los estilos, tipografías (Newsreader, IBM Plex Sans
 - **WHEN** el usuario navega a `/fuentes`
 - **THEN** la aplicación consulta en paralelo `GET /channels` y `GET /sources`
 - **AND** agrupa las fuentes RSS bajo sus respectivos canales, ordenados por `id_canal` ascendente
-- **AND** expande automáticamente el primer canal de la lista
+- **AND** muestra todos los medios colapsados; el usuario expande cada uno manualmente
 - **AND** muestra el contador `{n} fuentes · {m} canales` según los filtros aplicados
 - **AND** muestra las pills de idioma (ES, EN o ambas) derivadas de los feeds del canal
 
@@ -49,7 +49,7 @@ La interfaz SHALL soportar creación, edición, activación/desactivación y des
 - **AND** ante error se revierte el estado optimista y se notifica el fallo
 
 #### Scenario: Creación de fuente con canales (POST /sources)
-- **WHEN** el usuario completa el drawer con Nombre, URL del sitio, Idioma, Continente, País y al menos un canal RSS
+- **WHEN** el usuario completa el drawer con Nombre del medio, Sitio web del medio (opcional, solo referencia), Idioma, Continente, País y al menos un canal con su URL del feed RSS
 - **THEN** se envía un payload atómico `POST /sources` con `{ channel, sources }`
 - **AND** el nombre de cada fuente RSS se genera automáticamente como `"{medio} · {categoría IPTC}"` (máx. 150 caracteres)
 - **AND** tras éxito se muestra toast confirmatorio, se recargan datos y se expande el nuevo medio

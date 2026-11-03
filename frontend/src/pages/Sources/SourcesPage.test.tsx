@@ -69,7 +69,7 @@ describe('SourcesPage', () => {
     vi.mocked(sourcesApi.fetchSources).mockResolvedValue(sampleSources);
   });
 
-  it('renders header, counter, and expands first channel automatically', async () => {
+  it('renders header, counter, and keeps every channel collapsed on load', async () => {
     render(<SourcesPage />);
 
     expect(screen.getByText('Fuentes y canales RSS')).toBeInTheDocument();
@@ -87,12 +87,11 @@ describe('SourcesPage', () => {
     // Counter: 2 fuentes · 3 canales
     expect(screen.getByText('2 fuentes · 3 canales')).toBeInTheDocument();
 
-    // First channel (El País, id 1) is expanded automatically on initial load
-    expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
-    expect(screen.getByText('Política')).toBeInTheDocument();
-    expect(screen.getByText('Economía')).toBeInTheDocument();
-
-    // NPR (id 2) is collapsed
+    // No channel is expanded on initial load
+    for (const btn of screen.getAllByLabelText('Ver canales')) {
+      expect(btn).toHaveAttribute('aria-expanded', 'false');
+    }
+    expect(screen.queryByText('https://elpais.com/rss/portada.xml')).not.toBeInTheDocument();
     expect(screen.queryByText('https://npr.org/rss/news.xml')).not.toBeInTheDocument();
 
     // Language pills: El País has 'es'
@@ -140,17 +139,19 @@ describe('SourcesPage', () => {
 
     const expandButtons = screen.getAllByLabelText('Ver canales');
     const elPaisExpandBtn = expandButtons[0];
+    expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Expand El País
+    fireEvent.click(elPaisExpandBtn);
     expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
+    expect(screen.getByText('Política')).toBeInTheDocument();
+    expect(screen.getByText('Economía')).toBeInTheDocument();
 
     // Collapse El País
     fireEvent.click(elPaisExpandBtn);
     expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('https://elpais.com/rss/portada.xml')).not.toBeInTheDocument();
-
-    // Re-expand El País
-    fireEvent.click(elPaisExpandBtn);
-    expect(elPaisExpandBtn).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
   });
 
   it('toggles channel switch with patchChannel and shows toast with name', async () => {
@@ -205,8 +206,9 @@ describe('SourcesPage', () => {
     render(<SourcesPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('https://elpais.com/rss/portada.xml')).toBeInTheDocument();
+      expect(screen.getByText('El País')).toBeInTheDocument();
     });
+    fireEvent.click(screen.getAllByLabelText('Ver canales')[0]);
 
     const feedSwitches = screen.getAllByLabelText('Activar canal');
     const portadaSw = feedSwitches[0];
@@ -268,11 +270,13 @@ describe('SourcesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Crear fuente' }));
     expect(screen.getByText('Revisa los campos marcados')).toBeInTheDocument();
     expect(screen.getByText('Campo obligatorio')).toBeInTheDocument();
+    // Site URL is optional: an empty value is not flagged
+    expect(screen.queryByText('URL no válida')).not.toBeInTheDocument();
 
     // Fill valid data
-    const nameInput = screen.getByLabelText('Nombre');
-    const urlInput = screen.getByLabelText('URL del sitio');
-    const feedInputs = screen.getAllByLabelText('URL RSS');
+    const nameInput = screen.getByLabelText('Nombre del medio');
+    const urlInput = screen.getByLabelText('Sitio web del medio (opcional)');
+    const feedInputs = screen.getAllByLabelText('URL del feed RSS');
 
     await user.type(nameInput, 'Clarín');
     await user.type(urlInput, 'https://clarin.com');
@@ -346,9 +350,9 @@ describe('SourcesPage', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Nueva fuente' }));
 
-    const nameInput = screen.getByLabelText('Nombre');
-    const urlInput = screen.getByLabelText('URL del sitio');
-    const feedInputs = screen.getAllByLabelText('URL RSS');
+    const nameInput = screen.getByLabelText('Nombre del medio');
+    const urlInput = screen.getByLabelText('Sitio web del medio (opcional)');
+    const feedInputs = screen.getAllByLabelText('URL del feed RSS');
 
     await user.type(nameInput, 'El País');
     await user.type(urlInput, 'https://elpais.com');

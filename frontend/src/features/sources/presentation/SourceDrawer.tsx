@@ -120,10 +120,7 @@ const DrawerForm = ({
     if (!nombre.trim()) {
       err.nombre = 'Campo obligatorio';
     }
-    if (!url.trim()) {
-      // url can be empty or validated? Prototipo checks: if(!/^https?:\/\/\S+\.\S+/.test(d.url)) e.url='URL no válida';
-      err.url = 'URL no válida';
-    } else if (!isValidHttpUrl(url.trim())) {
+    if (url.trim() && !isValidHttpUrl(url.trim())) {
       err.url = 'URL no válida';
     }
 
@@ -199,26 +196,30 @@ const DrawerForm = ({
     <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
       <div className="bd">
         <label className="f" htmlFor="src-name">
-          Nombre
+          Nombre del medio
           <input
             id="src-name"
             className={`inp ${formErr.nombre ? 'err' : ''}`}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            placeholder="Ej.: El País"
           />
         </label>
         {formErr.nombre && <span className="errtxt">{formErr.nombre}</span>}
 
         <label className="f" htmlFor="src-site-url">
-          URL del sitio
+          Sitio web del medio (opcional)
           <input
             id="src-site-url"
             className={`inp ${formErr.url ? 'err' : ''}`}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://"
+            placeholder="https://elpais.com"
           />
         </label>
+        <p className="help" style={{ margin: '-8px 0 0' }}>
+          Página principal, solo como referencia. No se usa para capturar noticias.
+        </p>
         {formErr.url && <span className="errtxt">{formErr.url}</span>}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -292,7 +293,7 @@ const DrawerForm = ({
           </button>
         </div>
         <p className="help" style={{ margin: '-8px 0 0' }}>
-          Solo canales RSS; no se admite web scraping.
+          Cada canal es un feed RSS (XML) desde donde se capturan las noticias. No se admite web scraping.
         </p>
 
         {canales.map((c, i) => (
@@ -322,7 +323,7 @@ const DrawerForm = ({
             </div>
 
             <label className="f" htmlFor={`src-feed-url-${i}`}>
-              URL RSS
+              URL del feed RSS
               <input
                 id={`src-feed-url-${i}`}
                 className={`inp ${formErr[`rss${i}`] ? 'err' : ''}`}
@@ -335,7 +336,7 @@ const DrawerForm = ({
                     ),
                   );
                 }}
-                placeholder="https://…/rss"
+                placeholder="https://elpais.com/rss/portada.xml"
               />
             </label>
             {formErr[`rss${i}`] && (
