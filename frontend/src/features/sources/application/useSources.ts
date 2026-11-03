@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   IPTC_CATEGORY_LABELS,
   type Channel,
@@ -44,7 +44,6 @@ export function useSources(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openChannelIds, setOpenChannelIds] = useState<Set<number>>(new Set());
-  const initializedOpenRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,13 +55,6 @@ export function useSources(
       ]);
       setChannels(channelsData);
       setSources(sourcesData);
-
-      // Expand the first channel upon initial load
-      if (!initializedOpenRef.current && channelsData.length > 0) {
-        const sorted = [...channelsData].sort((a, b) => a.id - b.id);
-        setOpenChannelIds(new Set([sorted[0].id]));
-        initializedOpenRef.current = true;
-      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar las fuentes';
       setError(msg);

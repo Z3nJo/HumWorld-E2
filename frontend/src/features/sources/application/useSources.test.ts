@@ -110,7 +110,7 @@ describe('useSources and groupSourcesByChannel', () => {
   });
 
   describe('useSources hook', () => {
-    it('loads channels and sources in parallel and auto-expands the first channel', async () => {
+    it('loads channels and sources in parallel and leaves every channel collapsed', async () => {
       vi.mocked(sourcesApi.fetchChannels).mockResolvedValueOnce(sampleChannels);
       vi.mocked(sourcesApi.fetchSources).mockResolvedValueOnce(sampleSources);
 
@@ -127,7 +127,7 @@ describe('useSources and groupSourcesByChannel', () => {
       expect(result.current.channels).toHaveLength(3);
       expect(result.current.sources).toHaveLength(3);
       expect(result.current.channelGroups).toHaveLength(3);
-      expect(result.current.openChannelIds.has(10)).toBe(true);
+      expect(result.current.openChannelIds.size).toBe(0);
     });
 
     it('filters channelGroups by continent and status', async () => {
