@@ -28,12 +28,20 @@ class DashboardAggregate:
 
 
 @dataclass(frozen=True)
+class GlobalAggregate:
+    humor: Decimal | None
+    news_count: int
+    sufficient: bool
+
+
+@dataclass(frozen=True)
 class DashboardResult:
     date_from: date
     date_to: date
     continent: Continent | None
     country: str | None
     aggregates: tuple[DashboardAggregate, ...]
+    global_aggregate: GlobalAggregate | None = None
 
 
 @dataclass(frozen=True)
@@ -208,12 +216,22 @@ class DashboardService:
                 )
                 for record in country_records
             )
+        global_aggregate = None
+        if query.continent is None and query.country is None:
+            humor, count = self._repository.aggregate_global(
+                start_at=query.start_at, end_at=query.end_at,
+            )
+            global_aggregate = GlobalAggregate(
+                humor=self._round_humor(humor), news_count=count,
+                sufficient=count >= minimum,
+            )
         return DashboardResult(
             date_from=query.date_from,
             date_to=query.date_to,
             continent=query.continent,
             country=query.country,
             aggregates=tuple(aggregates),
+            global_aggregate=global_aggregate,
         )
 
     def get_influential_terms(

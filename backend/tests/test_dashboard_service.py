@@ -12,6 +12,7 @@ from app.services.dashboards import DashboardService, DashboardValidationError
 class FakeDashboardRepository:
     def __init__(self) -> None:
         self.aggregates: list[DashboardAggregateRecord] = []
+        self.global_result: tuple[Decimal | None, int] = (None, 0)
         self.influential: list[InfluentialTermRecord] = []
         self.aggregate_calls: list[dict[str, object]] = []
         self.influential_calls: list[dict[str, object]] = []
@@ -19,6 +20,9 @@ class FakeDashboardRepository:
     def aggregate(self, **filters: object) -> list[DashboardAggregateRecord]:
         self.aggregate_calls.append(filters)
         return self.aggregates
+
+    def aggregate_global(self, **filters: object) -> tuple[Decimal | None, int]:
+        return self.global_result
 
     def influential_terms(self, **filters: object) -> list[InfluentialTermRecord]:
         self.influential_calls.append(filters)
@@ -158,3 +162,36 @@ def test_invalid_queries_do_not_call_repository(
 
     assert repository.aggregate_calls == []
     assert repository.influential_calls == []
+
+
+def test_global_aggregate_uses_repository_count_and_configured_minimum(
+    repository: FakeDashboardRepository,
+) -> None:
+    # Continents sum to 7 (one news in two continents), the deduplicated global is 6.
+    repository.aggregates = [
+        DashboardAggregateRecord("America", None, Decimal("0.1"), 4),
+        DashboardAggregateRecord("Europa", None, Decimal("0.1"), 3),
+    ]
+    repository.global_result = (Decimal("0.12345"), 6)
+
+    result = DashboardService(repository, FakeConfiguration(minimum=7)).get_dashboard(
+        date_from=date(2026, 9, 1), date_to=date(2026, 9, 7),
+    )
+    assert result.global_aggregate.news_count == 6
+    assert result.global_aggregate.humor == Decimal("0.123")
+    assert result.global_aggregate.sufficient is False
+
+    result = DashboardService(repository, FakeConfiguration(minimum=6)).get_dashboard(
+        date_from=date(2026, 9, 1), date_to=date(2026, 9, 7),
+    )
+    assert result.global_aggregate.sufficient is True
+
+
+def test_global_aggregate_is_omitted_when_filtering_by_continent(
+    repository: FakeDashboardRepository,
+) -> None:
+    result = DashboardService(repository, FakeConfiguration()).get_dashboard(
+        date_from=date(2026, 9, 1), date_to=date(2026, 9, 7),
+        continent=Continent.EUROPE,
+    )
+    assert result.global_aggregate is None
