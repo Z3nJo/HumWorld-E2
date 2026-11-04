@@ -6,35 +6,15 @@ import argparse
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SPECS_ROOT = PROJECT_ROOT / "openspec" / "specs"
+CONTRACTS_ROOT = PROJECT_ROOT / "opsx" / "contracts"
+# Every published OpenSpec capability is a deliverable contract.
 CONTRACTS = {
-    "rss-news-capture": (
-        PROJECT_ROOT / "openspec" / "specs" / "rss-news-capture" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "rss-news-capture" / "spec.md",
-    ),
-    "rss-source-management": (
-        PROJECT_ROOT / "openspec" / "specs" / "rss-source-management" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "rss-source-management" / "spec.md",
-    ),
-    "runtime-configuration": (
-        PROJECT_ROOT / "openspec" / "specs" / "runtime-configuration" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "runtime-configuration" / "spec.md",
-    ),
-    "integration-verification": (
-        PROJECT_ROOT / "openspec" / "specs" / "integration-verification" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "integration-verification" / "spec.md",
-    ),
-    "news-sentiment-analysis": (
-        PROJECT_ROOT / "openspec" / "specs" / "news-sentiment-analysis" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "news-sentiment-analysis" / "spec.md",
-    ),
-    "news-purging": (
-        PROJECT_ROOT / "openspec" / "specs" / "news-purging" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "news-purging" / "spec.md",
-    ),
-    "dictionary-management": (
-        PROJECT_ROOT / "openspec" / "specs" / "dictionary-management" / "spec.md",
-        PROJECT_ROOT / "opsx" / "contracts" / "dictionary-management" / "spec.md",
-    ),
+    str(source.parent.relative_to(SPECS_ROOT)): (
+        source,
+        CONTRACTS_ROOT / source.relative_to(SPECS_ROOT),
+    )
+    for source in sorted(SPECS_ROOT.rglob("spec.md"))
 }
 
 
