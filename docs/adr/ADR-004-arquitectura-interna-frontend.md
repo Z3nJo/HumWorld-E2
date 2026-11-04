@@ -4,7 +4,7 @@
 |---|---|
 | **ID** | ADR-004 |
 | **Título** | Arquitectura interna del frontend: Clean Architecture liviana organizada por funcionalidad |
-| **Estado** | **Propuesto** — pendiente de revisión y acuerdo del equipo |
+| **Estado** | **Aceptado** — aprobado por el equipo; registrado el 4 de noviembre de 2026 en el cierre del Sprint 4 (`DOC-04`) |
 | **Fecha de redacción** | 8 de octubre de 2026 |
 | **Sprint** | Sprint 2 |
 | **Autor / responsable** | Matías Santos — Arquitectura y Documentación |
@@ -304,3 +304,4 @@ Se propone incorporar CF-V1 a CF-V4 a la secc. 2.2 de la Definition of Done medi
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
 | 0.1 | 2026-10-08 | Matías Santos | Redacción inicial. Estado: Propuesto, pendiente de revisión por el equipo. |
+| 1.0 | 2026-11-04 | Matías Santos | **Estado: Aceptado.** Aprobado por el equipo; se registra en el cierre del Sprint 4 (`DOC-04`), como exige la DoD de Release. Sin cambios en el contenido de la decisión respecto de la versión 0.1. |
