@@ -41,7 +41,7 @@ El stack está decidido en [`ADR-003`](docs/adr/ADR-003-stack-tecnologico.md), c
 | **Base de datos** | PostgreSQL 16 |
 | **Captura RSS y planificación** | feedparser + APScheduler |
 | **Frontend** | React + Vite + TypeScript |
-| **Mapa y gráficos** | react-simple-maps (coropleta por continente), Chart.js, d3-cloud |
+| **Mapa y gráficos** | d3, d3-geo, topojson-client y world-atlas (mapa por continente y país, evolución y resumen del dashboard); react-simple-maps (mapa de la landing). La nube de palabras se dibuja con React, sin biblioteca de gráficos |
 | **Pruebas** | pytest + pytest-cov (backend), Vitest + Testing Library (frontend) |
 | **Calidad de código** | SonarCloud |
 | **Contenerización** | Docker Compose: backend, frontend y base de datos |
@@ -66,9 +66,12 @@ HumWorld-E2/
 ├── docs/
 │   ├── adr/              Decisiones de arquitectura (ADR)
 │   ├── uml/              Casos de uso, modelo E/R, componentes
+│   ├── openapi/          Contrato OpenAPI exportado desde la aplicación
+│   ├── operations/       Guías operativas (credenciales PostgreSQL)
 │   ├── sprints/          Planificación y seguimiento por sprint
 │   └── definition-of-done.md
-├── opsx/                 Contratos OpenSpec y configuración de entorno (docker-compose.yml)
+├── openspec/            Fuente editable de especificaciones y cambios OpenSpec
+├── opsx/                 Contratos OpenSpec generados y configuración de entorno (docker-compose.yml)
 ├── .github/workflows/    Pipelines de CI/CD
 └── README.md
 ```
@@ -96,7 +99,23 @@ Detenerlo:
 docker compose --env-file .env -f opsx/docker-compose.yml down
 ```
 
-El backend aplica las migraciones al iniciar. Swagger queda disponible en `http://localhost:3000/api/docs`.
+Al iniciar, el contenedor `backend` aplica las migraciones (`alembic upgrade head`), siembra el catálogo geográfico local (`python -m app.seeds.geography`) y arranca uvicorn con un solo proceso; con `CAPTURE_SCHEDULER_ENABLED=true` (valor por defecto) siembra además los parámetros y el léxico de sentimiento y arranca el planificador.
+
+Los canales y fuentes RSS **no** se siembran solos. Tras el primer arranque:
+
+```bash
+docker compose --env-file .env -f opsx/docker-compose.yml exec backend python -m app.seeds.sources
+```
+
+El comando es idempotente: crea seis canales, uno por continente.
+
+| Servicio | URL |
+|---|---|
+| Frontend (servidor de Vite) | `http://localhost:5173` |
+| API y Swagger | `http://localhost:3000/api/docs` (JSON en `/api/openapi.json`) |
+| PostgreSQL 16 | `localhost:5432` |
+
+Para desarrollo sin Docker, ver [`backend/README.md`](backend/README.md) (migraciones, seeds y pruebas) y [`frontend/README.md`](frontend/README.md) (pnpm, Vite y Vitest).
 
 ## 6. API
 
@@ -104,13 +123,16 @@ Base: `/api/v1` · Formato: JSON · Documentación interactiva: `/api/docs`
 
 | Recurso | Métodos | Propósito |
 |---|---|---|
-| `/sources` | GET, POST, PUT, PATCH, DELETE | Implementado en E1-H01: gestión de canales y fuentes RSS |
-| `/sources/capture` | POST | Implementado en E1-H05: captura manual inmediata de todas las fuentes activas o de una selección |
-| `/news` | GET, DELETE | Consulta de noticias, noticias influyentes y purgado automático de caducadas (E4-H02) |
-| `/dictionary` | GET, POST, PUT, PATCH, DELETE | Implementado en E2-H01-API: gestión CRUD y búsqueda de términos evaluables |
-| `/config` | GET, PUT | Implementado en E1-H04 y E4-H01: parámetros generales (periodicidad de captura, caducidad de noticias) |
-| `/sentiment` | GET, POST | Implementado en E2-H04 (`POST` análisis puntual sin persistencia); `GET` para humor agregado previsto en Sprint 3 |
-| `/dashboards` | GET | Implementado en T-DASH-01: humor agregado por continente y país, evolución diaria, nube de palabras y noticias influyentes (ADR-002) |
+| `/sources` | GET, POST, PUT, PATCH, DELETE | E1-H01: gestión de fuentes RSS y alta de canales con sus fuentes |
+| `/sources/capture` | POST | E1-H05: captura manual inmediata de todas las fuentes activas o de una selección |
+| `/channels` | GET, PUT, PATCH, DELETE | Gestión de canales (medios); `DELETE` desactiva el canal |
+| `/news` | DELETE | E4-H03: purgado manual de las noticias caducadas. El purgado automático (E4-H02) es un trabajo del planificador |
+| `/dictionary` | GET, POST, PUT, PATCH, DELETE | E2-H01-API: gestión CRUD y búsqueda de términos evaluables; `DELETE` desactiva el término |
+| `/config` | GET, PUT | E1-H04 y E4-H01: parámetros generales (periodicidad de captura, caducidad de noticias) |
+| `/sentiment` | POST | E2-H04: análisis puntual de un texto, sin persistencia |
+| `/dashboards` | GET | T-DASH-01, E3-H01, E3-H02 y E3-H03: humor agregado (`""`), `/geografia`, `/evolucion`, `/nube-palabras` y `/noticias-influyentes` (ADR-002) |
+
+El contrato completo está en [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml), exportado desde `/api/openapi.json`.
 
 Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 
@@ -126,6 +148,8 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/uml/MOD-01`](docs/uml/MOD-01-modelo-er-inicial.md) | Modelo E/R preliminar: entidades, relaciones e integridad |
 | [`docs/uml/UML-01`](docs/uml/UML-01-casos-de-uso.md) | Diagrama de casos de uso: actores, casos de uso y endpoints |
 | [`docs/uml/UML-02`](docs/uml/UML-02-diagrama-componentes.md) | Diagrama de componentes: frontend, capas del backend, scheduler y PostgreSQL |
+| [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml) | Contrato OpenAPI de la API REST, exportado desde la aplicación |
+| [`docs/operations/postgresql-credentials.md`](docs/operations/postgresql-credentials.md) | Generación, uso y rotación de las credenciales de PostgreSQL |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación, cierre y evidencia de validación por sprint e historia |
 | [`docs/sprints/planificacion-sprint-1.md`](docs/sprints/planificacion-sprint-1.md) | Planificación del Sprint 1 (31 puntos) |
@@ -135,7 +159,17 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) | Resultado del Sprint 3, métricas de CI, deuda abierta y recalibración |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
 | `openspec/` | Única fuente editable de propuestas, especificaciones y tareas OpenSpec; incluye las capacidades frontend bajo `openspec/specs/frontend/` |
-| `opsx/contracts/` | Copia entregable generada mediante `python opsx/sync_contracts.py` |
+| `opsx/contracts/` | Copia entregable de todas las especificaciones de `openspec/specs/`, generada con `python opsx/sync_contracts.py` (CI ejecuta `--check`) |
+
+### Uso de IA
+
+El proyecto se desarrolla con asistentes de IA bajo un flujo guiado por especificaciones. Los artefactos que dirigen a los asistentes están versionados:
+
+| Artefacto | Uso |
+|---|---|
+| `.agents/skills/openspec-*/SKILL.md` | Instrucciones de los asistentes para explorar, proponer, aplicar, sincronizar y archivar cambios OpenSpec |
+| `openspec/config.yaml` | Configuración del flujo OpenSpec (`schema: spec-driven`) |
+| `openspec/changes/` | Propuesta, diseño, especificación y tareas de cada cambio; los cerrados se archivan en `archive/` |
 
 ## 8. Equipo
 
@@ -152,7 +186,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 - **Sprint 2 — Motor de sentimiento y purgado: cerrado.** Se entregaron los 35 puntos comprometidos: E2-H01-API, ADR-001, E2-H02, E2-H03, E2-H04, E4-H02, `QA-S2`, `INT-S2` y `DOC-S2`.
 - **Sprint 3 — Interfaz de usuario y dashboards: cerrado.** Se entregaron los 41 puntos comprometidos: E2-H01-UI, T-DASH-01, E3-H01, E3-H03, E4-H04, ADR-002, `QA-S3`, `INT-S3` y `DOC-S3`.
 
-El sistema cuenta con el motor de sentimiento en español e inglés formalizado en ADR-001, con cálculo y persistencia del humor por noticia en PostgreSQL, desglose de términos en `NOTICIA_TERMINO`, léxico curado reproducible de 30 pares de conceptos, CRUD de diccionario en `/api/v1/dictionary`, endpoint `POST /api/v1/sentiment` para análisis puntual y purgado periódico de noticias caducadas. La suite cuenta con 168 pruebas y 97,62 % de cobertura (CI y revalidación local del 28 de septiembre de 2026), con verificación contra PostgreSQL 16 real.
+El sistema cuenta con el motor de sentimiento en español e inglés formalizado en ADR-001, con cálculo y persistencia del humor por noticia en PostgreSQL, desglose de términos en `NOTICIA_TERMINO`, léxico curado reproducible (catálogo inicial ampliado a 8000 términos en el Sprint 4), CRUD de diccionario en `/api/v1/dictionary`, endpoint `POST /api/v1/sentiment` para análisis puntual y purgado periódico de noticias caducadas. La suite cuenta con 168 pruebas y 97,62 % de cobertura (CI y revalidación local del 28 de septiembre de 2026), con verificación contra PostgreSQL 16 real.
 
 La pertenencia temática se resuelve mediante `NOTICIA_PAIS → PAIS`: admite múltiples países por noticia, conserva la evidencia del alias, versiona la clasificación y evita duplicaciones en los agregados. El canal sigue representando la procedencia editorial y solo actúa como respaldo cuando el texto no menciona un país.
 
@@ -160,4 +194,4 @@ Desde el Sprint 3 cuenta además con una interfaz React/Vite: dashboard con mapa
 
 El detalle del resultado, las métricas y la recalibración de velocidad están en [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) (Sprint 2: [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md)).
 
-**Siguiente:** Sprint 4 — cierre de `E3-H02` y de la deuda abierta, y estabilización antes del congelamiento interno del 30 de octubre de 2026.
+- **Sprint 4 — Estabilización y cierre.** Integrado en `main` (PR #72 a #105): noticias influyentes (`E3-H02`), purgado manual por API e interfaz (`E4-H03`), atribución geográfica por país mencionado (`NOTICIA_PAIS`, catálogo local), catálogo inicial de sentimiento ampliado a 8000 términos, eliminación de credenciales PostgreSQL versionadas, pruebas de integración finales (`QA-01`) y cobertura sobre el 80 % (`QA-02`).

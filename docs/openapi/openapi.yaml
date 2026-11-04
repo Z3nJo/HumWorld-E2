@@ -1,10 +1,2091 @@
-openapi: 3.0.3
-
+# Generado desde /api/openapi.json (app.main:app). No editar a mano.
+openapi: 3.1.0
 info:
   title: HumWorld API
+  description: API REST del proyecto HumWorld
   version: 0.1.0
-
-servers:
-  - url: /api/v1
-
-paths: {}
+paths:
+  /api/v1/config:
+    get:
+      tags:
+      - config
+      summary: Consultar configuracion runtime
+      operationId: get_config_api_v1_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - config
+      summary: Actualizar configuracion runtime
+      operationId: replace_config_api_v1_config_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigReplace'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/channels:
+    get:
+      tags:
+      - channels
+      summary: Listar canales
+      operationId: list_channels_api_v1_channels_get
+      parameters:
+      - name: continent
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continent
+      - name: country
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Country
+      - name: active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Active
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChannelResponse'
+                title: Response List Channels Api V1 Channels Get
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Canal no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/channels/{channel_id}:
+    get:
+      tags:
+      - channels
+      summary: Consultar un canal
+      operationId: get_channel_api_v1_channels__channel_id__get
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Channel Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Canal no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - channels
+      summary: Reemplazar un canal
+      operationId: replace_channel_api_v1_channels__channel_id__put
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Channel Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelReplace'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Canal no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+      - channels
+      summary: Actualizar parcialmente un canal
+      operationId: patch_channel_api_v1_channels__channel_id__patch
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Channel Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Canal no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - channels
+      summary: Desactivar un canal
+      operationId: delete_channel_api_v1_channels__channel_id__delete
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Channel Id
+      responses:
+        '204':
+          description: Successful Response
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Canal no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards/geografia:
+    get:
+      tags:
+      - dashboards
+      summary: Humor y noticias por continente y pais para el mapa
+      operationId: get_geography_api_v1_dashboards_geografia_get
+      parameters:
+      - name: fecha_desde
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: Fecha Desde
+      - name: fecha_hasta
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: Fecha Hasta
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards/evolucion:
+    get:
+      tags:
+      - dashboards
+      summary: Evolucion diaria UTC; por defecto los ultimos 30 dias
+      operationId: get_evolution_api_v1_dashboards_evolucion_get
+      parameters:
+      - name: fecha_desde
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Fecha Desde
+      - name: fecha_hasta
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Fecha Hasta
+      - name: continente
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continente
+      - name: pais
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 2
+            pattern: ^[A-Za-z]{2}$
+          - type: 'null'
+          title: Pais
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardEvolutionResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards/noticias-influyentes:
+    get:
+      tags:
+      - dashboards
+      summary: Top 10 noticias por valor absoluto del humor
+      operationId: get_influential_news_api_v1_dashboards_noticias_influyentes_get
+      parameters:
+      - name: fecha_desde
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: Fecha Desde
+      - name: fecha_hasta
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: Fecha Hasta
+      - name: continente
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continente
+      - name: pais
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 2
+            pattern: ^[A-Za-z]{2}$
+          - type: 'null'
+          title: Pais
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfluentialNewsResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards:
+    get:
+      tags:
+      - dashboards
+      summary: Consultar humor agregado del dashboard
+      operationId: get_dashboard_api_v1_dashboards_get
+      parameters:
+      - name: fecha_desde
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Primer dia incluido, en UTC
+          title: Fecha Desde
+        description: Primer dia incluido, en UTC
+      - name: fecha_hasta
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Ultimo dia incluido, en UTC
+          title: Fecha Hasta
+        description: Ultimo dia incluido, en UTC
+      - name: continente
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continente
+      - name: pais
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 2
+            pattern: ^[A-Za-z]{2}$
+          - type: 'null'
+          title: Pais
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards/nube-palabras:
+    get:
+      tags:
+      - dashboards
+      summary: Consultar los terminos mas influyentes
+      operationId: get_influential_terms_api_v1_dashboards_nube_palabras_get
+      parameters:
+      - name: fecha_desde
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Primer dia incluido, en UTC
+          title: Fecha Desde
+        description: Primer dia incluido, en UTC
+      - name: fecha_hasta
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          description: Ultimo dia incluido, en UTC
+          title: Fecha Hasta
+        description: Ultimo dia incluido, en UTC
+      - name: continente
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continente
+      - name: pais
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 2
+            pattern: ^[A-Za-z]{2}$
+          - type: 'null'
+          title: Pais
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfluentialTermsResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dictionary:
+    get:
+      tags:
+      - dictionary
+      summary: Listar o buscar terminos del diccionario
+      operationId: list_terms_api_v1_dictionary_get
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Texto parcial de la palabra; no interpreta comodines
+          title: Q
+        description: Texto parcial de la palabra; no interpreta comodines
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TermResponse'
+                title: Response List Terms Api V1 Dictionary Get
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+      - dictionary
+      summary: Crear un termino del diccionario
+      operationId: create_term_api_v1_dictionary_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dictionary/{term_id}:
+    get:
+      tags:
+      - dictionary
+      summary: Consultar un termino del diccionario
+      operationId: get_term_api_v1_dictionary__term_id__get
+      parameters:
+      - name: term_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Term Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - dictionary
+      summary: Reemplazar un termino del diccionario
+      operationId: replace_term_api_v1_dictionary__term_id__put
+      parameters:
+      - name: term_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Term Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermReplace'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+      - dictionary
+      summary: Actualizar parcialmente un termino del diccionario
+      operationId: patch_term_api_v1_dictionary__term_id__patch
+      parameters:
+      - name: term_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Term Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TermPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - dictionary
+      summary: Desactivar un termino del diccionario
+      operationId: delete_term_api_v1_dictionary__term_id__delete
+      parameters:
+      - name: term_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Term Id
+      responses:
+        '204':
+          description: Successful Response
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Termino no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/news:
+    delete:
+      tags:
+      - news
+      summary: Purgar manualmente noticias caducadas
+      operationId: purge_expired_news_api_v1_news_delete
+      responses:
+        '204':
+          description: Successful Response
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sentiment:
+    post:
+      tags:
+      - sentiment
+      summary: Analizar el humor de un texto puntual
+      operationId: analyze_text_api_v1_sentiment_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SentimentRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentimentResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sources/capture:
+    post:
+      tags:
+      - sources
+      summary: Ejecutar captura RSS inmediata
+      operationId: capture_sources_api_v1_sources_capture_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/CaptureRequest'
+              - type: 'null'
+              title: Payload
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaptureResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Fuente no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sources:
+    post:
+      tags:
+      - sources
+      summary: Crear un canal con fuentes o agregar fuentes a un canal
+      operationId: create_sources_api_v1_sources_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceBatchCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceBatchResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - sources
+      summary: Listar fuentes RSS
+      operationId: list_sources_api_v1_sources_get
+      parameters:
+      - name: continent
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+          title: Continent
+      - name: active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Active
+      - name: channel_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            exclusiveMinimum: 0
+          - type: 'null'
+          title: Channel Id
+      - name: country
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Country
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceResponse'
+                title: Response List Sources Api V1 Sources Get
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sources/{source_id}:
+    get:
+      tags:
+      - sources
+      summary: Consultar una fuente RSS
+      operationId: get_source_api_v1_sources__source_id__get
+      parameters:
+      - name: source_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Source Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - sources
+      summary: Reemplazar una fuente RSS
+      operationId: replace_source_api_v1_sources__source_id__put
+      parameters:
+      - name: source_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Source Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourceReplace'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+      - sources
+      summary: Actualizar parcialmente una fuente RSS
+      operationId: patch_source_api_v1_sources__source_id__patch
+      parameters:
+      - name: source_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Source Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourcePatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceResponse'
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - sources
+      summary: Eliminar una fuente RSS
+      operationId: delete_source_api_v1_sources__source_id__delete
+      parameters:
+      - name: source_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Source Id
+      responses:
+        '204':
+          description: Successful Response
+        '400':
+          description: Solicitud invalida o duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    CaptureRequest:
+      properties:
+        source_ids:
+          anyOf:
+          - items:
+              type: integer
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Source Ids
+          examples:
+          - - 1
+            - 3
+      type: object
+      title: CaptureRequest
+    CaptureResponse:
+      properties:
+        sources:
+          items:
+            $ref: '#/components/schemas/CaptureSourceResponse'
+          type: array
+          title: Sources
+        skipped_source_ids:
+          items:
+            type: integer
+          type: array
+          title: Skipped Source Ids
+        inserted:
+          type: integer
+          title: Inserted
+        failed_sources:
+          type: integer
+          title: Failed Sources
+      type: object
+      required:
+      - sources
+      - skipped_source_ids
+      - inserted
+      - failed_sources
+      title: CaptureResponse
+    CaptureSourceResponse:
+      properties:
+        source_id:
+          type: integer
+          title: Source Id
+        inserted:
+          type: integer
+          title: Inserted
+        duplicates:
+          type: integer
+          title: Duplicates
+        invalid:
+          type: integer
+          title: Invalid
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      type: object
+      required:
+      - source_id
+      - inserted
+      - duplicates
+      - invalid
+      - error
+      title: CaptureSourceResponse
+    ChannelCreate:
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Nombre
+          examples:
+          - BBC Mundo
+        continente:
+          $ref: '#/components/schemas/Continent'
+          examples:
+          - Europa
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+          examples:
+          - CL
+        url_sitio:
+          anyOf:
+          - type: string
+            maxLength: 500
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Url Sitio
+          examples:
+          - https://example.com
+        activo:
+          type: boolean
+          title: Activo
+          default: true
+      additionalProperties: false
+      type: object
+      required:
+      - nombre
+      - continente
+      title: ChannelCreate
+    ChannelPatch:
+      properties:
+        nombre:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+          - type: 'null'
+          title: Nombre
+        continente:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        url_sitio:
+          anyOf:
+          - type: string
+            maxLength: 500
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Url Sitio
+        activo:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Activo
+      additionalProperties: false
+      type: object
+      title: ChannelPatch
+    ChannelReplace:
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Nombre
+        continente:
+          $ref: '#/components/schemas/Continent'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        url_sitio:
+          anyOf:
+          - type: string
+            maxLength: 500
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Url Sitio
+        activo:
+          type: boolean
+          title: Activo
+      additionalProperties: false
+      type: object
+      required:
+      - nombre
+      - continente
+      - pais
+      - url_sitio
+      - activo
+      title: ChannelReplace
+    ChannelResponse:
+      properties:
+        id_canal:
+          type: integer
+          title: Id Canal
+        nombre:
+          type: string
+          title: Nombre
+        continente:
+          $ref: '#/components/schemas/Continent'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        url_sitio:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Url Sitio
+        activo:
+          type: boolean
+          title: Activo
+        fecha_alta:
+          type: string
+          format: date-time
+          title: Fecha Alta
+      type: object
+      required:
+      - id_canal
+      - nombre
+      - continente
+      - pais
+      - url_sitio
+      - activo
+      - fecha_alta
+      title: ChannelResponse
+    ConfigReplace:
+      properties:
+        captura_periodicidad_minutos:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Captura Periodicidad Minutos
+          examples:
+          - 30
+        noticias_caducidad_dias:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Noticias Caducidad Dias
+          examples:
+          - 30
+      type: object
+      required:
+      - captura_periodicidad_minutos
+      - noticias_caducidad_dias
+      title: ConfigReplace
+    ConfigResponse:
+      properties:
+        captura_periodicidad_minutos:
+          type: integer
+          title: Captura Periodicidad Minutos
+          examples:
+          - 60
+        noticias_caducidad_dias:
+          type: integer
+          title: Noticias Caducidad Dias
+          examples:
+          - 30
+      type: object
+      required:
+      - captura_periodicidad_minutos
+      - noticias_caducidad_dias
+      title: ConfigResponse
+    Continent:
+      type: string
+      enum:
+      - Africa
+      - America
+      - Antartida
+      - Asia
+      - Europa
+      - Oceania
+      title: Continent
+    DashboardAggregateResponse:
+      properties:
+        continente:
+          $ref: '#/components/schemas/Continent'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        humor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Humor
+        noticias:
+          type: integer
+          minimum: 0.0
+          title: Noticias
+        suficiente:
+          type: boolean
+          title: Suficiente
+      type: object
+      required:
+      - continente
+      - pais
+      - humor
+      - noticias
+      - suficiente
+      title: DashboardAggregateResponse
+    DashboardDayResponse:
+      properties:
+        fecha:
+          type: string
+          format: date
+          title: Fecha
+        humor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Humor
+        noticias:
+          type: integer
+          minimum: 0.0
+          title: Noticias
+        suficiente:
+          type: boolean
+          title: Suficiente
+      type: object
+      required:
+      - fecha
+      - humor
+      - noticias
+      - suficiente
+      title: DashboardDayResponse
+    DashboardEvolutionResponse:
+      properties:
+        fecha_desde:
+          type: string
+          format: date
+          title: Fecha Desde
+        fecha_hasta:
+          type: string
+          format: date
+          title: Fecha Hasta
+        continente:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        dias:
+          items:
+            $ref: '#/components/schemas/DashboardDayResponse'
+          type: array
+          title: Dias
+      type: object
+      required:
+      - fecha_desde
+      - fecha_hasta
+      - continente
+      - pais
+      - dias
+      title: DashboardEvolutionResponse
+    DashboardGlobalAggregateResponse:
+      properties:
+        humor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Humor
+        noticias:
+          type: integer
+          minimum: 0.0
+          title: Noticias
+        suficiente:
+          type: boolean
+          title: Suficiente
+      type: object
+      required:
+      - humor
+      - noticias
+      - suficiente
+      title: DashboardGlobalAggregateResponse
+    DashboardResponse:
+      properties:
+        fecha_desde:
+          type: string
+          format: date
+          title: Fecha Desde
+        fecha_hasta:
+          type: string
+          format: date
+          title: Fecha Hasta
+        continente:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        agregados:
+          items:
+            $ref: '#/components/schemas/DashboardAggregateResponse'
+          type: array
+          title: Agregados
+        agregado_global:
+          anyOf:
+          - $ref: '#/components/schemas/DashboardGlobalAggregateResponse'
+          - type: 'null'
+          description: Solo sin filtros geograficos; cuenta cada noticia una vez aunque
+            pertenezca a varios continentes
+      type: object
+      required:
+      - fecha_desde
+      - fecha_hasta
+      - continente
+      - pais
+      - agregados
+      title: DashboardResponse
+    ErrorResponse:
+      properties:
+        detail:
+          anyOf:
+          - type: string
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          title: Detail
+      type: object
+      required:
+      - detail
+      title: ErrorResponse
+    InfluentialNewsItemResponse:
+      properties:
+        id_noticia:
+          type: integer
+          title: Id Noticia
+        titulo:
+          type: string
+          title: Titulo
+        url:
+          type: string
+          title: Url
+        canal:
+          type: string
+          title: Canal
+        continente:
+          $ref: '#/components/schemas/Continent'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        fecha_registro:
+          type: string
+          format: date-time
+          title: Fecha Registro
+        valor_humor:
+          type: string
+          title: Valor Humor
+        paises_atribuidos:
+          items:
+            type: string
+          type: array
+          title: Paises Atribuidos
+          description: Paises atribuidos a la noticia (ISO-3166 alfa-2); pais/continente
+            describen la fuente
+      type: object
+      required:
+      - id_noticia
+      - titulo
+      - url
+      - canal
+      - continente
+      - pais
+      - fecha_registro
+      - valor_humor
+      title: InfluentialNewsItemResponse
+    InfluentialNewsResponse:
+      properties:
+        fecha_desde:
+          type: string
+          format: date
+          title: Fecha Desde
+        fecha_hasta:
+          type: string
+          format: date
+          title: Fecha Hasta
+        continente:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        noticias:
+          items:
+            $ref: '#/components/schemas/InfluentialNewsItemResponse'
+          type: array
+          title: Noticias
+      type: object
+      required:
+      - fecha_desde
+      - fecha_hasta
+      - continente
+      - pais
+      - noticias
+      title: InfluentialNewsResponse
+    InfluentialTermResponse:
+      properties:
+        id_termino:
+          type: integer
+          title: Id Termino
+        termino:
+          type: string
+          title: Termino
+        idioma:
+          $ref: '#/components/schemas/Language'
+        peso:
+          type: string
+          title: Peso
+        aporte_total:
+          type: string
+          title: Aporte Total
+        frecuencia:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Frecuencia
+      type: object
+      required:
+      - id_termino
+      - termino
+      - idioma
+      - peso
+      - aporte_total
+      - frecuencia
+      title: InfluentialTermResponse
+    InfluentialTermsResponse:
+      properties:
+        fecha_desde:
+          type: string
+          format: date
+          title: Fecha Desde
+        fecha_hasta:
+          type: string
+          format: date
+          title: Fecha Hasta
+        continente:
+          anyOf:
+          - $ref: '#/components/schemas/Continent'
+          - type: 'null'
+        pais:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Pais
+        terminos:
+          items:
+            $ref: '#/components/schemas/InfluentialTermResponse'
+          type: array
+          title: Terminos
+      type: object
+      required:
+      - fecha_desde
+      - fecha_hasta
+      - continente
+      - pais
+      - terminos
+      title: InfluentialTermsResponse
+    IptcCategory:
+      type: string
+      enum:
+      - arts/culture/entertainment/media
+      - conflict/war/peace
+      - crime/law/justice
+      - disaster/accident
+      - economy/business/finance
+      - education
+      - environment
+      - health
+      - human interest
+      - labour
+      - lifestyle/leisure
+      - politics
+      - religion
+      - science/technology
+      - society
+      - sport
+      - weather
+      title: IptcCategory
+    Language:
+      type: string
+      enum:
+      - es
+      - en
+      title: Language
+    SentimentRequest:
+      properties:
+        texto:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Texto
+          examples:
+          - La comunidad celebró una buena noticia
+        idioma:
+          $ref: '#/components/schemas/Language'
+          examples:
+          - es
+      type: object
+      required:
+      - texto
+      - idioma
+      title: SentimentRequest
+    SentimentResponse:
+      properties:
+        valor_humor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Valor Humor
+        terminos:
+          items:
+            $ref: '#/components/schemas/SentimentTermResponse'
+          type: array
+          title: Terminos
+      type: object
+      required:
+      - valor_humor
+      - terminos
+      title: SentimentResponse
+    SentimentTermResponse:
+      properties:
+        id_termino:
+          type: integer
+          title: Id Termino
+        palabra:
+          type: string
+          title: Palabra
+        valor:
+          type: string
+          title: Valor
+        ocurrencias:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Ocurrencias
+        aporte_humor:
+          type: string
+          title: Aporte Humor
+      type: object
+      required:
+      - id_termino
+      - palabra
+      - valor
+      - ocurrencias
+      - aporte_humor
+      title: SentimentTermResponse
+    SourceBatchCreate:
+      properties:
+        channel:
+          anyOf:
+          - $ref: '#/components/schemas/ChannelCreate'
+          - type: 'null'
+        channel_id:
+          anyOf:
+          - type: integer
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Channel Id
+        sources:
+          items:
+            $ref: '#/components/schemas/SourceCreate'
+          type: array
+          minItems: 1
+          title: Sources
+      additionalProperties: false
+      type: object
+      required:
+      - sources
+      title: SourceBatchCreate
+    SourceBatchResponse:
+      properties:
+        channel:
+          $ref: '#/components/schemas/ChannelResponse'
+        sources:
+          items:
+            $ref: '#/components/schemas/SourceResponse'
+          type: array
+          title: Sources
+      type: object
+      required:
+      - channel
+      - sources
+      title: SourceBatchResponse
+    SourceCreate:
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Nombre
+          examples:
+          - Portada
+        url_feed:
+          type: string
+          maxLength: 500
+          minLength: 1
+          format: uri
+          title: Url Feed
+          examples:
+          - https://example.com/rss.xml
+        categoria_iptc:
+          $ref: '#/components/schemas/IptcCategory'
+          examples:
+          - politics
+        idioma:
+          $ref: '#/components/schemas/Language'
+          examples:
+          - es
+        activa:
+          type: boolean
+          title: Activa
+          default: true
+      additionalProperties: false
+      type: object
+      required:
+      - nombre
+      - url_feed
+      - categoria_iptc
+      - idioma
+      title: SourceCreate
+    SourcePatch:
+      properties:
+        nombre:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+          - type: 'null'
+          title: Nombre
+        url_feed:
+          anyOf:
+          - type: string
+            maxLength: 500
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Url Feed
+        categoria_iptc:
+          anyOf:
+          - $ref: '#/components/schemas/IptcCategory'
+          - type: 'null'
+        idioma:
+          anyOf:
+          - $ref: '#/components/schemas/Language'
+          - type: 'null'
+        activa:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Activa
+      additionalProperties: false
+      type: object
+      title: SourcePatch
+    SourceReplace:
+      properties:
+        nombre:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Nombre
+        url_feed:
+          type: string
+          maxLength: 500
+          minLength: 1
+          format: uri
+          title: Url Feed
+        categoria_iptc:
+          $ref: '#/components/schemas/IptcCategory'
+        idioma:
+          $ref: '#/components/schemas/Language'
+        activa:
+          type: boolean
+          title: Activa
+      additionalProperties: false
+      type: object
+      required:
+      - nombre
+      - url_feed
+      - categoria_iptc
+      - idioma
+      - activa
+      title: SourceReplace
+    SourceResponse:
+      properties:
+        id_fuente:
+          type: integer
+          title: Id Fuente
+        id_canal:
+          type: integer
+          title: Id Canal
+        nombre:
+          type: string
+          title: Nombre
+        url_feed:
+          type: string
+          title: Url Feed
+        categoria_iptc:
+          $ref: '#/components/schemas/IptcCategory'
+        idioma:
+          $ref: '#/components/schemas/Language'
+        activa:
+          type: boolean
+          title: Activa
+        fecha_ultima_captura:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Fecha Ultima Captura
+        fecha_alta:
+          type: string
+          format: date-time
+          title: Fecha Alta
+        canal:
+          $ref: '#/components/schemas/ChannelResponse'
+      type: object
+      required:
+      - id_fuente
+      - id_canal
+      - nombre
+      - url_feed
+      - categoria_iptc
+      - idioma
+      - activa
+      - fecha_ultima_captura
+      - fecha_alta
+      - canal
+      title: SourceResponse
+    TermCreate:
+      properties:
+        palabra:
+          type: string
+          title: Palabra
+          examples:
+          - alegría
+        idioma:
+          $ref: '#/components/schemas/Language'
+          examples:
+          - es
+        valor:
+          anyOf:
+          - type: number
+          - type: string
+          title: Valor
+          examples:
+          - '0.75'
+        activo:
+          type: boolean
+          title: Activo
+          default: true
+      type: object
+      required:
+      - palabra
+      - idioma
+      - valor
+      title: TermCreate
+    TermPatch:
+      properties:
+        palabra:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Palabra
+        idioma:
+          anyOf:
+          - $ref: '#/components/schemas/Language'
+          - type: 'null'
+        valor:
+          anyOf:
+          - type: number
+          - type: string
+          - type: 'null'
+          title: Valor
+        activo:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Activo
+      type: object
+      title: TermPatch
+    TermReplace:
+      properties:
+        palabra:
+          type: string
+          title: Palabra
+          examples:
+          - alegría
+        idioma:
+          $ref: '#/components/schemas/Language'
+          examples:
+          - es
+        valor:
+          anyOf:
+          - type: number
+          - type: string
+          title: Valor
+          examples:
+          - '0.75'
+        activo:
+          type: boolean
+          title: Activo
+      type: object
+      required:
+      - palabra
+      - idioma
+      - valor
+      - activo
+      title: TermReplace
+    TermResponse:
+      properties:
+        id_termino:
+          type: integer
+          title: Id Termino
+        palabra:
+          type: string
+          title: Palabra
+        idioma:
+          $ref: '#/components/schemas/Language'
+        valor:
+          type: string
+          title: Valor
+        activo:
+          type: boolean
+          title: Activo
+        fecha_alta:
+          type: string
+          format: date-time
+          title: Fecha Alta
+        fecha_modificacion:
+          type: string
+          format: date-time
+          title: Fecha Modificacion
+      type: object
+      required:
+      - id_termino
+      - palabra
+      - idioma
+      - valor
+      - activo
+      - fecha_alta
+      - fecha_modificacion
+      title: TermResponse

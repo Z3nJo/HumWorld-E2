@@ -6,7 +6,7 @@
 | **Épica / Sprint** | Transversal — Sprint 3 (`DOC-S3`) |
 | **Responsable** | Matías Santos (Arquitectura y Documentación) |
 | **Depende de** | `T-DASH-01`, `E3-H01`, `ADR-000`, `ADR-002` |
-| **Estado** | Publicado — refleja `main` en `bc43219` (16 de octubre de 2026) |
+| **Estado** | Publicado — revisado contra `main` en `5e166a8` (3 de noviembre de 2026, `DOC-04`) |
 | **Fecha** | 2026-10-19 |
 | **Fuente** | Especificación HumWorld 260714, secc. 4.2, 4.3, 4.7 (punto 3) y 10.2; `backend/app/api/`; `frontend/src/App.tsx` |
 
@@ -134,7 +134,7 @@ flowchart LR
 | `/config` | CU-10 | Implementado |
 | `/sentiment` | CU-11 | Implementado solo `POST` |
 | `/dashboards` | CU-02 a CU-06 | Implementado |
-| `/news` | — | Sin endpoint propio. El listado de noticias influyentes vive en `/dashboards/noticias-influyentes` y el purgado automático es un trabajo interno y el manual se lanza desde `/parametros` |
+| `/news` | CU-14 (manual) | Implementado solo `DELETE` (purgado manual). El listado de noticias influyentes vive en `/dashboards/noticias-influyentes` y el purgado automático es un trabajo del Planificador |
 
 ---
 

@@ -1,22 +1,20 @@
 # UML-02 — Diagrama de componentes
 
-> **Actualización geográfica (27-10-2026).** El backend incluye un generador offline de catálogo (REST Countries + GeoNames + overlay curado), un seed idempotente y un reconocedor trie local. `NewsCaptureService` ejecuta sentimiento y atribución en la misma transacción por fuente; el backfill geográfico usa lotes independientes del sentimiento. `DashboardRepository` consulta `NOTICIA_PAIS/PAIS` y conserva `CANAL` para mostrar procedencia y para el respaldo continental sin país. En runtime no se consulta ningún servicio geográfico externo.
-
 | Campo | Valor |
 |---|---|
 | **Identificador** | `UML-02` |
-| **Épica / Sprint** | Transversal — Sprint 3 (`DOC-S3`) |
+| **Épica / Sprint** | Transversal — Sprint 3 (`DOC-S3`); rehecho en notación UML en el Sprint 4 (`DOC-04`) |
 | **Responsable** | Matías Santos (Arquitectura y Documentación) |
 | **Depende de** | `ADR-000` (tres capas), `ADR-001` (cálculo del humor), `ADR-003` (stack), `ADR-004` (frontend), `MOD-01` (modelo E/R) |
-| **Estado** | Publicado — refleja `main` en `bc43219` (16 de octubre de 2026) |
-| **Fecha** | 2026-10-19 |
+| **Estado** | Publicado — refleja `main` en `5e166a8` (3 de noviembre de 2026) |
+| **Fecha** | 2026-11-04 |
 | **Fuente** | Especificación HumWorld 260714, secc. 4.7 (punto 3); `backend/app/`, `frontend/src/`, `opsx/docker-compose.yml` |
 
 ---
 
 ## 1. Alcance
 
-Muestra los componentes desplegables de HumWorld, sus módulos internos y las interfaces por las que se comunican, tal como están en el código. Los nombres de los nodos son módulos o clases reales.
+Diagrama de componentes UML 2 de HumWorld: componentes, puertos, interfaces provistas (círculo) e interfaces requeridas (dependencia `«use»`), tal como están en el código. Los nombres de los componentes son módulos o clases reales.
 
 No incluye el detalle de entidades y atributos, que está en [`MOD-01`](MOD-01-modelo-er-inicial.md), ni el flujo de usuario, que está en [`UML-01`](UML-01-casos-de-uso.md).
 
@@ -24,113 +22,23 @@ No incluye el detalle de entidades y atributos, que está en [`MOD-01`](MOD-01-m
 
 ## 2. Diagrama
 
-```mermaid
-flowchart LR
-    USR["Navegador"]
-    RSS["Feeds RSS externos"]
+![Diagrama de componentes UML de HumWorld](UML-02-diagrama-componentes.svg)
 
-    subgraph DC["Docker Compose · opsx/docker-compose.yml"]
-        subgraph FE["frontend · React 19 + Vite · :5173"]
-            ROUTER["App.tsx<br/>createBrowserRouter"]
-            SHELL["components/AppShell"]
-            PAGES["pages/<br/>Dashboard · Dictionary · Sources · Parameters"]
-            subgraph FEAT["features/ · ADR-004"]
-                F_LAND["landing"]
-                F_DASH["dashboard"]
-                F_DICT["dictionary"]
-                F_SRC["sources"]
-                F_CFG["config"]
-            end
-            HTTP["shared/api/httpClient.ts<br/>VITE_API_URL"]
-            PROXY["Proxy de Vite<br/>/api → VITE_API_TARGET"]
-        end
+Fuente PlantUML: [`UML-02-diagrama-componentes.puml`](UML-02-diagrama-componentes.puml). Para regenerar el SVG tras modificarla:
 
-        subgraph BE["backend · FastAPI · :3000"]
-            MAIN["main.py<br/>lifespan, errores 400/404, /api/docs"]
-            subgraph API["app/api · presentación"]
-                R_CFG["configuration.py"]
-                R_CHN["channels.py"]
-                R_DSH["dashboards.py"]
-                R_DIC["dictionary.py"]
-                R_SEN["sentiment.py"]
-                R_SRC["sources.py"]
-            end
-            subgraph SVC["app/services · lógica de negocio"]
-                S_CFG["ConfigurationService"]
-                S_CHN["ChannelService"]
-                S_DSH["DashboardService"]
-                S_DIC["DictionaryService"]
-                S_SEN["SentimentAnalysisService<br/>SentimentConfigurationService"]
-                S_SRC["SourceService"]
-                S_CAP["NewsCaptureService<br/>HttpxFeedparserClient"]
-                S_PUR["NewsPurgeService"]
-                ENGINE["sentiment_engine.py<br/>calculate_sentiment · ADR-001"]
-            end
-            subgraph REPO["app/repositories · datos"]
-                REPOS["Configuration · Channel · Dashboard · Term<br/>Source · NewsCapture · NewsPurge Repository"]
-            end
-            MODELS["app/models<br/>Channel · RssSource · News · Term · NewsTerm · Configuration"]
-            DB_MOD["database.py · config.py<br/>SQLAlchemy + psycopg"]
-            SCHED["scheduler.py · CaptureScheduler<br/>rss-news-capture · news-purging"]
-            SEEDS["app/seeds<br/>sources · sentiment"]
-        end
-
-        PG[("PostgreSQL 16<br/>postgres:16-alpine · :5432<br/>migraciones Alembic")]
-    end
-
-    USR --> ROUTER
-    ROUTER --> SHELL
-    ROUTER --> F_LAND
-    SHELL --> PAGES
-    PAGES --> F_DASH
-    PAGES --> F_DICT
-    PAGES --> F_SRC
-    PAGES --> F_CFG
-    F_DASH --> HTTP
-    F_DICT --> HTTP
-    F_SRC --> HTTP
-    F_CFG --> HTTP
-    HTTP -->|"HTTP JSON /api/v1"| PROXY
-    PROXY -->|"HTTP JSON /api/v1"| MAIN
-
-    MAIN --> API
-    MAIN -->|"arranca"| SCHED
-    MAIN -->|"siembra al arrancar"| SEEDS
-
-    R_CFG --> S_CFG
-    R_CHN --> S_CHN
-    R_DSH --> S_DSH
-    R_DSH --> S_SEN
-    R_DIC --> S_DIC
-    R_SEN --> S_SEN
-    R_SRC --> S_SRC
-    R_SRC --> S_CAP
-
-    S_CFG -->|"reschedule"| SCHED
-    SCHED --> S_CAP
-    SCHED --> S_PUR
-    SCHED --> S_CFG
-
-    S_CAP --> ENGINE
-    S_SEN --> ENGINE
-    S_CAP -->|"httpx + feedparser"| RSS
-
-    S_CFG --> REPOS
-    S_CHN --> REPOS
-    S_DSH --> REPOS
-    S_DIC --> REPOS
-    S_SEN --> REPOS
-    S_SRC --> REPOS
-    S_CAP --> REPOS
-    S_PUR --> REPOS
-    SEEDS --> MODELS
-
-    REPOS --> MODELS
-    MODELS --> DB_MOD
-    DB_MOD -->|"SQL · DATABASE_URL"| PG
+```bash
+plantuml -tsvg docs/uml/UML-02-diagrama-componentes.puml
 ```
 
-> Las flechas indican dependencia de uso (quién llama a quién). `F_LAND` no llama a la API: la landing muestra datos de ejemplo. El proxy de Vite solo actúa con `VITE_API_URL` vacío, que es el valor por defecto.
+Notación:
+
+| Elemento | Significado |
+|---|---|
+| Rectángulo con el icono de componente | Componente. Los anidados son sus partes internas. |
+| Cuadrado en el borde | Puerto. `frontend` recibe las rutas del navegador y sale por HTTP; `backend` expone HTTP en `:3000`. |
+| Círculo unido con línea continua | Interfaz provista por el componente al que está unida. |
+| Flecha discontinua `«use»` | Interfaz requerida: el componente de origen depende de ella. |
+| Flecha continua | Dependencia directa o delegación (quién llama a quién). |
 
 ---
 
@@ -141,10 +49,10 @@ flowchart LR
 | Componente | Responsabilidad |
 |---|---|
 | `App.tsx` | Rutas: `/` (landing) y, dentro de `AppShell`, `/dashboard`, `/dictionary`, `/fuentes` y `/parametros`. Cualquier otra ruta redirige a `/dictionary`. |
-| `components/AppShell` | Marco común con la navegación lateral. |
-| `pages/` | Pantallas. Código anterior a `ADR-004`, organizado por tipo. |
-| `features/<funcionalidad>/` | Código nuevo según `ADR-004` (estado Propuesto): `domain`, `application` (hooks como `useDashboard`, `useSources`, `useConfig`), `infrastructure` (clientes `dashboardApi`, `dictionaryApi`, `sourcesApi`, `configApi`) y `presentation`. |
-| `features/dashboard/presentation` | `DashboardMap` (d3 y topojson-client), `DashboardTimeline` y `DashboardSummary` (d3), y `DashboardWordCloud` (React sin bibliotecas de gráficos). |
+| `components/AppShell` | Marco común con la navegación lateral. Las pantallas de `pages/` (código anterior a `ADR-004`) montan las funcionalidades. |
+| `features/<funcionalidad>/` | Código según `ADR-004` (estado Propuesto): `domain`, `application` (hooks como `useDashboard`, `useSources`, `useConfig`), `infrastructure` (clientes `dashboardApi`, `dictionaryApi`, `sourcesApi`, `configApi`) y `presentation`. |
+| `features/landing` | Landing pública con mapa de `react-simple-maps`. No consume la API (datos de ejemplo). |
+| `features/dashboard` | `DashboardMap` (d3, d3-geo, topojson-client), `DashboardTimeline` y `DashboardSummary` (d3), y `DashboardWordCloud` (React sin bibliotecas de gráficos). |
 | `shared/api/httpClient.ts` | Único cliente HTTP. Antepone `VITE_API_URL` (vacío por defecto) a las rutas `/api/v1/...`. |
 | Proxy de Vite (`vite.config.ts`) | En desarrollo reenvía `/api` a `VITE_API_TARGET` (por defecto `http://localhost:3000`; en Compose, `http://backend:3000`). |
 
@@ -154,24 +62,29 @@ Las capas y sus reglas R-1 a R-6 son normativas (`ADR-000`): `api` → `services
 
 | Componente | Responsabilidad |
 |---|---|
-| `main.py` | Crea la aplicación FastAPI, monta los seis routers bajo `/api/v1`, traduce las excepciones de dominio a `400`/`404` y los errores de validación a `400`, y publica `/api/docs` y `/api/openapi.json`. Su `lifespan` siembra la configuración y el léxico de sentimiento y arranca el scheduler, solo si `CAPTURE_SCHEDULER_ENABLED` es verdadero. |
-| `app/api/*` | Routers sin reglas de negocio; validan entrada con los esquemas de `schemas.py` y delegan en un servicio. |
-| `app/services/*` | Reglas de negocio. `NewsCaptureService` lee los feeds con `HttpxFeedparserClient` y analiza cada noticia insertada. `DashboardService` valida el filtro y arma los agregados, la evolución, la nube de palabras y las noticias influyentes (`ADR-002`). |
+| `main.py` | Raíz de composición. Crea la aplicación FastAPI, monta los siete routers bajo `/api/v1`, traduce las excepciones de dominio a `400`/`404` y los errores de validación a `400`, y publica `/api/docs` y `/api/openapi.json`. Su `lifespan` siembra la configuración y el léxico de sentimiento y arranca el scheduler, solo si `CAPTURE_SCHEDULER_ENABLED` es verdadero. |
+| `app/api/*` | Routers sin reglas de negocio (`channels`, `configuration`, `dashboards`, `dictionary`, `news`, `sentiment`, `sources`); validan entrada con `schemas.py`, instancian el servicio con su repositorio y delegan. |
+| `DictionaryService`, `SourceService`, `ChannelService`, `ConfigurationService` | Reglas de gestión del diccionario, fuentes, canales y parámetros. `ConfigurationService` reprograma el scheduler mediante `CaptureScheduleProtocol` tras `PUT /config`. |
+| `DashboardService` | Valida el filtro y arma los agregados por continente, país y global, la evolución, la nube de palabras y las noticias influyentes (`ADR-002`). |
+| `SentimentAnalysisService` | Análisis puntual de un texto (`POST /sentiment`), sin persistencia. |
+| `NewsCaptureService` | Lee los feeds a través de `FeedClientProtocol` (implementado por `HttpxFeedparserClient`), inserta las noticias, calcula el humor y la atribución geográfica en la misma transacción por fuente, y procesa las pendientes (`process_pending_news()`). |
+| `GeographicAttributionService` | Reconoce países mencionados en el texto con un reconocedor trie local sobre el catálogo sembrado. No consulta servicios externos. |
+| `NewsPurgeService` | Borra las noticias más antiguas que `noticias_caducidad_dias`; lo usan el trabajo `news-purging` y `DELETE /news` (vía `NewsPurgeApplicationService`). |
 | `sentiment_engine.py` | Motor de cálculo del humor (`ADR-001`): reconoce términos activos del idioma de la noticia y normaliza la puntuación a `[-1, 1]` con la fórmula configurada. No accede a la base de datos y se prueba sin ella. |
-| `app/repositories/*` | Únicas clases que consultan PostgreSQL. `DashboardRepository` ejecuta las consultas agregadas. |
-| `app/models/*` | Modelos SQLAlchemy de las tablas `canal`, `fuente_rss`, `noticia`, `termino`, `noticia_termino` y `configuracion`. |
-| `database.py`, `config.py` | Motor y sesión en caché (`lru_cache`); `config.py` reescribe `postgresql://` a `postgresql+psycopg://`. |
-| `scheduler.py` | `CaptureScheduler` sobre `BackgroundScheduler` de APScheduler (UTC). Dos trabajos con intervalo `captura_periodicidad_minutos`: `rss-news-capture` (captura y `process_pending_news()`) y `news-purging` (borra las noticias más antiguas que `noticias_caducidad_dias`). Exige un único proceso de uvicorn. |
-| `app/seeds/` | `sources.py` (seis canales, uno por continente; se ejecuta a mano) y `sentiment.py` (parámetros y léxico; se ejecuta al arrancar). |
+| `app/repositories/*` | Únicas clases que consultan PostgreSQL. Implementan los protocolos de repositorio que declaran los servicios. `DashboardRepository` ejecuta las consultas agregadas sobre `NOTICIA_PAIS/PAIS`. |
+| `app/models/*` | Modelos SQLAlchemy de las tablas `canal`, `fuente_rss`, `noticia`, `termino`, `noticia_termino`, `configuracion`, `pais`, `pais_alias` y `noticia_pais`. |
+| `scheduler.py` | `CaptureScheduler` sobre `BackgroundScheduler` de APScheduler (UTC). Dos trabajos con intervalo `captura_periodicidad_minutos`: `rss-news-capture` y `news-purging`. Exige un único proceso de uvicorn. |
+| `app/seeds/` | `geography.py` (catálogo de países; se ejecuta al arrancar el contenedor), `sentiment.py` (parámetros y léxico; desde `lifespan`) y `sources.py` (seis canales; se ejecuta a mano). |
+| `scripts/` (fuera del diagrama) | Herramientas offline: `generate_geographic_catalog.py` (REST Countries + GeoNames + overlay curado), `backfill_geography.py` (atribución por lotes de noticias existentes) y `benchmark_geographic_matcher.py`. |
 
 ### 3.3 Infraestructura
 
 | Componente | Detalle |
 |---|---|
 | PostgreSQL 16 | Imagen `postgres:16-alpine`, puerto `5432`, volumen `postgres_data`. Único gestor admitido (`ADR-003`), también en pruebas. |
-| Contenedor `backend` | `python:3.12-slim`; al arrancar ejecuta `alembic upgrade head` y uvicorn en el puerto `3000`. |
+| Contenedor `backend` | `python:3.12-slim`; al arrancar ejecuta `alembic upgrade head`, `python -m app.seeds.geography` y uvicorn en el puerto `3000`. |
 | Contenedor `frontend` | `node:22-alpine`; servidor de desarrollo de Vite en el puerto `5173`. |
-| Feeds RSS externos | Fuente de las noticias. Solo lectura por RSS. |
+| Feeds RSS externos | Fuente de las noticias. Solo lectura por RSS; sin *scraping*. |
 
 ---
 
@@ -181,24 +94,27 @@ Las capas y sus reglas R-1 a R-6 son normativas (`ADR-000`): `api` → `services
 |---|---|---|---|
 | `/api/v1/dashboards` | `api/dashboards.py` | `features/dashboard` | `GET ""`, `GET /geografia`, `GET /evolucion`, `GET /nube-palabras`, `GET /noticias-influyentes` |
 | `/api/v1/dictionary` | `api/dictionary.py` | `features/dictionary` | `GET`, `POST`; `GET`, `PUT`, `PATCH`, `DELETE /{term_id}` |
-| `/api/v1/sources` | `api/sources.py` | `features/sources` | `GET`, `POST`; `GET`, `PUT`, `PATCH`, `DELETE /{source_id}`; `POST /capture` (sin consumidor en el frontend) |
+| `/api/v1/sources` | `api/sources.py` | `features/sources` | `GET`, `POST`; `GET`, `PUT`, `PATCH`, `DELETE /{source_id}`; `POST /capture` |
 | `/api/v1/channels` | `api/channels.py` | `features/sources` | `GET`; `GET`, `PUT`, `PATCH`, `DELETE /{channel_id}` |
 | `/api/v1/config` | `api/configuration.py` | `features/config` | `GET`, `PUT` |
+| `/api/v1/news` | `api/news.py` | `features/config` | `DELETE` (purgado manual) |
 | `/api/v1/sentiment` | `api/sentiment.py` | Ninguno en el frontend (Swagger o clientes externos) | `POST` |
-| `/api/docs`, `/api/openapi.json` | `main.py` | Desarrolladores | Documentación OpenAPI |
-| `CaptureScheduleProtocol.reschedule(minutos)` | `scheduler.py` | `ConfigurationService` | Reprograma los dos trabajos tras `PUT /config` |
+| `/api/docs`, `/api/openapi.json` | `main.py` | Desarrolladores | Documentación OpenAPI; copia en [`docs/openapi/openapi.yaml`](../openapi/openapi.yaml) |
+| `CaptureScheduleProtocol` | `CaptureScheduler` | `ConfigurationService` | `reschedule(minutos)` tras `PUT /config` |
+| `FeedClientProtocol` | `HttpxFeedparserClient` | `NewsCaptureService` | Descarga y parseo de un feed |
 | `calculate_sentiment(...)` | `sentiment_engine.py` | `NewsCaptureService`, `SentimentAnalysisService` | Cálculo en memoria, sin base de datos |
-| SQL sobre `DATABASE_URL` | PostgreSQL 16 | `database.py` (vía repositorios) | Lectura y escritura de las seis tablas |
-| RSS sobre HTTP | Medios externos | `HttpxFeedparserClient` | Descarga y parseo de feeds |
+| Protocolos de repositorio (`*RepositoryProtocol`) | `app/repositories` | Servicios | Persistencia y consultas |
+| SQL sobre `DATABASE_URL` | PostgreSQL 16 | `app/models` y repositorios (SQLAlchemy + psycopg) | Lectura y escritura de las nueve tablas |
+| RSS sobre HTTP | Medios externos | `HttpxFeedparserClient` | Lectura de feeds (httpx + feedparser) |
 
 ---
 
 ## 5. Encaje con los ADR
 
-- **ADR-000.** El diagrama respeta el sentido `api` → `services` → `repositories` → `models`. El scheduler y `main.py` actúan como raíz de composición: instancian servicios y repositorios, pero no contienen reglas de negocio.
-- **ADR-001.** El motor de sentimiento es un módulo de la capa de servicios sin dependencias de base de datos.
-- **ADR-002.** El orden y el límite de las noticias influyentes se ejecutan en `DashboardRepository.influential_news`; el frontend no reordena.
-- **ADR-004.** Convive con el código por tipo de `pages/`. Las funcionalidades nuevas (`dashboard`, `sources`, `config`, `landing`) ya siguen la estructura por funcionalidad.
+- **ADR-000.** Los servicios dependen de protocolos de repositorio, no de las clases concretas; los repositorios los implementan. `main.py`, los routers y el scheduler actúan como raíz de composición: instancian servicios y repositorios, pero no contienen reglas de negocio.
+- **ADR-001.** El motor de sentimiento es un componente de la capa de servicios que solo provee `calculate_sentiment(...)` y no depende de la base de datos.
+- **ADR-002.** El orden y el límite de las noticias influyentes se ejecutan en `DashboardRepository`; el frontend no reordena.
+- **ADR-004.** Convive con el código por tipo de `pages/`. Las funcionalidades (`dashboard`, `dictionary`, `sources`, `config`, `landing`) siguen la estructura por funcionalidad.
 
 ---
 

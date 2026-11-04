@@ -1,0 +1,117 @@
+@startuml UML-02-diagrama-componentes
+' Fuente del diagrama de UML-02. Exportar con:
+'   plantuml -tsvg docs/uml/UML-02-diagrama-componentes.puml
+skinparam componentStyle uml2
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam nodesep 40
+skinparam ranksep 60
+
+title HumWorld — Diagrama de componentes (UML-02)
+
+component "frontend «SPA React 19 + Vite»" as FE {
+  portin "rutas / · /dashboard · /dictionary\n/fuentes · /parametros" as FeIn
+  component "App.tsx\n«router»" as Router
+  component "AppShell" as Shell
+  component "landing" as FLanding
+  component "dashboard" as FDash
+  component "dictionary" as FDict
+  component "sources" as FSrc
+  component "config" as FCfg
+  component "shared/api/httpClient" as Http
+  portout "HTTP JSON" as FeOut
+
+  FeIn --> Router
+  Router --> FLanding
+  Router --> Shell
+  Shell --> FDash
+  Shell --> FDict
+  Shell --> FSrc
+  Shell --> FCfg
+  FDash --> Http
+  FDict --> Http
+  FSrc --> Http
+  FCfg --> Http
+  Http --> FeOut
+}
+
+interface "API REST /api/v1\n(OpenAPI en /api/docs)" as IRest
+
+component "backend «FastAPI · :3000»" as BE {
+  portin "HTTP :3000" as BeIn
+
+  component "app.main\n«composition root»" as Main
+  component "app.api\n«routers»" as Api
+
+  component "app.services" as Svc {
+    component "Dictionary · Source ·\nChannel · Configuration\nService" as SCrud
+    component "DashboardService" as SDash
+    component "SentimentAnalysisService" as SSent
+    component "NewsCaptureService" as SCap
+    component "NewsPurgeService" as SPur
+    component "GeographicAttributionService" as SGeo
+    component "sentiment_engine\n«ADR-001»" as Engine
+    component "HttpxFeedparserClient" as Feed
+
+    interface "FeedClientProtocol" as IFeed
+    interface "calculate_sentiment()" as ICalc
+    interface "Repository protocols" as IRepo
+
+    Feed - IFeed
+    Engine -up- ICalc
+    SCap ..> IFeed : <<use>>
+    SCap ..> ICalc : <<use>>
+    SSent ..> ICalc : <<use>>
+    SCap --> SGeo
+    SCrud ..> IRepo : <<use>>
+    SDash ..> IRepo : <<use>>
+    SSent ..> IRepo : <<use>>
+    SCap ..> IRepo : <<use>>
+    SPur ..> IRepo : <<use>>
+  }
+
+  component "CaptureScheduler\n«APScheduler»" as Sched
+  interface "CaptureScheduleProtocol" as ISched
+  component "app.repositories" as Repo
+  component "app.models\n«SQLAlchemy ORM»" as Models
+  component "app.seeds\n(geography · sentiment · sources)" as Seeds
+
+  BeIn --> Main
+  Main --> Api
+  Main --> Sched : arranca
+  Main --> Seeds : siembra
+  Api --> SCrud
+  Api --> SDash
+  Api --> SSent
+  Api --> SCap
+  Api --> SPur
+  Sched - ISched
+  SCrud ..> ISched : <<use>> reschedule
+  Sched --> SCap : rss-news-capture
+  Sched --> SPur : news-purging
+  Repo - IRepo
+  Repo --> Models
+  Seeds --> Models
+}
+
+component "PostgreSQL 16\n«database»" as PG
+interface "SQL · DATABASE_URL" as ISql
+component "Feeds RSS externos\n«sistema externo»" as RSS
+interface "RSS sobre HTTP" as IRss
+
+PG - ISql
+RSS - IRss
+
+IRest -down- BeIn
+
+FeOut ..> IRest : <<use>>
+
+Models ..> ISql : <<use>>
+Feed ..> IRss : <<use>>
+
+note bottom of FE
+  En desarrollo el proxy de Vite reenvía /api
+  a VITE_API_TARGET (en Compose, http://backend:3000).
+  landing no consume la API (datos de ejemplo).
+end note
+@enduml
