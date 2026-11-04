@@ -51,7 +51,7 @@ del fin del sprint en Jira (30 de octubre).
 | --- | --- | --- |
 | Atribución geográfica por país mencionado (`NOTICIA_PAIS`, catálogo local, backfill) | #75-#82, #86-#88 y #92, 2026-10-27 a 2026-10-30 | Sin ID de backlog (series `geo-01` a `geo-11`); specs `news-geographic-attribution` y `dashboard-aggregation` actualizadas |
 | Rediseño de la landing con globo de partículas y migración a pnpm | #72, 2026-10-26 | Sin ID de backlog |
-| Catálogo inicial de sentimiento ampliado a 8000 términos | #98, 2026-10-30 | Sin ID de backlog; cambio OpenSpec `expand-sentiment-seed-catalog` activo |
+| Catálogo inicial de sentimiento ampliado a 8000 términos | #98, 2026-10-30 | Sin ID de backlog; cambio OpenSpec `expand-sentiment-seed-catalog` archivado el 2026-11-04 |
 | Captura manual desde la pantalla de fuentes (`E1-H05`, interfaz) | #90, 2026-10-30 | Historia del Sprint 1; se agrega su interfaz |
 | Mejoras del dashboard: agregado global, países desde la API y animación del mapa (`E3-H01`) | #101-#103 y #105, 2026-11-03 | Historia del Sprint 3; integradas después del congelamiento |
 | Claridad del alta de fuentes (`E1-H01`) | #104, 2026-11-03 | Historia del Sprint 1; integrada después del congelamiento |
@@ -83,7 +83,7 @@ Test Files  27 passed (27)
 | Migraciones Alembic | 6 (1 nueva: esquema geográfico, PR #78) | — |
 | Análisis SonarCloud del último PR (#106) | Superado | Sin incidencias críticas ni bloqueantes |
 
-La validación estricta de especificaciones OpenSpec no se revalidó para este cierre.
+`openspec validate --specs --strict` (4 de noviembre de 2026, tras archivar los cambios): 18 especificaciones válidas, 0 con errores.
 
 ## Contratos y documentación
 
@@ -92,10 +92,25 @@ La validación estricta de especificaciones OpenSpec no se revalidó para este c
 | `dashboard-aggregation` | `/api/v1/dashboards` y sus cuatro subrutas | `openspec/specs/` y `opsx/contracts/` |
 | `news-geographic-attribution` | Atribución por país en captura y backfill | `openspec/specs/` y `opsx/contracts/` |
 | `news-purging` | Trabajo `news-purging` y `DELETE /api/v1/news` | `openspec/specs/` y `opsx/contracts/` |
-| Capacidades frontend (`app-shell`, `dictionary-ui`, `dictionary-ui-pagination`, `frontend-runtime`, `parameters-ui`, `sources-ui`) | Pantallas React | `openspec/specs/frontend/` y `opsx/contracts/frontend/` |
+| `deployment-credentials` (nueva) | Credenciales PostgreSQL externas en Docker y CI | `openspec/specs/` y `opsx/contracts/` |
+| Capacidades frontend (`app-shell`, `dictionary-ui`, `dictionary-ui-pagination`, `frontend-runtime`, `influential-news-ui` (nueva), `parameters-ui`, `sources-ui`) | Pantallas React | `openspec/specs/frontend/` y `opsx/contracts/frontend/` |
 
-Desde el PR #106, `opsx/sync_contracts.py` publica en `opsx/contracts/` las 16
+Desde el PR #106, `opsx/sync_contracts.py` publica en `opsx/contracts/` todas las
 especificaciones de `openspec/specs/` (antes, 7) y CI verifica que estén sincronizadas.
+
+El 4 de noviembre se archivaron los diez cambios OpenSpec que seguían activos, todos
+completados. Ya no queda ningún cambio activo en `openspec/changes/`, y las especificaciones
+publicadas pasan de 16 a 18.
+
+| Cambio | Efecto en `openspec/specs/` |
+| --- | --- |
+| `e2-h02-news-sentiment`, `e4-h03-manual-news-purging`, `e1-h05-e4-h03-manual-capture-purge-ui` | Ninguno (`--skip-specs`): sus requisitos ya estaban en las especificaciones principales; en `e2-h02`, en una versión posterior y más detallada |
+| `e3-h02-influential-news-list` | Crea `frontend/influential-news-ui` (5 requisitos) |
+| `expand-sentiment-seed-catalog` | Modifica el léxico inicial de `news-sentiment-analysis` (de 30 pares de conceptos a 4.000 términos por idioma) |
+| `remove-exposed-postgresql-passwords` | Crea `deployment-credentials` (4 requisitos) |
+| `restrict-geographic-catalog-input-paths`, `restrict-geographic-catalog-output-paths` | Agregan un requisito cada uno a `news-geographic-attribution` |
+| `restrict-frontend-docker-build-context` | Agrega un requisito a `frontend/frontend-runtime` |
+| `pin-pnpm-action-commit` | Agrega un requisito a `python-postgres-cicd-stack` |
 
 Documentación publicada en el sprint:
 
@@ -128,7 +143,7 @@ sprint siguiente.
 | `E3-H02` sin cierre formal | Cerrado | Issues #67 y #68 cerrados, PR #70 fusionado, Jira en Done y evidencia publicada |
 | ADR-004 en estado Propuesto | Cerrado | Aceptado por el equipo |
 | Enlace `/operaciones` sin ruta | Cerrado | `AppShell.tsx` ya no lo enlaza |
-| Cambios OpenSpec sin archivar | Parcial | `e4-h02-news-purging` archivado (PR #73); `e2-h02-news-sentiment` sigue activo |
+| Cambios OpenSpec sin archivar | Cerrado | `e4-h02-news-purging` archivado (PR #73); el resto, incluido `e2-h02-news-sentiment`, archivado el 2026-11-04 (ver [Contratos y documentación](#contratos-y-documentación)) |
 | Prueba sobre SQLite | Abierto y ampliado | Seis ficheros de `backend/tests/` crean motores SQLite en memoria (`test_dashboard_evolution.py`, `test_dashboard_geographic_repository.py`, `test_geographic_seed.py`, `test_channel_geographic_reconciliation.py`, `test_source_seed.py`, `test_sentiment_analysis_service.py`) |
 | Protocolo C-V9 de ADR-001 | Abierto | Sin evidencia en el repositorio de la ejecución V-0 a V-5 con 100 noticias reales |
 | Rango de `TERMINO.valor` | Abierto | `schemas.py` no valida `[-10, 10]` y no hay restricción en la base de datos |
@@ -157,7 +172,6 @@ Sección 4 de la [Definition of Done](../definition-of-done.md).
 | `FIX-01` y `DEMO-01` | Postergados del Sprint 4 | Ejecutar antes de la demostración |
 | Puntos 6 a 9 de la DoD de Release | Verificación del README en máquina limpia, registro de prompts y ficheros de contexto, entregable `.tgz` y acceso del profesor | Completar dentro de `FIX-01` y `DEMO-01` |
 | Pruebas sobre SQLite | Seis ficheros contradicen la regla de usar solo PostgreSQL 16 | `FIX-01` |
-| Cambios OpenSpec activos | Diez cambios en `openspec/changes/` sin archivar, entre ellos `e2-h02-news-sentiment`, `e3-h02-influential-news-list` y `e4-h03-manual-news-purging` | Archivar por sus responsables |
 | Protocolo C-V9 y rango de `TERMINO.valor` | Arrastre del Sprint 2 | Alinear `ADR-001` o el código |
 | Prueba omitida en backend | CI reporta `1 skipped` | Identificar el motivo (`pytest -rs`) |
 | Dependencias sin uso | `chart.js` y `d3-cloud` figuran en `frontend/package.json` y no se importan | Quitarlas |
