@@ -50,7 +50,7 @@ Notación:
 |---|---|
 | `App.tsx` | Rutas: `/` (landing) y, dentro de `AppShell`, `/dashboard`, `/dictionary`, `/fuentes` y `/parametros`. Cualquier otra ruta redirige a `/dictionary`. |
 | `components/AppShell` | Marco común con la navegación lateral. Las pantallas de `pages/` (código anterior a `ADR-004`) montan las funcionalidades. |
-| `features/<funcionalidad>/` | Código según `ADR-004` (estado Propuesto): `domain`, `application` (hooks como `useDashboard`, `useSources`, `useConfig`), `infrastructure` (clientes `dashboardApi`, `dictionaryApi`, `sourcesApi`, `configApi`) y `presentation`. |
+| `features/<funcionalidad>/` | Código según `ADR-004` (Aceptado): `domain`, `application` (hooks como `useDashboard`, `useSources`, `useConfig`), `infrastructure` (clientes `dashboardApi`, `dictionaryApi`, `sourcesApi`, `configApi`) y `presentation`. |
 | `features/landing` | Landing pública con mapa de `react-simple-maps`. No consume la API (datos de ejemplo). |
 | `features/dashboard` | `DashboardMap` (d3, d3-geo, topojson-client), `DashboardTimeline` y `DashboardSummary` (d3), y `DashboardWordCloud` (React sin bibliotecas de gráficos). |
 | `shared/api/httpClient.ts` | Único cliente HTTP. Antepone `VITE_API_URL` (vacío por defecto) a las rutas `/api/v1/...`. |

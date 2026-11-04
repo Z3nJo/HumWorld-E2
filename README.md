@@ -157,6 +157,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/sprints/planificacion-sprint-2.md`](docs/sprints/planificacion-sprint-2.md) | Planificación del Sprint 2 (35 puntos) |
 | [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md) | Resultado del Sprint 2, métricas y recalibración de velocidad |
 | [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) | Resultado del Sprint 3, métricas de CI, deuda abierta y recalibración |
+| [`docs/sprints/cierre-sprint-4.md`](docs/sprints/cierre-sprint-4.md) | Resultado del Sprint 4, métricas finales, estado de la deuda y verificación de la DoD de Release |
 | [`docs/requisitos-resumen.md`](docs/requisitos-resumen.md) | Resumen de alcance, funcionalidades y endpoints |
 | `openspec/` | Única fuente editable de propuestas, especificaciones y tareas OpenSpec; incluye las capacidades frontend bajo `openspec/specs/frontend/` |
 | `opsx/contracts/` | Copia entregable de todas las especificaciones de `openspec/specs/`, generada con `python opsx/sync_contracts.py` (CI ejecuta `--check`) |
@@ -185,13 +186,12 @@ El proyecto se desarrolla con asistentes de IA bajo un flujo guiado por especifi
 - **Sprint 1 — Captura RSS: cerrado.** Se entregaron los 31 puntos comprometidos (`INFRA-02`, `CICD-00`, E1-H01, E1-H02, E1-H04, E4-H01, E1-H03, E1-H05, `QA-S1` e `INT-S1`).
 - **Sprint 2 — Motor de sentimiento y purgado: cerrado.** Se entregaron los 35 puntos comprometidos: E2-H01-API, ADR-001, E2-H02, E2-H03, E2-H04, E4-H02, `QA-S2`, `INT-S2` y `DOC-S2`.
 - **Sprint 3 — Interfaz de usuario y dashboards: cerrado.** Se entregaron los 41 puntos comprometidos: E2-H01-UI, T-DASH-01, E3-H01, E3-H03, E4-H04, ADR-002, `QA-S3`, `INT-S3` y `DOC-S3`.
+- **Sprint 4 — Estabilización y cierre: cerrado.** Se entregaron 22 de los 30 puntos comprometidos: `E3-H02`, `E4-H03`, `INT-01`, `SNQ-04`, `QA-01`, `QA-02`, `SWG-04` y `DOC-04`. `FIX-01` y `DEMO-01` se ejecutan después del cierre. Fuera del alcance comprometido se integró la atribución geográfica por país mencionado (`NOTICIA_PAIS`, catálogo local) y el catálogo inicial de sentimiento de 8000 términos. En CI sobre `main` (4 de noviembre de 2026) la suite backend tiene 347 pruebas y 97,30 % de cobertura, y la suite frontend, 213 pruebas.
+
+El detalle de cada sprint está en sus documentos de cierre: [Sprint 1](docs/sprints/cierre-sprint-1.md), [Sprint 2](docs/sprints/cierre-sprint-2.md), [Sprint 3](docs/sprints/cierre-sprint-3.md) y [Sprint 4](docs/sprints/cierre-sprint-4.md).
 
 El sistema cuenta con el motor de sentimiento en español e inglés formalizado en ADR-001, con cálculo y persistencia del humor por noticia en PostgreSQL, desglose de términos en `NOTICIA_TERMINO`, léxico curado reproducible (catálogo inicial ampliado a 8000 términos en el Sprint 4), CRUD de diccionario en `/api/v1/dictionary`, endpoint `POST /api/v1/sentiment` para análisis puntual y purgado periódico de noticias caducadas. La suite cuenta con 168 pruebas y 97,62 % de cobertura (CI y revalidación local del 28 de septiembre de 2026), con verificación contra PostgreSQL 16 real.
 
 La pertenencia temática se resuelve mediante `NOTICIA_PAIS → PAIS`: admite múltiples países por noticia, conserva la evidencia del alias, versiona la clasificación y evita duplicaciones en los agregados. El canal sigue representando la procedencia editorial y solo actúa como respaldo cuando el texto no menciona un país.
 
 Desde el Sprint 3 cuenta además con una interfaz React/Vite: dashboard con mapa mundial por continente y país, evolución diaria y nube de palabras (`/dashboard`), gestión del diccionario (`/dictionary`) y panel de administración de fuentes, canales y parámetros (`/fuentes`, `/parametros`), sobre los endpoints `/api/v1/dashboards` y `/api/v1/channels`. En CI sobre `main` (16 de octubre de 2026) la suite backend tiene 242 pruebas y 97,82 % de cobertura, y la suite frontend, 136 pruebas.
-
-El detalle del resultado, las métricas y la recalibración de velocidad están en [`docs/sprints/cierre-sprint-3.md`](docs/sprints/cierre-sprint-3.md) (Sprint 2: [`docs/sprints/cierre-sprint-2.md`](docs/sprints/cierre-sprint-2.md)).
-
-- **Sprint 4 — Estabilización y cierre.** Integrado en `main` (PR #72 a #105): noticias influyentes (`E3-H02`), purgado manual por API e interfaz (`E4-H03`), atribución geográfica por país mencionado (`NOTICIA_PAIS`, catálogo local), catálogo inicial de sentimiento ampliado a 8000 términos, eliminación de credenciales PostgreSQL versionadas, pruebas de integración finales (`QA-01`) y cobertura sobre el 80 % (`QA-02`).
