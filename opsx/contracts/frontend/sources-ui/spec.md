@@ -1,0 +1,109 @@
+# frontend/sources-ui Specification
+
+## Purpose
+
+Proporcionar una pantalla de administración de fuentes y canales RSS que reproduzca con fidelidad pixel-perfect la experiencia visual del prototipo de HumWorld (`HumWorld Prototipo.html`, ruta `#/fuentes`) y conecte todas las operaciones a la API REST real de backend (`GET /channels`, `GET /sources`, `POST /sources`, `PATCH /channels/{id}`, `DELETE /channels/{id}`, `PATCH /sources/{id}`, `DELETE /sources/{id}`).
+
+## Vocabulary Mapping
+
+| UI (prototipo) | Backend | Código interno |
+|---|---|---|
+| "Fuente" (fila principal) | `canal` (`/channels`) | `Channel` |
+| "Canal RSS" (subfila) | `fuente_rss` (`/sources`) | `RssSource` |
+| Fuente.url | `canal.url_sitio` | `siteUrl` |
+| Fuente.activa | `canal.activo` | `Channel.active` |
+| Canal.url_rss | `fuente_rss.url_feed` | `feedUrl` |
+| Canal.categoria | `fuente_rss.categoria_iptc` | `category` / `iptcCategory` |
+| Canal.activo | `fuente_rss.activa` | `RssSource.active` |
+| Idioma de la fuente | `fuente_rss.idioma` (por feed) | `languages` (derivado) |
+| País | `canal.pais` (por medio, ISO-2 o null) | `Channel.country` |
+
+## Requirements
+
+### Requirement: Renderizado idéntico al prototipo de interfaz
+
+La interfaz SHALL conservar los estilos, tipografías (Newsreader, IBM Plex Sans, IBM Plex Mono), componentes (`.sw`, `.pill`, `.seg`, `.sel`, `.inp`, `.btn`, `.drawer`, `.modal`, `.t`, `.sub`, `.empty`, `.meta`, `.help`, `.errtxt`), estructura de tabla y responsive (≤820px) definidos en el prototipo de HumWorld.
+
+#### Scenario: Carga inicial
+- **WHEN** el usuario navega a `/fuentes`
+- **THEN** la aplicación consulta en paralelo `GET /channels` y `GET /sources`
+- **AND** agrupa las fuentes RSS bajo sus respectivos canales, ordenados por `id_canal` ascendente
+- **AND** muestra todos los medios colapsados; el usuario expande cada uno manualmente
+- **AND** muestra el contador `{n} fuentes · {m} canales` según los filtros aplicados
+- **AND** muestra las pills de idioma (ES, EN o ambas) derivadas de los feeds del canal
+
+#### Scenario: Filtrado local
+- **WHEN** el usuario selecciona un continente o un estado (Todas, Activas, Inactivas)
+- **THEN** el filtro se aplica localmente sobre todos los datos cargados sin realizar peticiones redundantes
+
+### Requirement: Gestión de fuentes y canales con la API real
+
+La interfaz SHALL soportar creación, edición, activación/desactivación y desactivación lógica mediante las rutas de `/api/v1`.
+
+#### Scenario: Activación y desactivación optimista
+- **WHEN** el usuario acciona el interruptor de un medio
+- **THEN** se actualiza inmediatamente la UI y se envía `PATCH /channels/{id} { activo }`
+- **AND** ante error se revierte el estado optimista y se notifica el fallo
+- **WHEN** el usuario acciona el interruptor de un canal RSS
+- **THEN** se actualiza inmediatamente la UI y se envía `PATCH /sources/{id} { activa }`
+- **AND** ante error se revierte el estado optimista y se notifica el fallo
+
+#### Scenario: Creación de fuente con canales (POST /sources)
+- **WHEN** el usuario completa el drawer con Nombre del medio, Sitio web del medio (opcional, solo referencia), Idioma, Continente, País y al menos un canal con su URL del feed RSS
+- **THEN** se envía un payload atómico `POST /sources` con `{ channel, sources }`
+- **AND** el nombre de cada fuente RSS se genera automáticamente como `"{medio} · {categoría IPTC}"` (máx. 150 caracteres)
+- **AND** tras éxito se muestra toast confirmatorio, se recargan datos y se expande el nuevo medio
+
+#### Scenario: Edición de fuente con cálculo de diferencias (diff secuencial)
+- **WHEN** el usuario guarda cambios en una fuente existente
+- **THEN** se ejecuta secuencialmente: `PATCH /channels/{id}` (si cambiaron atributos del medio) → `PATCH /sources/{id}` (por cada feed modificado) → `POST /sources { channel_id, sources }` (por feeds añadidos) → `DELETE /sources/{id}` (por feeds eliminados)
+- **AND** ante error en cualquier paso se detiene el proceso, se recargan datos y se mantiene el drawer abierto mostrando el error
+
+#### Scenario: Desactivación lógica de medio (DELETE /channels/{id})
+- **WHEN** el usuario pulsa «Eliminar» en una fuente
+- **THEN** se muestra un modal veraz indicando que se desactivará la fuente conservando sus canales RSS y noticias
+- **AND** al confirmar se ejecuta `DELETE /channels/{id}`, desactivando el medio en backend
+
+### Requirement: Tratamiento robusto de errores de API
+
+La interfaz SHALL procesar respuestas de error del backend (400, 404, 500) y parsear listas de validación de Pydantic concatenando los mensajes legibles. Si ocurre un error 400 por duplicidad, el mensaje permanece visible en toast y el drawer no se cierra para evitar pérdida de datos.
+
+#### Scenario: Conservar el formulario ante un error de validación
+- **WHEN** una operación recibe un error 400 por duplicidad con uno o más mensajes de validación
+- **THEN** la interfaz muestra los mensajes legibles concatenados en un toast
+- **AND** conserva abierto el drawer con los datos ingresados
+
+### Requirement: Captura manual de fuentes RSS desde la interfaz
+
+La interfaz SHALL permitir ejecutar la captura RSS inmediata mediante `POST /api/v1/sources/capture`, tanto para todas las fuentes elegibles como para los canales RSS de un medio concreto, y SHALL informar el resultado devuelto por la API sin recalcularlo en el cliente.
+
+#### Scenario: Capturar todas las fuentes elegibles
+- **WHEN** el usuario pulsa «Capturar ahora» en la barra superior de `/fuentes`
+- **THEN** se envía `POST /api/v1/sources/capture` sin cuerpo
+- **AND** al responder `200` se muestra un toast con `inserted` como noticias insertadas, `failed_sources` como fuentes fallidas y la cantidad de `skipped_source_ids` como fuentes omitidas
+
+#### Scenario: Capturar los canales RSS de un medio
+- **WHEN** el usuario pulsa «Capturar» en la fila de un medio activo con al menos un canal RSS activo
+- **THEN** se envía `POST /api/v1/sources/capture` con `{ "source_ids": [...] }` que contiene únicamente los identificadores de los canales RSS activos de ese medio
+- **AND** al responder `200` se muestra el mismo resumen de resultado que en la captura global
+
+#### Scenario: Medio sin canales RSS capturables
+- **WHEN** un medio está inactivo o no tiene canales RSS activos
+- **THEN** su acción «Capturar» se muestra deshabilitada
+- **AND** no se envía ninguna petición de captura para ese medio
+
+#### Scenario: Evitar capturas simultáneas
+- **WHEN** hay una captura en curso iniciada desde la pantalla
+- **THEN** «Capturar ahora» y todas las acciones «Capturar» por medio permanecen deshabilitadas
+- **AND** la acción que inició la captura indica que la operación está en curso
+- **AND** las acciones se rehabilitan cuando la petición finaliza con éxito o con error
+
+#### Scenario: Informar fuentes con error
+- **WHEN** la respuesta `200` incluye uno o más elementos de `sources` con `error` distinto de `null`
+- **THEN** el toast de resultado indica que hubo fuentes fallidas con su cantidad
+- **AND** se presenta con el estilo de error en lugar del de éxito
+
+#### Scenario: Fallo de la petición de captura
+- **WHEN** `POST /api/v1/sources/capture` responde `400`, `404` o `500`, o la red falla
+- **THEN** se muestra un toast de error con el mensaje legible obtenido según el tratamiento de errores de API existente
+- **AND** los datos de la tabla y los filtros aplicados se conservan sin cambios
