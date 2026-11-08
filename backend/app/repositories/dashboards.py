@@ -46,6 +46,20 @@ class InfluentialNewsRecord:
     paises_atribuidos: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class NewsBreakdownTermRecord:
+    id_termino: int
+    palabra: str
+    ocurrencias: int
+    aporte_humor: Decimal
+
+
+@dataclass(frozen=True)
+class NewsBreakdownRecord:
+    valor_humor: Decimal
+    terminos: tuple[NewsBreakdownTermRecord, ...]
+
+
 class DashboardRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -141,6 +155,25 @@ class DashboardRepository:
             )
             for row in rows
         ]
+
+    def news_term_breakdown(self, news_id: int) -> NewsBreakdownRecord | None:
+        humor = self._session.scalar(
+            select(News.valor_humor).where(News.id_noticia == news_id)
+        )
+        if humor is None:
+            return None
+        rows = self._session.execute(
+            select(
+                Term.id_termino, Term.palabra, NewsTerm.ocurrencias, NewsTerm.aporte_humor,
+            )
+            .join(Term, Term.id_termino == NewsTerm.id_termino)
+            .where(NewsTerm.id_noticia == news_id)
+            .order_by(func.abs(NewsTerm.aporte_humor).desc(), Term.palabra.asc())
+        )
+        return NewsBreakdownRecord(
+            valor_humor=humor,
+            terminos=tuple(NewsBreakdownTermRecord(*row) for row in rows),
+        )
 
     def aggregate_countries(
         self, *, start_at: datetime, end_at: datetime,

@@ -13,6 +13,7 @@ from app.api.schemas import (
     InfluentialTermsResponse,
     DashboardEvolutionResponse,
     InfluentialNewsResponse,
+    SentimentResponse,
 )
 from app.database import get_db
 from app.models.domains import Continent
@@ -101,6 +102,20 @@ def get_influential_news(
     return service.get_influential_news(
         date_from=fecha_desde, date_to=fecha_hasta, continent=continente, country=pais,
     )
+
+
+@dashboard_router.get(
+    "/noticias/{id_noticia}/terminos", response_model=SentimentResponse,
+    summary="Desglose de terminos que componen el humor de una noticia",
+    responses={**ERROR_RESPONSES, 404: {
+        "model": ErrorResponse, "description": "Noticia no encontrada o sin analizar",
+    }},
+)
+def get_news_breakdown(
+    service: Annotated[DashboardService, Depends(get_dashboard_service)],
+    id_noticia: int,
+) -> dict[str, object]:
+    return service.get_news_breakdown(id_noticia)
 
 
 @dashboard_router.get(

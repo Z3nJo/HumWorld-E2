@@ -7,10 +7,12 @@ from typing import Protocol
 from app.models.domains import Continent
 from app.repositories.dashboards import (
     DashboardAggregateRecord, DashboardDayRecord, InfluentialNewsRecord,
-    InfluentialTermRecord,
+    InfluentialTermRecord, NewsBreakdownRecord,
 )
+from app.services.sources import ResourceNotFoundError
 
 THREE_DECIMALS = Decimal("0.001")
+TWO_DECIMALS = Decimal("0.01")
 COUNTRY_PATTERN = re.compile(r"^[A-Za-z]{2}$")
 
 
@@ -88,6 +90,8 @@ class DashboardRepositoryProtocol(Protocol):
         continent: str | None, country: str | None,
     ) -> list[InfluentialNewsRecord]: ...
 
+    def news_term_breakdown(self, news_id: int) -> NewsBreakdownRecord | None: ...
+
     def aggregate(
         self,
         *,
@@ -164,6 +168,26 @@ class DashboardService:
         return {
             "fecha_desde": date_from, "fecha_hasta": date_to,
             "continente": continent, "pais": query.country, "noticias": records,
+        }
+
+    def get_news_breakdown(self, news_id: int) -> dict[str, object]:
+        record = self._repository.news_term_breakdown(news_id)
+        if record is None:
+            raise ResourceNotFoundError("Noticia no encontrada o sin analizar")
+        return {
+            "valor_humor": record.valor_humor,
+            "terminos": [
+                {
+                    "id_termino": term.id_termino,
+                    "palabra": term.palabra,
+                    "valor": (term.aporte_humor / term.ocurrencias).quantize(
+                        TWO_DECIMALS, rounding=ROUND_HALF_UP
+                    ),
+                    "ocurrencias": term.ocurrencias,
+                    "aporte_humor": term.aporte_humor,
+                }
+                for term in record.terminos
+            ],
         }
 
     def get_dashboard(

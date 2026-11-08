@@ -522,3 +522,41 @@ def test_influential_terms_aggregate_order_filter_and_limit(engine) -> None:
         )
         assert len(smaller_set) == 1
         assert smaller_set[0].term_id == europe_term.id_termino
+
+
+def test_news_term_breakdown_orders_by_impact_and_keeps_history(engine) -> None:
+    registered_at = datetime(2026, 9, 1, tzinfo=UTC)
+    with Session(engine, expire_on_commit=False) as session:
+        source = _source(session, "breakdown", "America", "CL")
+        news = _news(session, source, "analyzed", registered_at, Decimal("-0.400"))
+        other = _news(session, source, "other", registered_at, Decimal("0.100"))
+        crisis = _term(session, "crisis", active=False)
+        _contribution(session, news, crisis, occurrences=2, contribution=Decimal("-8.00"))
+        zeta = _term(session, "zeta")
+        _contribution(session, news, zeta, occurrences=1, contribution=Decimal("3.00"))
+        alfa = _term(session, "alfa")
+        _contribution(session, news, alfa, occurrences=3, contribution=Decimal("-3.00"))
+        _contribution(session, other, zeta, occurrences=1, contribution=Decimal("9.00"))
+        crisis.valor = Decimal("-9.0")
+        session.commit()
+
+        record = DashboardRepository(session).news_term_breakdown(news.id_noticia)
+
+        assert record is not None
+        assert record.valor_humor == Decimal("-0.400")
+        assert [(t.palabra, t.ocurrencias, t.aporte_humor) for t in record.terminos] == [
+            ("crisis", 2, Decimal("-8.00")),
+            ("alfa", 3, Decimal("-3.00")),
+            ("zeta", 1, Decimal("3.00")),
+        ]
+
+
+def test_news_term_breakdown_returns_none_for_missing_or_unanalyzed_news(engine) -> None:
+    with Session(engine, expire_on_commit=False) as session:
+        source = _source(session, "unanalyzed", "America", "CL")
+        pending = _news(session, source, "pending", datetime(2026, 9, 1, tzinfo=UTC), None)
+        session.commit()
+        repository = DashboardRepository(session)
+
+        assert repository.news_term_breakdown(pending.id_noticia) is None
+        assert repository.news_term_breakdown(999999) is None
