@@ -183,7 +183,7 @@ Cada elemento SHALL incluir `id_noticia`, `titulo`, `url`, `canal`, `continente`
 - **AND** no se agregan ni modifican rutas o parámetros destinados al frontend
 
 ### Requirement: Validación y publicación del contrato
-El sistema MUST responder `400` cuando una operación con rango obligatorio omita cualquiera de las fechas, una fecha no tenga formato válido, `fecha_desde` sea posterior a `fecha_hasta`, `continente` esté fuera del dominio admitido, `pais` no tenga exactamente dos letras o se informe `pais` sin `continente`. Las cinco operaciones del dashboard, sus parámetros, respuestas y errores SHALL estar publicados en OpenAPI.
+El sistema MUST responder `400` cuando una operación con rango obligatorio omita cualquiera de las fechas, una fecha no tenga formato válido, `fecha_desde` sea posterior a `fecha_hasta`, `continente` esté fuera del dominio admitido, `pais` no tenga exactamente dos letras o se informe `pais` sin `continente`. Las seis operaciones del dashboard, sus parámetros, respuestas y errores SHALL estar publicados en OpenAPI.
 
 #### Scenario: Rechazar un rango incompleto o invertido
 - **WHEN** falta uno de los extremos del rango o `fecha_desde` es posterior a `fecha_hasta`
@@ -195,4 +195,31 @@ El sistema MUST responder `400` cuando una operación con rango obligatorio omit
 
 #### Scenario: Publicar el endpoint
 - **WHEN** un consumidor consulta la documentación OpenAPI
-- **THEN** encuentra `GET /api/v1/dashboards`, `/geografia`, `/evolucion`, `/nube-palabras` y `/noticias-influyentes`, sus parámetros, esquemas de respuesta y los códigos `200`, `400` y `500`
+- **THEN** encuentra `GET /api/v1/dashboards`, `/geografia`, `/evolucion`, `/nube-palabras`, `/noticias-influyentes` y `/noticias/{id}/terminos`, sus parámetros, esquemas de respuesta y los códigos `200`, `400` y `500`
+
+### Requirement: Desglose de términos por noticia
+El sistema SHALL exponer `GET /api/v1/dashboards/noticias/{id}/terminos`, que devuelve `valor_humor` (el valor guardado de la noticia) y `terminos`, con `id_termino`, `palabra`, `valor`, `ocurrencias` y `aporte_humor` por cada término detectado. `valor` SHALL ser `aporte_humor / ocurrencias`, no el valor vigente del diccionario. `terminos` SHALL incluir también los términos hoy inactivos y SHALL ordenarse por valor absoluto de `aporte_humor` descendente y luego por `palabra` ascendente.
+
+#### Scenario: Consultar el desglose de una noticia analizada
+- **WHEN** se consulta una noticia con términos detectados
+- **THEN** responde `200` con su `valor_humor` y sus términos ordenados de mayor a menor impacto
+
+#### Scenario: Conservar el valor del momento del análisis
+- **WHEN** el valor de un término del diccionario se edita después del análisis
+- **THEN** `valor` sigue siendo `aporte_humor / ocurrencias` del análisis original
+
+#### Scenario: Incluir términos desactivados
+- **WHEN** un término fue desactivado después de analizar la noticia
+- **THEN** sigue apareciendo en el desglose
+
+#### Scenario: Noticia inexistente o sin analizar
+- **WHEN** la noticia no existe o no fue analizada
+- **THEN** responde `404`
+
+#### Scenario: Identificador inválido
+- **WHEN** el identificador no es numérico
+- **THEN** responde `400`
+
+#### Scenario: Dejar intacto el ranking
+- **WHEN** un consumidor consulta `GET /api/v1/dashboards/noticias-influyentes` después del cambio
+- **THEN** la respuesta conserva sus campos, nombres y tipos
