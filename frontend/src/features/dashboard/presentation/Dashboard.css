@@ -788,17 +788,41 @@ table.t {
 .influential-news .in-detail dt { color: var(--muted, #6b6558); }
 .influential-news .in-detail dd { margin: 0; overflow-wrap: anywhere; }
 
-.influential-news .in-breakdown { margin-top: 8px; }
+.influential-news .in-breakdown { margin: 0 0 12px 2.5em; }
+
+/* ── Word breakdown side panel (reuses .btn, table.t, .errbox, .empty) ── */
 .breakdown-panel {
-  position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none;
-  width: min(420px, 100vw); border: 0; padding: 16px; overflow-y: auto;
-  background: var(--card, #fff); color: inherit; box-shadow: -4px 0 16px rgb(0 0 0 / 0.2);
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(560px, 100vw);
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: -20px 0 60px #0003;
+  flex-direction: column;
 }
-.breakdown-panel::backdrop { background: rgb(0 0 0 / 0.35); }
-.breakdown-panel .bp-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.breakdown-panel .bp-news { overflow-wrap: anywhere; font-weight: 600; }
-.breakdown-panel .bp-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-.breakdown-panel .bp-table th, .breakdown-panel .bp-table td { padding: 4px 6px; text-align: left; }
-.breakdown-panel .bp-table th:nth-child(n+2), .breakdown-panel .bp-table td:nth-child(n+2) { text-align: right; }
+
+.breakdown-panel[open] { display: flex; }
+.breakdown-panel::backdrop { background: #1c1f2659; }
+
+.breakdown-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.breakdown-panel header h2 { margin: 0; font: 500 22px/1.2 var(--serif); }
+.breakdown-panel .bp-news { margin: 6px 0 0; color: var(--ink2); overflow-wrap: anywhere; }
+.breakdown-panel .bd { padding: 18px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.breakdown-panel .bp-humor { margin: 0; font: 12px var(--mono); color: var(--ink3); }
+.breakdown-panel .bp-humor .mono { font-size: 14px; }
 .breakdown-panel .pos { color: var(--pos); }
 .breakdown-panel .neg { color: var(--neg); }

@@ -82,7 +82,7 @@ export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, 
                       )}
                     </dd>
                   </dl>
-                  <button type="button" className="in-breakdown" onClick={() => setSelected(item)}>
+                  <button type="button" className="btn sm in-breakdown" onClick={() => setSelected(item)}>
                     Ver desglose de palabras
                   </button>
                 </details>

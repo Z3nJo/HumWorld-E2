@@ -20,44 +20,53 @@ export const NewsBreakdownPanel: React.FC<NewsBreakdownPanelProps> = ({ news, on
 
   return (
     <dialog ref={dialogRef} className="breakdown-panel" aria-labelledby="breakdown-title" onClose={onClose}>
-      <header className="bp-head">
-        <h2 id="breakdown-title">Desglose de palabras</h2>
-        <button type="button" onClick={() => dialogRef.current?.close()}>Cerrar</button>
-      </header>
-      <p className="bp-news">{news.titulo}</p>
-      {loading && <p role="status">Cargando desglose…</p>}
-      {error && (
-        <div role="alert">
-          <p>{error}</p>
-          <button type="button" onClick={retry}>Reintentar</button>
+      <header>
+        <div>
+          <h2 id="breakdown-title">Desglose de palabras</h2>
+          <p className="bp-news">{news.titulo}</p>
         </div>
-      )}
-      {data && (
-        <>
-          <p>
-            Humor guardado:{' '}
-            <span className={`mono ${humorPolarity(data.valor_humor)}`}>{formatHumor(data.valor_humor)}</span>
-          </p>
-          <table className="bp-table">
-            <thead>
-              <tr><th>Palabra</th><th>Valor</th><th>Veces</th><th>Aporte</th></tr>
-            </thead>
-            <tbody>
-              {data.terminos.map((term) => (
-                <tr key={term.id_termino}>
-                  <td>{term.palabra}</td>
-                  <td className={`mono ${humorPolarity(term.valor)}`}>{formatHumor(term.valor)}</td>
-                  <td className="mono">{term.ocurrencias}</td>
-                  <td className={`mono ${humorPolarity(term.aporte_humor)}`}>{formatHumor(term.aporte_humor)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <small>
-            El aporte está en escala de términos, no en [-1, 1]: el humor guardado se calcula con la fórmula configurada.
-          </small>
-        </>
-      )}
+        <button type="button" className="btn sm" onClick={() => dialogRef.current?.close()}>Cerrar</button>
+      </header>
+      <div className="bd">
+        {loading && <p className="meta" role="status">Cargando desglose…</p>}
+        {error && (
+          <div className="errbox" role="alert">
+            <b>No se pudo cargar el desglose</b>
+            <span>{error}</span>
+            <button type="button" className="btn sm" onClick={retry}>Reintentar</button>
+          </div>
+        )}
+        {data && (
+          <>
+            <p className="bp-humor">
+              Humor guardado{' '}
+              <span className={`mono ${humorPolarity(data.valor_humor)}`}>{formatHumor(data.valor_humor)}</span>
+            </p>
+            {data.terminos.length ? (
+              <table className="t">
+                <thead>
+                  <tr><th>Palabra</th><th className="num">Valor</th><th className="num">Veces</th><th className="num">Aporte</th></tr>
+                </thead>
+                <tbody>
+                  {data.terminos.map((term) => (
+                    <tr key={term.id_termino}>
+                      <td>{term.palabra}</td>
+                      <td className={`num ${humorPolarity(term.valor)}`}>{formatHumor(term.valor)}</td>
+                      <td className="num">{term.ocurrencias}</td>
+                      <td className={`num ${humorPolarity(term.aporte_humor)}`}>{formatHumor(term.aporte_humor)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="empty"><b>Sin palabras detectadas</b>Esta noticia no tiene términos del diccionario.</div>
+            )}
+            <small className="meta">
+              El aporte está en escala de términos, no en [-1, 1]: el humor guardado se calcula con la fórmula configurada.
+            </small>
+          </>
+        )}
+      </div>
     </dialog>
   );
 };
