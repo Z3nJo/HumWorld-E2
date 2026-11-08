@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { http } from '../../../shared/api/httpClient';
-import { fetchEvolution, fetchGeography, fetchInfluentialNews } from './dashboardApi';
+import { fetchEvolution, fetchGeography, fetchInfluentialNews, fetchNewsBreakdown } from './dashboardApi';
 
 vi.mock('../../../shared/api/httpClient', () => ({ http: { get: vi.fn() } }));
 
@@ -40,5 +40,18 @@ describe('dashboard daily evolution and ranking API', () => {
     const data = await fetchInfluentialNews(params);
     expect(data.noticias.map((item) => [item.id_noticia, item.valor_humor])).toEqual([[2, -0.9], [1, 0.3]]);
     expect(http.get).toHaveBeenCalledWith('/api/v1/dashboards/noticias-influyentes?fecha_desde=2026-10-01&fecha_hasta=2026-10-07&continente=America&pais=CL');
+  });
+
+  it('maps the word breakdown decimals to numbers', async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      valor_humor: '-0.400',
+      terminos: [{ id_termino: 1, palabra: 'crisis', valor: '-4.00', ocurrencias: 2, aporte_humor: '-8.00' }],
+    });
+    const data = await fetchNewsBreakdown(7);
+    expect(data).toEqual({
+      valor_humor: -0.4,
+      terminos: [{ id_termino: 1, palabra: 'crisis', valor: -4, ocurrencias: 2, aporte_humor: -8 }],
+    });
+    expect(http.get).toHaveBeenCalledWith('/api/v1/dashboards/noticias/7/terminos');
   });
 });

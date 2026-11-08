@@ -1,5 +1,5 @@
 import { http } from '../../../shared/api/httpClient';
-import type { DashboardAggregate, DashboardData, DashboardEvolutionData, InfluentialNewsData, InfluentialTerm, InfluentialTermsData } from '../domain/dashboard';
+import type { DashboardAggregate, DashboardData, DashboardEvolutionData, InfluentialNewsData, NewsBreakdown, NewsBreakdownTerm, InfluentialTerm, InfluentialTermsData } from '../domain/dashboard';
 import type { Continent } from '../../sources/domain/source';
 
 interface DashboardAggregateDto {
@@ -108,6 +108,21 @@ export async function fetchInfluentialNews(params: FetchDashboardParams): Promis
   type Dto = { noticias: (Omit<InfluentialNewsData['noticias'][number], 'valor_humor'> & { valor_humor: string })[] };
   const dto = await http.get<Dto>(`/api/v1/dashboards/noticias-influyentes?${queryString(params)}`);
   return { noticias: dto.noticias.map((news) => ({ ...news, valor_humor: Number(news.valor_humor) })) };
+}
+
+export async function fetchNewsBreakdown(id: number): Promise<NewsBreakdown> {
+  type Dto = { valor_humor: string; terminos: Record<keyof NewsBreakdownTerm, string | number>[] };
+  const dto = await http.get<Dto>(`/api/v1/dashboards/noticias/${id}/terminos`);
+  return {
+    valor_humor: Number(dto.valor_humor),
+    terminos: dto.terminos.map((term) => ({
+      id_termino: Number(term.id_termino),
+      palabra: String(term.palabra),
+      valor: Number(term.valor),
+      ocurrencias: Number(term.ocurrencias),
+      aporte_humor: Number(term.aporte_humor),
+    })),
+  };
 }
 
 export async function fetchDashboard(params: FetchDashboardParams): Promise<DashboardData> {

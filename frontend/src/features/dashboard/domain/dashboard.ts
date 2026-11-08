@@ -74,6 +74,20 @@ export interface InfluentialNewsData {
   noticias: InfluentialNews[];
 }
 
+export interface NewsBreakdownTerm {
+  id_termino: number;
+  palabra: string;
+  /** Value per occurrence at analysis time (`aporte_humor / ocurrencias`), not the current dictionary value. */
+  valor: number;
+  ocurrencias: number;
+  aporte_humor: number;
+}
+
+export interface NewsBreakdown {
+  valor_humor: number;
+  terminos: NewsBreakdownTerm[];
+}
+
 export interface DashboardScope {
   continente: Continent | null;
   pais: string | null;

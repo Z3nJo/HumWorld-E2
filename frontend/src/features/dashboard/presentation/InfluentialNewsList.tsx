@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { InfluentialNews } from '../domain/dashboard';
 import { CONTINENT_ORDER, countryName, formatHumor } from '../domain/countries';
+import { NewsBreakdownPanel } from './NewsBreakdownPanel';
 import { humorPolarity, safeNewsUrl, type Polarity } from '../domain/news';
 
 interface InfluentialNewsListProps {
@@ -28,7 +29,9 @@ function sourceRegion(item: InfluentialNews): string {
   return CONTINENT_ORDER.find((c) => c.key === item.continente)?.label ?? item.continente;
 }
 
-export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, scopeTitle }) => (
+export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, scopeTitle }) => {
+  const [selected, setSelected] = useState<InfluentialNews | null>(null);
+  return (
   <div className="card">
     <div className="ch">
       <h2>Noticias más influyentes</h2>
@@ -79,6 +82,9 @@ export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, 
                       )}
                     </dd>
                   </dl>
+                  <button type="button" className="in-breakdown" onClick={() => setSelected(item)}>
+                    Ver desglose de palabras
+                  </button>
                 </details>
               </li>
             );
@@ -91,5 +97,7 @@ export const InfluentialNewsList: React.FC<InfluentialNewsListProps> = ({ news, 
         </div>
       )}
     </div>
+    {selected && <NewsBreakdownPanel news={selected} onClose={() => setSelected(null)} />}
   </div>
-);
+  );
+};

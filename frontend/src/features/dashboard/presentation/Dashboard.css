@@ -787,3 +787,18 @@ table.t {
 
 .influential-news .in-detail dt { color: var(--muted, #6b6558); }
 .influential-news .in-detail dd { margin: 0; overflow-wrap: anywhere; }
+
+.influential-news .in-breakdown { margin-top: 8px; }
+.breakdown-panel {
+  position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: none;
+  width: min(420px, 100vw); border: 0; padding: 16px; overflow-y: auto;
+  background: var(--card, #fff); color: inherit; box-shadow: -4px 0 16px rgb(0 0 0 / 0.2);
+}
+.breakdown-panel::backdrop { background: rgb(0 0 0 / 0.35); }
+.breakdown-panel .bp-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.breakdown-panel .bp-news { overflow-wrap: anywhere; font-weight: 600; }
+.breakdown-panel .bp-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.breakdown-panel .bp-table th, .breakdown-panel .bp-table td { padding: 4px 6px; text-align: left; }
+.breakdown-panel .bp-table th:nth-child(n+2), .breakdown-panel .bp-table td:nth-child(n+2) { text-align: right; }
+.breakdown-panel .pos { color: var(--pos); }
+.breakdown-panel .neg { color: var(--neg); }

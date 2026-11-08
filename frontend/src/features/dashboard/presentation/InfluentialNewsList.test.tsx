@@ -1,8 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fetchNewsBreakdown } from '../infrastructure/dashboardApi';
 import { InfluentialNewsList } from './InfluentialNewsList';
 import type { InfluentialNews } from '../domain/dashboard';
+
+vi.mock('../infrastructure/dashboardApi', () => ({ fetchNewsBreakdown: vi.fn() }));
 
 const item = (over: Partial<InfluentialNews>): InfluentialNews => ({
   id_noticia: 1,
@@ -17,6 +20,11 @@ const item = (over: Partial<InfluentialNews>): InfluentialNews => ({
 });
 
 describe('InfluentialNewsList', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(fetchNewsBreakdown).mockResolvedValue({ valor_humor: 0.4, terminos: [] });
+  });
+
   it('keeps received order with position, visible sign and scope', () => {
     render(<InfluentialNewsList scopeTitle="Chile" news={[
       item({ id_noticia: 1, titulo: 'Positiva suave', valor_humor: 0.4 }),
@@ -80,5 +88,23 @@ describe('InfluentialNewsList', () => {
     render(<InfluentialNewsList scopeTitle="Global" news={[]} />);
     expect(screen.getByText('Sin noticias evaluables')).toBeInTheDocument();
     expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+  });
+
+  it('does not request any breakdown when rendering the list', () => {
+    render(<InfluentialNewsList scopeTitle="Global" news={[item({}), item({ id_noticia: 2 })]} />);
+    expect(fetchNewsBreakdown).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument();
+  });
+
+  it('opens one panel per click, requests once and closes it', async () => {
+    const user = userEvent.setup();
+    render(<InfluentialNewsList scopeTitle="Global" news={[item({}), item({ id_noticia: 2, titulo: 'Titular dos' })]} />);
+    await user.click(screen.getAllByText('Titular dos')[0]);
+    await user.click(screen.getAllByRole('button', { name: /ver desglose de palabras/i })[1]);
+    expect(await screen.findByRole('dialog', { name: /desglose de palabras/i })).toBeInTheDocument();
+    expect(fetchNewsBreakdown).toHaveBeenCalledTimes(1);
+    expect(fetchNewsBreakdown).toHaveBeenCalledWith(2);
+    await user.click(screen.getByRole('button', { name: /cerrar/i }));
+    expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument();
   });
 });
