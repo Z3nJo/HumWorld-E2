@@ -278,9 +278,29 @@
   gap: 8px;
 }
 
+.datehd-cur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 170px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.datehd-lbl {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
 .datehd b {
-  font: 500 22px/1 var(--serif);
-  min-width: 150px;
+  font: 600 24px/1 var(--serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
   text-align: center;
 }
 

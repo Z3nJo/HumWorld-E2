@@ -247,11 +247,14 @@ export const DashboardPage: React.FC = () => {
                   >
                     ‹
                   </button>
-                  <b>
-                    {windowSize > 1
-                      ? `${formatDateShort(days[w0])} – ${formatDate(days[w1])}`
-                      : formatDate(days[selectedDayIndex])}
-                  </b>
+                  <div className="datehd-cur" aria-live="polite">
+                    <span className="datehd-lbl">{windowSize > 1 ? 'Ventana' : 'Fecha'}</span>
+                    <b>
+                      {windowSize > 1
+                        ? `${formatDateShort(days[w0])} – ${formatDate(days[w1])}`
+                        : formatDate(days[selectedDayIndex])}
+                    </b>
+                  </div>
                   <button
                     className="btn sm"
                     disabled={selectedDayIndex >= days.length - 1}
