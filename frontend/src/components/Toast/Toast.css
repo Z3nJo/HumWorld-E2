@@ -29,6 +29,22 @@
   color: #fff;
 }
 
+.ts-spinner {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: tsSpin 0.8s linear infinite;
+}
+
+@keyframes tsSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ts code {
   font: 500 11px var(--mono);
   background: rgba(255, 255, 255, 0.12);

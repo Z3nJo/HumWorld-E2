@@ -51,6 +51,10 @@ export const SourcesPage = () => {
 
   const runCapture = async (sourceIds?: number[]) => {
     setCapturing(true);
+    const loadingId = addToast(
+      'Capturando noticias… puede tardar un momento, no cierres esta página.',
+      'loading',
+    );
     try {
       const res: CaptureResult = await captureSources(sourceIds);
       const msg = `Captura finalizada: ${res.inserted} noticias insertadas, ${res.failedSources} fuentes fallidas, ${res.skippedSourceIds.length} fuentes omitidas`;
@@ -59,6 +63,7 @@ export const SourcesPage = () => {
       const msg = err instanceof Error ? err.message : 'Error al ejecutar la captura';
       addToast(msg, 'error');
     } finally {
+      removeToast(loadingId);
       setCapturing(false);
     }
   };
