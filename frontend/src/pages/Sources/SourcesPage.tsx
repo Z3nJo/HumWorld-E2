@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { captureSources } from '../../features/sources/infrastructure/sourcesApi';
+import { captureSources, fetchSources } from '../../features/sources/infrastructure/sourcesApi';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useSources } from '../../features/sources/application/useSources';
 import type {
@@ -34,7 +34,7 @@ export const SourcesPage = () => {
     reload,
   } = useSources(continentFilter, statusFilter);
 
-  const { toasts, addToast, removeToast } = useToast();
+  const { toasts, addToast, removeToast, updateToast } = useToast();
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -51,14 +51,29 @@ export const SourcesPage = () => {
 
   const runCapture = async (sourceIds?: number[]) => {
     setCapturing(true);
-    const loadingId = addToast(
-      'Capturando noticias… puede tardar un momento, no cierres esta página.',
-      'loading',
-    );
+    const loadingId = addToast('Capturando noticias…', 'loading');
     try {
-      const res: CaptureResult = await captureSources(sourceIds);
-      const msg = `Captura finalizada: ${res.inserted} noticias insertadas, ${res.failedSources} fuentes fallidas, ${res.skippedSourceIds.length} fuentes omitidas`;
-      addToast(msg, res.failedSources > 0 ? 'error' : 'success');
+      const ids = sourceIds ?? (await listCapturableSourceIds());
+      const total: CaptureResult = { inserted: 0, failedSources: 0, skippedSourceIds: [] };
+      for (const [index, id] of ids.entries()) {
+        updateToast(loadingId, {
+          progress: {
+            current: index,
+            total: ids.length,
+            detail: `Noticias cargadas: ${total.inserted}`,
+          },
+        });
+        try {
+          const res = await captureSources([id]);
+          total.inserted += res.inserted;
+          total.failedSources += res.failedSources;
+          total.skippedSourceIds.push(...res.skippedSourceIds);
+        } catch {
+          total.failedSources += 1;
+        }
+      }
+      const msg = `Captura finalizada: ${total.inserted} noticias insertadas, ${total.failedSources} fuentes fallidas, ${total.skippedSourceIds.length} fuentes omitidas`;
+      addToast(msg, total.failedSources > 0 ? 'error' : 'success');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al ejecutar la captura';
       addToast(msg, 'error');
@@ -67,6 +82,12 @@ export const SourcesPage = () => {
       setCapturing(false);
     }
   };
+
+  // Same set the backend captures when no ids are sent: active sources of active channels.
+  const listCapturableSourceIds = async () =>
+    (await fetchSources(undefined, true))
+      .filter((s) => s.active && s.channel.active)
+      .map((s) => s.id);
 
   const handleCaptureChannel = (channel: ChannelWithSources) =>
     runCapture(channel.sources.filter((c) => c.active).map((c) => c.id));

@@ -383,7 +383,8 @@ describe('SourcesPage', () => {
           screen.getByText(/5 noticias insertadas, 0 fuentes fallidas, 1 fuentes omitidas/),
         ).toBeInTheDocument(),
       );
-      expect(sourcesApi.captureSources).toHaveBeenCalledWith(undefined);
+      expect(sourcesApi.captureSources).toHaveBeenCalledTimes(1);
+      expect(sourcesApi.captureSources).toHaveBeenCalledWith([101]);
     });
 
     it('disables capture actions while the request is pending', async () => {
@@ -417,6 +418,73 @@ describe('SourcesPage', () => {
       await waitFor(() => expect(sourcesApi.captureSources).toHaveBeenCalledWith([101]));
     });
 
+    describe('progress', () => {
+      const extraSource: Source = {
+        ...sampleSources[0],
+        id: 103,
+        name: 'El País · Cultura',
+      };
+
+      const deferred = () => {
+        let resolve!: (v: typeof captureOk) => void;
+        let reject!: (e: Error) => void;
+        const promise = new Promise<typeof captureOk>((res, rej) => {
+          resolve = res;
+          reject = rej;
+        });
+        return { promise, resolve, reject };
+      };
+
+      it('captures source by source and shows an accumulating progress bar', async () => {
+        vi.mocked(sourcesApi.fetchSources).mockResolvedValue([...sampleSources, extraSource]);
+        const first = deferred();
+        const second = deferred();
+        vi.mocked(sourcesApi.captureSources)
+          .mockReturnValueOnce(first.promise)
+          .mockReturnValueOnce(second.promise);
+        render(<SourcesPage />);
+        await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+        expect(await screen.findByText('Fuente 1 de 2')).toBeInTheDocument();
+        expect(screen.getByText('Noticias cargadas: 0')).toBeInTheDocument();
+        expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+        expect(sourcesApi.captureSources).toHaveBeenNthCalledWith(1, [101]);
+
+        first.resolve({ inserted: 3, failedSources: 0, skippedSourceIds: [] });
+
+        expect(await screen.findByText('Fuente 2 de 2')).toBeInTheDocument();
+        expect(screen.getByText('Noticias cargadas: 3')).toBeInTheDocument();
+        expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+        expect(sourcesApi.captureSources).toHaveBeenNthCalledWith(2, [103]);
+
+        second.resolve({ inserted: 4, failedSources: 0, skippedSourceIds: [] });
+
+        expect(
+          await screen.findByText(/7 noticias insertadas, 0 fuentes fallidas, 0 fuentes omitidas/),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      });
+
+      it('keeps going when one source fails and counts it as failed', async () => {
+        vi.mocked(sourcesApi.fetchSources).mockResolvedValue([...sampleSources, extraSource]);
+        vi.mocked(sourcesApi.captureSources)
+          .mockRejectedValueOnce(new Error('Fallo de red'))
+          .mockResolvedValueOnce({ inserted: 4, failedSources: 0, skippedSourceIds: [] });
+        render(<SourcesPage />);
+        await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+        const toast = await screen.findByText(
+          /4 noticias insertadas, 1 fuentes fallidas, 0 fuentes omitidas/,
+        );
+        expect(toast.closest('[class*="error"]')).not.toBeNull();
+        expect(sourcesApi.captureSources).toHaveBeenCalledTimes(2);
+      });
+    });
+
     it('disables per-source capture for inactive sources', async () => {
       render(<SourcesPage />);
       await waitFor(() => expect(screen.getByText('NPR')).toBeInTheDocument());
@@ -439,14 +507,14 @@ describe('SourcesPage', () => {
       expect(toast.closest('[class*="error"]')).not.toBeNull();
     });
 
-    it('shows an error toast and keeps the table when the request fails', async () => {
+    it('reports a failed source and keeps the table when the request fails', async () => {
       vi.mocked(sourcesApi.captureSources).mockRejectedValue(new Error('Fallo de red'));
       render(<SourcesPage />);
       await waitFor(() => expect(screen.getByText('El País')).toBeInTheDocument());
 
       fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
 
-      expect(await screen.findByText('Fallo de red')).toBeInTheDocument();
+      expect(await screen.findByText(/0 noticias insertadas, 1 fuentes fallidas/)).toBeInTheDocument();
       expect(screen.getByText('El País')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Capturar ahora' })).toBeEnabled();
     });
