@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 export interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'loading';
 }
 
 export function useToast() {
@@ -13,7 +13,7 @@ export function useToast() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+  const addToast = useCallback((message: string, type: ToastMessage['type'] = 'success') => {
     const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newToast: ToastMessage = { id, message, type };
 

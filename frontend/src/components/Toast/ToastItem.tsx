@@ -8,13 +8,14 @@ interface ToastItemProps {
 
 export const ToastItem = ({ toast, onClose }: ToastItemProps) => {
   const isSuccess = toast.type === 'success';
+  const isLoading = toast.type === 'loading';
 
   return (
     <div
-      className={`ts ${isSuccess ? 'ts--success' : 'ts--error'}`}
-      role={isSuccess ? 'status' : 'alert'}
+      className={`ts ${isSuccess ? 'ts--success' : isLoading ? 'ts--loading' : 'ts--error'}`}
+      role={isSuccess || isLoading ? 'status' : 'alert'}
     >
-      <code>{isSuccess ? '200' : 'ERR'}</code>
+      {isLoading ? <span className="ts-spinner" aria-hidden="true" /> : <code>{isSuccess ? '200' : 'ERR'}</code>}
       <span>{toast.message}</span>
       <button
         type="button"
