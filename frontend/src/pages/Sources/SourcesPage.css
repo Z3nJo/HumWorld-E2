@@ -441,11 +441,30 @@ table.t {
   gap: 8px;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media (max-width: 640px) {
   .top,
   .view {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .backend-note {

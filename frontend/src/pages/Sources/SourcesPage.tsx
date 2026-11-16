@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { captureSources, fetchSources } from '../../features/sources/infrastructure/sourcesApi';
 import { ToastContainer } from '../../components/Toast/ToastContainer';
 import { useSources } from '../../features/sources/application/useSources';
@@ -16,9 +16,12 @@ import { SourceTable } from '../../features/sources/presentation/SourceTable';
 import { useToast } from '../../hooks/useToast';
 import './SourcesPage.css';
 
+const SOURCES_PER_PAGE = 10;
+
 export const SourcesPage = () => {
   const [continentFilter, setContinentFilter] = useState<Continent | ''>('');
   const [statusFilter, setStatusFilter] = useState<SourceStatusFilter>('all');
+  const [page, setPage] = useState(0);
 
   const {
     channelGroups,
@@ -35,6 +38,14 @@ export const SourcesPage = () => {
   } = useSources(continentFilter, statusFilter);
 
   const { toasts, addToast, removeToast, updateToast } = useToast();
+
+  // Clamp so the page stays valid if the list shrinks (e.g. after deactivating).
+  const pageCount = Math.max(1, Math.ceil(channelGroups.length / SOURCES_PER_PAGE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pagedGroups = useMemo(() => {
+    const start = currentPage * SOURCES_PER_PAGE;
+    return channelGroups.slice(start, start + SOURCES_PER_PAGE);
+  }, [channelGroups, currentPage]);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -204,7 +215,10 @@ export const SourcesPage = () => {
             <select
               className="sel"
               value={continentFilter}
-              onChange={(e) => setContinentFilter(e.target.value as Continent | '')}
+              onChange={(e) => {
+                setContinentFilter(e.target.value as Continent | '');
+                setPage(0);
+              }}
               aria-label="Continente"
             >
               <option value="">Todos los continentes</option>
@@ -220,7 +234,10 @@ export const SourcesPage = () => {
                 <button
                   key={v}
                   className={statusFilter === v ? 'on' : ''}
-                  onClick={() => setStatusFilter(v)}
+                  onClick={() => {
+                    setStatusFilter(v);
+                    setPage(0);
+                  }}
                 >
                   {v === 'all' ? 'Todas' : v === 'active' ? 'Activas' : 'Inactivas'}
                 </button>
@@ -264,7 +281,7 @@ export const SourcesPage = () => {
 
         {!loading && !error && (
           <SourceTable
-            channelGroups={channelGroups}
+            channelGroups={pagedGroups}
             openChannelIds={openChannelIds}
             onToggleChannelOpen={toggleChannelOpen}
             onToggleSourceActive={handleToggleSourceActive}
@@ -274,6 +291,39 @@ export const SourcesPage = () => {
             onCaptureChannel={handleCaptureChannel}
             capturing={capturing}
           />
+        )}
+
+        {!loading && !error && channelGroups.length > 0 && (
+          <nav className="pagination" aria-label="Paginación de fuentes">
+            <span className="meta">
+              {currentPage * SOURCES_PER_PAGE + 1}–
+              {Math.min((currentPage + 1) * SOURCES_PER_PAGE, channelGroups.length)} de{' '}
+              {channelGroups.length}
+            </span>
+            <div className="pagination-controls">
+              <button
+                type="button"
+                className="btn sm"
+                onClick={() => setPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                aria-label="Página anterior"
+              >
+                ‹ Anterior
+              </button>
+              <span className="meta" aria-live="polite">
+                Página {currentPage + 1} / {pageCount}
+              </span>
+              <button
+                type="button"
+                className="btn sm"
+                onClick={() => setPage(Math.min(pageCount - 1, currentPage + 1))}
+                disabled={currentPage >= pageCount - 1}
+                aria-label="Página siguiente"
+              >
+                Siguiente ›
+              </button>
+            </div>
+          </nav>
         )}
       </div>
 
