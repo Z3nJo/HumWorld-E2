@@ -5,8 +5,14 @@ from types import SimpleNamespace
 import pytest
 
 from app.models.domains import Continent
-from app.repositories.dashboards import DashboardAggregateRecord, InfluentialTermRecord
+from app.repositories.dashboards import (
+    DashboardAggregateRecord,
+    InfluentialTermRecord,
+    NewsBreakdownRecord,
+    NewsBreakdownTermRecord,
+)
 from app.services.dashboards import DashboardService, DashboardValidationError
+from app.services.sources import ResourceNotFoundError
 
 
 class FakeDashboardRepository:
@@ -16,6 +22,10 @@ class FakeDashboardRepository:
         self.influential: list[InfluentialTermRecord] = []
         self.aggregate_calls: list[dict[str, object]] = []
         self.influential_calls: list[dict[str, object]] = []
+        self.breakdown: NewsBreakdownRecord | None = None
+
+    def news_term_breakdown(self, news_id: int) -> NewsBreakdownRecord | None:
+        return self.breakdown
 
     def aggregate(self, **filters: object) -> list[DashboardAggregateRecord]:
         self.aggregate_calls.append(filters)
@@ -195,3 +205,34 @@ def test_global_aggregate_is_omitted_when_filtering_by_continent(
         continent=Continent.EUROPE,
     )
     assert result.global_aggregate is None
+
+
+def test_news_breakdown_derives_value_from_contribution_and_occurrences(
+    repository: FakeDashboardRepository,
+) -> None:
+    repository.breakdown = NewsBreakdownRecord(
+        Decimal("-0.400"),
+        (
+            NewsBreakdownTermRecord(1, "crisis", 2, Decimal("-8.00")),
+            NewsBreakdownTermRecord(2, "paz", 3, Decimal("1.00")),
+        ),
+    )
+
+    result = DashboardService(repository, FakeConfiguration()).get_news_breakdown(7)
+
+    assert result == {
+        "valor_humor": Decimal("-0.400"),
+        "terminos": [
+            {"id_termino": 1, "palabra": "crisis", "valor": Decimal("-4.00"),
+             "ocurrencias": 2, "aporte_humor": Decimal("-8.00")},
+            {"id_termino": 2, "palabra": "paz", "valor": Decimal("0.33"),
+             "ocurrencias": 3, "aporte_humor": Decimal("1.00")},
+        ],
+    }
+
+
+def test_news_breakdown_raises_not_found_when_repository_returns_none(
+    repository: FakeDashboardRepository,
+) -> None:
+    with pytest.raises(ResourceNotFoundError):
+        DashboardService(repository, FakeConfiguration()).get_news_breakdown(7)

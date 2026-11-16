@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from app.api.dashboards import get_dashboard_service
 from app.main import app
 from app.models.domains import Continent
+from app.services.sources import ResourceNotFoundError
 from app.services.dashboards import (
     DashboardAggregate,
     DashboardResult,
@@ -196,3 +197,54 @@ def test_invalid_dashboard_queries_return_400_without_repository_call(
         assert repository.calls == 0
     finally:
         app.dependency_overrides.clear()
+
+
+class BreakdownService:
+    def get_news_breakdown(self, news_id: int) -> dict[str, object]:
+        if news_id != 7:
+            raise ResourceNotFoundError("Noticia no encontrada o sin analizar")
+        return {
+            "valor_humor": Decimal("-0.400"),
+            "terminos": [{
+                "id_termino": 1, "palabra": "crisis", "valor": Decimal("-4.00"),
+                "ocurrencias": 2, "aporte_humor": Decimal("-8.00"),
+            }],
+        }
+
+
+def _breakdown_client_get(path: str):
+    app.dependency_overrides[get_dashboard_service] = lambda: BreakdownService()
+    try:
+        with TestClient(app) as client:
+            return client.get(path)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_news_breakdown_endpoint_serializes_terms() -> None:
+    response = _breakdown_client_get("/api/v1/dashboards/noticias/7/terminos")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "valor_humor": "-0.400",
+        "terminos": [{
+            "id_termino": 1, "palabra": "crisis", "valor": "-4.00",
+            "ocurrencias": 2, "aporte_humor": "-8.00",
+        }],
+    }
+
+
+def test_news_breakdown_endpoint_returns_404_for_unknown_news() -> None:
+    assert _breakdown_client_get("/api/v1/dashboards/noticias/8/terminos").status_code == 404
+
+
+def test_news_breakdown_endpoint_returns_400_for_non_numeric_id() -> None:
+    assert _breakdown_client_get("/api/v1/dashboards/noticias/abc/terminos").status_code == 400
+
+
+def test_news_breakdown_route_is_published_in_openapi() -> None:
+    with TestClient(app) as client:
+        paths = client.get("/api/openapi.json").json()["paths"]
+
+    assert "/api/v1/dashboards/noticias/{id_noticia}/terminos" in paths
+    assert "/api/v1/dashboards/noticias-influyentes" in paths
