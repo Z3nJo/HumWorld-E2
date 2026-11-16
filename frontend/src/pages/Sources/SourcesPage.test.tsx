@@ -368,6 +368,106 @@ describe('SourcesPage', () => {
     });
   });
 
+  describe('pagination', () => {
+    // 23 channels: 12 in Europa (ids 1-12) and 11 in America (ids 13-23), 1 feed each.
+    const manyChannels: Channel[] = Array.from({ length: 23 }, (_, i) => ({
+      id: i + 1,
+      name: `Medio ${String(i + 1).padStart(2, '0')}`,
+      continent: i < 12 ? 'Europa' : 'America',
+      country: null,
+      siteUrl: `https://medio${i + 1}.com`,
+      active: true,
+    }));
+    const manySources: Source[] = manyChannels.map((ch) => ({
+      id: ch.id * 10,
+      channelId: ch.id,
+      name: `${ch.name} · Portada`,
+      feedUrl: `https://medio${ch.id}.com/rss.xml`,
+      category: 'politics',
+      iptcCategory: 'politics',
+      language: 'es',
+      active: true,
+      channel: ch,
+    }));
+
+    beforeEach(() => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue(manyChannels);
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue(manySources);
+    });
+
+    const renderLoaded = async () => {
+      render(<SourcesPage />);
+      await waitFor(() => expect(screen.getByText('Medio 01')).toBeInTheDocument());
+    };
+
+    it('shows only the first 10 sources and the range', async () => {
+      await renderLoaded();
+
+      expect(screen.getByText('Medio 10')).toBeInTheDocument();
+      expect(screen.queryByText('Medio 11')).not.toBeInTheDocument();
+      expect(screen.getByText('1–10 de 23')).toBeInTheDocument();
+      expect(screen.getByText('Página 1 / 3')).toBeInTheDocument();
+      // The counter keeps reflecting every source, not just the visible page
+      expect(screen.getByText('23 fuentes · 23 canales')).toBeInTheDocument();
+    });
+
+    it('navigates between pages and disables the buttons at the edges', async () => {
+      await renderLoaded();
+      const prev = screen.getByRole('button', { name: 'Página anterior' });
+      const next = screen.getByRole('button', { name: 'Página siguiente' });
+      expect(prev).toBeDisabled();
+
+      fireEvent.click(next);
+      expect(screen.getByText('Medio 11')).toBeInTheDocument();
+      expect(screen.queryByText('Medio 10')).not.toBeInTheDocument();
+      expect(screen.getByText('11–20 de 23')).toBeInTheDocument();
+
+      fireEvent.click(next);
+      expect(screen.getByText('Medio 23')).toBeInTheDocument();
+      expect(screen.getByText('21–23 de 23')).toBeInTheDocument();
+      expect(next).toBeDisabled();
+
+      fireEvent.click(prev);
+      expect(screen.getByText('Página 2 / 3')).toBeInTheDocument();
+    });
+
+    it('goes back to the first page when a filter changes', async () => {
+      await renderLoaded();
+      fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+      expect(screen.getByText('Página 2 / 3')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Continente'), {
+        target: { value: 'America' },
+      });
+
+      expect(screen.getByText('Página 1 / 2')).toBeInTheDocument();
+      expect(screen.getByText('1–10 de 11')).toBeInTheDocument();
+      expect(screen.getByText('Medio 13')).toBeInTheDocument();
+    });
+
+    it('does not show the pagination when there are no sources', async () => {
+      vi.mocked(sourcesApi.fetchChannels).mockResolvedValue([]);
+      vi.mocked(sourcesApi.fetchSources).mockResolvedValue([]);
+      render(<SourcesPage />);
+
+      expect(await screen.findByText('No hay fuentes con estos filtros')).toBeInTheDocument();
+      expect(screen.queryByRole('navigation', { name: 'Paginación de fuentes' })).not.toBeInTheDocument();
+    });
+
+    it('captures every active source, not only the visible page', async () => {
+      vi.mocked(sourcesApi.captureSources).mockResolvedValue({
+        inserted: 0,
+        failedSources: 0,
+        skippedSourceIds: [],
+      });
+      await renderLoaded();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Capturar ahora' }));
+
+      await waitFor(() => expect(sourcesApi.captureSources).toHaveBeenCalledTimes(23));
+    });
+  });
+
   describe('manual capture', () => {
     const captureOk = { inserted: 5, failedSources: 0, skippedSourceIds: [9] };
 
