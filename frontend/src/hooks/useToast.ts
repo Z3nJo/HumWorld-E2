@@ -1,9 +1,16 @@
 import { useCallback, useState } from 'react';
 
+export interface ToastProgress {
+  current: number;
+  total: number;
+  detail?: string;
+}
+
 export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'loading';
+  progress?: ToastProgress;
 }
 
 export function useToast() {
@@ -29,6 +36,10 @@ export function useToast() {
     return id;
   }, [removeToast]);
 
+  const updateToast = useCallback((id: string, patch: Partial<Omit<ToastMessage, 'id'>>) => {
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }, []);
+
   const clearToasts = useCallback(() => {
     setToasts([]);
   }, []);
@@ -37,6 +48,7 @@ export function useToast() {
     toasts,
     addToast,
     removeToast,
+    updateToast,
     clearToasts,
   };
 }

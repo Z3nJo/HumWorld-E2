@@ -77,3 +77,35 @@
     transform: translateY(0);
   }
 }
+
+.ts-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 260px;
+}
+
+.ts-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.ts-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  transition: width 300ms ease;
+}
+
+.ts-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font: 500 11px var(--mono);
+  opacity: 0.85;
+}
+
+.ts-progress-detail {
+  font: 500 11px var(--mono);
+}
