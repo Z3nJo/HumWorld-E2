@@ -197,6 +197,48 @@ def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
     }
 
 
+def test_openapi_exposes_only_the_three_expected_anonymous_api_operations() -> None:
+    schema = app.openapi()
+    anonymous_operations: set[tuple[str, str]] = set()
+
+    for path, path_item in schema["paths"].items():
+        if not path.startswith("/api/v1"):
+            continue
+        for method, operation in path_item.items():
+            if method.upper() not in {"GET", "POST", "PUT", "PATCH", "DELETE"}:
+                continue
+            if not operation.get("security"):
+                anonymous_operations.add((method.upper(), path))
+
+    assert anonymous_operations == {
+        ("GET", "/api/v1/dashboards"),
+        ("GET", "/api/v1/dashboards/nube-palabras"),
+        ("GET", "/api/v1/dashboards/noticias-influyentes"),
+    }
+
+
+def test_openapi_documents_clerk_security_and_authentication_errors() -> None:
+    schema = app.openapi()
+    assert schema["components"]["securitySchemes"]["ClerkBearer"] == {
+        "type": "http",
+        "description": "Token de sesion emitido por Clerk",
+        "scheme": "bearer",
+    }
+
+    protected = schema["paths"]["/api/v1/config"]["get"]
+    assert protected["security"] == [{"ClerkBearer": []}]
+    assert protected["responses"].keys() >= {"401", "403", "503"}
+
+    for path in (
+        "/api/v1/dashboards",
+        "/api/v1/dashboards/nube-palabras",
+        "/api/v1/dashboards/noticias-influyentes",
+    ):
+        operation = schema["paths"][path]["get"]
+        assert not operation.get("security")
+        assert not ({"401", "403", "503"} & operation["responses"].keys())
+
+
 def test_openapi_documents_dictionary_operations_schemas_and_errors() -> None:
     schema = app.openapi()
     collection = schema["paths"]["/api/v1/dictionary"]

@@ -1,4 +1,3 @@
-# Generado desde /api/openapi.json (app.main:app). No editar a mano.
 openapi: 3.1.0
 info:
   title: HumWorld API
@@ -30,6 +29,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+      security:
+      - ClerkBearer: []
     put:
       tags:
       - config
@@ -60,12 +67,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+      security:
+      - ClerkBearer: []
   /api/v1/channels:
     get:
       tags:
       - channels
       summary: Listar canales
       operationId: list_channels_api_v1_channels_get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: continent
         in: query
@@ -119,12 +136,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/channels/{channel_id}:
     get:
       tags:
       - channels
       summary: Consultar un canal
       operationId: get_channel_api_v1_channels__channel_id__get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: channel_id
         in: path
@@ -157,11 +182,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     put:
       tags:
       - channels
       summary: Reemplazar un canal
       operationId: replace_channel_api_v1_channels__channel_id__put
+      security:
+      - ClerkBearer: []
       parameters:
       - name: channel_id
         in: path
@@ -200,11 +233,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     patch:
       tags:
       - channels
       summary: Actualizar parcialmente un canal
       operationId: patch_channel_api_v1_channels__channel_id__patch
+      security:
+      - ClerkBearer: []
       parameters:
       - name: channel_id
         in: path
@@ -243,11 +284,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     delete:
       tags:
       - channels
       summary: Desactivar un canal
       operationId: delete_channel_api_v1_channels__channel_id__delete
+      security:
+      - ClerkBearer: []
       parameters:
       - name: channel_id
         in: path
@@ -276,12 +325,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/geografia:
     get:
       tags:
       - dashboards
       summary: Humor y noticias por continente y pais para el mapa
       operationId: get_geography_api_v1_dashboards_geografia_get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -316,12 +373,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/evolucion:
     get:
       tags:
       - dashboards
       summary: Evolucion diaria UTC; por defecto los ultimos 30 dias
       operationId: get_evolution_api_v1_dashboards_evolucion_get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -379,6 +444,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/noticias-influyentes:
     get:
       tags:
@@ -434,6 +505,52 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboards/noticias/{id_noticia}/terminos:
+    get:
+      tags:
+      - dashboards
+      summary: Desglose de terminos que componen el humor de una noticia
+      operationId: get_news_breakdown_api_v1_dashboards_noticias__id_noticia__terminos_get
+      security:
+      - ClerkBearer: []
+      parameters:
+      - name: id_noticia
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Id Noticia
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentimentResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+        '404':
+          description: Noticia no encontrada o sin analizar
           content:
             application/json:
               schema:
@@ -570,6 +687,8 @@ paths:
       - dictionary
       summary: Listar o buscar terminos del diccionario
       operationId: list_terms_api_v1_dictionary_get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: q
         in: query
@@ -609,11 +728,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     post:
       tags:
       - dictionary
       summary: Crear un termino del diccionario
       operationId: create_term_api_v1_dictionary_post
+      security:
+      - ClerkBearer: []
       requestBody:
         required: true
         content:
@@ -645,12 +772,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dictionary/{term_id}:
     get:
       tags:
       - dictionary
       summary: Consultar un termino del diccionario
       operationId: get_term_api_v1_dictionary__term_id__get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: term_id
         in: path
@@ -683,11 +818,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     put:
       tags:
       - dictionary
       summary: Reemplazar un termino del diccionario
       operationId: replace_term_api_v1_dictionary__term_id__put
+      security:
+      - ClerkBearer: []
       parameters:
       - name: term_id
         in: path
@@ -726,11 +869,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     patch:
       tags:
       - dictionary
       summary: Actualizar parcialmente un termino del diccionario
       operationId: patch_term_api_v1_dictionary__term_id__patch
+      security:
+      - ClerkBearer: []
       parameters:
       - name: term_id
         in: path
@@ -769,11 +920,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     delete:
       tags:
       - dictionary
       summary: Desactivar un termino del diccionario
       operationId: delete_term_api_v1_dictionary__term_id__delete
+      security:
+      - ClerkBearer: []
       parameters:
       - name: term_id
         in: path
@@ -802,6 +961,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/news:
     delete:
       tags:
@@ -817,6 +982,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+      security:
+      - ClerkBearer: []
   /api/v1/sentiment:
     post:
       tags:
@@ -848,6 +1021,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+      security:
+      - ClerkBearer: []
   /api/v1/sources/capture:
     post:
       tags:
@@ -887,12 +1068,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
+      security:
+      - ClerkBearer: []
   /api/v1/sources:
     post:
       tags:
       - sources
       summary: Crear un canal con fuentes o agregar fuentes a un canal
       operationId: create_sources_api_v1_sources_post
+      security:
+      - ClerkBearer: []
       requestBody:
         required: true
         content:
@@ -924,11 +1115,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     get:
       tags:
       - sources
       summary: Listar fuentes RSS
       operationId: list_sources_api_v1_sources_get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: continent
         in: query
@@ -991,12 +1190,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/sources/{source_id}:
     get:
       tags:
       - sources
       summary: Consultar una fuente RSS
       operationId: get_source_api_v1_sources__source_id__get
+      security:
+      - ClerkBearer: []
       parameters:
       - name: source_id
         in: path
@@ -1029,11 +1236,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     put:
       tags:
       - sources
       summary: Reemplazar una fuente RSS
       operationId: replace_source_api_v1_sources__source_id__put
+      security:
+      - ClerkBearer: []
       parameters:
       - name: source_id
         in: path
@@ -1072,11 +1287,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     patch:
       tags:
       - sources
       summary: Actualizar parcialmente una fuente RSS
       operationId: patch_source_api_v1_sources__source_id__patch
+      security:
+      - ClerkBearer: []
       parameters:
       - name: source_id
         in: path
@@ -1115,11 +1338,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
     delete:
       tags:
       - sources
       summary: Eliminar una fuente RSS
       operationId: delete_source_api_v1_sources__source_id__delete
+      security:
+      - ClerkBearer: []
       parameters:
       - name: source_id
         in: path
@@ -1148,6 +1379,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/ClerkUnauthorized'
+        '403':
+          $ref: '#/components/responses/ClerkForbidden'
+        '503':
+          $ref: '#/components/responses/ClerkUnavailable'
 components:
   schemas:
     CaptureRequest:
@@ -1420,6 +1657,7 @@ components:
         humor:
           anyOf:
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Humor
         noticias:
@@ -1446,6 +1684,7 @@ components:
         humor:
           anyOf:
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Humor
         noticias:
@@ -1499,6 +1738,7 @@ components:
         humor:
           anyOf:
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Humor
         noticias:
@@ -1593,6 +1833,7 @@ components:
           title: Fecha Registro
         valor_humor:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Valor Humor
         paises_atribuidos:
           items:
@@ -1656,9 +1897,11 @@ components:
           $ref: '#/components/schemas/Language'
         peso:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Peso
         aporte_total:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Aporte Total
         frecuencia:
           type: integer
@@ -1755,6 +1998,7 @@ components:
         valor_humor:
           anyOf:
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Valor Humor
         terminos:
@@ -1777,6 +2021,7 @@ components:
           title: Palabra
         valor:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Valor
         ocurrencias:
           type: integer
@@ -1784,6 +2029,7 @@ components:
           title: Ocurrencias
         aporte_humor:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Aporte Humor
       type: object
       required:
@@ -1990,6 +2236,7 @@ components:
           anyOf:
           - type: number
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Valor
           examples:
           - '0.75'
@@ -2018,6 +2265,7 @@ components:
           anyOf:
           - type: number
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Valor
         activo:
@@ -2042,6 +2290,7 @@ components:
           anyOf:
           - type: number
           - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Valor
           examples:
           - '0.75'
@@ -2067,6 +2316,7 @@ components:
           $ref: '#/components/schemas/Language'
         valor:
           type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Valor
         activo:
           type: boolean
@@ -2089,3 +2339,27 @@ components:
       - fecha_alta
       - fecha_modificacion
       title: TermResponse
+  securitySchemes:
+    ClerkBearer:
+      type: http
+      description: Token de sesion emitido por Clerk
+      scheme: bearer
+  responses:
+    ClerkUnauthorized:
+      description: Sesion ausente o invalida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ClerkForbidden:
+      description: Cuenta autenticada no autorizada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ClerkUnavailable:
+      description: Autenticacion administrativa no disponible
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
