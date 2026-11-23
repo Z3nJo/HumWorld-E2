@@ -98,6 +98,45 @@
   color: #e8e4da;
 }
 
+.navsession {
+  margin-top: auto;
+  padding: 14px 10px 0;
+  border-top: 1px solid #343841;
+  display: grid;
+  gap: 7px;
+}
+
+.navsession span {
+  font: 10px/1.2 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #99968e;
+}
+
+.navsession strong {
+  overflow: hidden;
+  color: #f3f0e8;
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navsession button {
+  justify-self: start;
+  border: 1px solid #555a65;
+  border-radius: 5px;
+  padding: 6px 9px;
+  background: transparent;
+  color: #e8e4da;
+  font-size: 12px;
+}
+
+.navsession button:hover {
+  border-color: #e8e4da;
+  background: #2a2e37;
+}
+
 main {
   min-width: 0;
   display: flex;
@@ -145,8 +184,15 @@ main {
     flex-wrap: wrap;
   }
   .navgrp h6,
-  .navfoot {
+  .navfoot,
+  .navsession span,
+  .navsession strong {
     display: none;
+  }
+  .navsession {
+    margin-top: 0;
+    padding: 0;
+    border: 0;
   }
   .authbar {
     padding: 8px 16px;
