@@ -1,0 +1,6 @@
+allowBuilds:
+  '@clerk/shared': true
+minimumReleaseAgeExclude:
+  - '@clerk/react@6.19.0'
+  - '@clerk/shared@4.47.0'
+  - '@clerk/localizations@4.25.1'
