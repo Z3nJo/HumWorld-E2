@@ -177,4 +177,14 @@ describe('LandingPage', () => {
     expect(screen.getByText('Previsualizaciones con datos de ejemplo')).toBeInTheDocument();
     expect(screen.getByText('Acuerdo regional amplía cuotas de exportación')).toBeInTheDocument();
   });
+
+  it('loads all three public previews without an authentication provider', async () => {
+    renderLanding();
+
+    await waitFor(() => {
+      expect(fetchDashboard).toHaveBeenCalledOnce();
+      expect(fetchInfluentialTerms).toHaveBeenCalledOnce();
+      expect(fetchInfluentialNews).toHaveBeenCalledOnce();
+    });
+  });
 });

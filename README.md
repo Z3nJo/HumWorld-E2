@@ -27,7 +27,7 @@ Funcionalidades principales:
 | **Fuentes de datos** | Exclusivamente RSS. **No se utiliza web scraping** en ninguna parte del sistema. |
 | **Idiomas analizados** | Español e inglés únicamente. |
 | **Categorización** | Primer nivel de IPTC Media Topics. |
-| **Autenticación** | **No implementada en esta fase.** Todas las operaciones administrativas están disponibles sin inicio de sesión (restricción `R-03`). Por este motivo el entorno no debe exponerse públicamente. |
+| **Autenticación** | Clerk con cuentas administrativas permitidas por ambiente (dos en producción). El landing y sus tres consultas de solo lectura son públicos; dashboard y administración requieren sesión. |
 
 ## 3. Stack técnico
 
@@ -83,7 +83,8 @@ Los subdirectorios de `backend/` se crean conforme avanzan las historias; su cor
 **Requisitos:** Docker y Docker Compose.
 
 Antes del primer arranque, copiar `.env.example` a `.env` en la raíz y completar
-las credenciales privadas siguiendo [la guía de PostgreSQL](docs/operations/postgresql-credentials.md).
+las credenciales privadas siguiendo [la guía de PostgreSQL](docs/operations/postgresql-credentials.md)
+y [la guía de Clerk](docs/operations/clerk-authentication.md).
 En instalaciones existentes, seguir primero la sección de rotación: cambiar `.env`
 no modifica la contraseña del rol almacenada en el volumen.
 
@@ -134,7 +135,7 @@ Base: `/api/v1` · Formato: JSON · Documentación interactiva: `/api/docs`
 
 El contrato completo está en [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml), exportado desde `/api/openapi.json`.
 
-Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
+Códigos de respuesta: `200`, `201`, `204`, `400`, `401`, `403`, `404`, `500`, `503`.
 
 ## 7. Documentación
 
@@ -150,6 +151,7 @@ Códigos de respuesta: `200`, `201`, `204`, `400`, `404`, `500`.
 | [`docs/uml/UML-02`](docs/uml/UML-02-diagrama-componentes.md) | Diagrama de componentes: frontend, capas del backend, scheduler y PostgreSQL |
 | [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml) | Contrato OpenAPI de la API REST, exportado desde la aplicación |
 | [`docs/operations/postgresql-credentials.md`](docs/operations/postgresql-credentials.md) | Generación, uso y rotación de las credenciales de PostgreSQL |
+| [`docs/operations/clerk-authentication.md`](docs/operations/clerk-authentication.md) | Configuración de la cuenta administrativa Clerk en Development y Production |
 | [`docs/definition-of-done.md`](docs/definition-of-done.md) | Definition of Done del equipo |
 | [`docs/sprints/`](docs/sprints/) | Planificación, cierre y evidencia de validación por sprint e historia |
 | [`docs/sprints/planificacion-sprint-1.md`](docs/sprints/planificacion-sprint-1.md) | Planificación del Sprint 1 (31 puntos) |
