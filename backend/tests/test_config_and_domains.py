@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from app.auth import ClerkConfigurationError, resolve_clerk_configuration
 from app.config import Settings, normalize_database_url
 from app.models import News
 from app.models.domains import Continent, IptcCategory, Language
@@ -42,6 +43,54 @@ def test_missing_database_url_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with pytest.raises(ValidationError, match="database_url"):
         Settings(_env_file=None)
+
+
+def test_clerk_configuration_parses_admin_ids_and_authorized_parties() -> None:
+    settings = Settings(
+        database_url="postgresql://localhost/humworld",
+        clerk_secret_key="sk_test_example",
+        clerk_jwt_key="-----BEGIN PUBLIC KEY-----\\nabc\\n-----END PUBLIC KEY-----",
+        clerk_admin_user_ids="user_admin, user_second",
+        clerk_authorized_parties="http://localhost:5173, https://humworld.example/",
+        _env_file=None,
+    )
+
+    configuration = resolve_clerk_configuration(settings)
+
+    assert configuration.authorized_parties == (
+        "http://localhost:5173",
+        "https://humworld.example",
+    )
+    assert configuration.admin_user_ids == ("user_admin", "user_second")
+    assert "\n" in configuration.jwt_key
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("clerk_secret_key", None),
+        ("clerk_jwt_key", "not-a-pem"),
+        ("clerk_admin_user_ids", "user_admin,not-a-clerk-id"),
+        ("clerk_admin_user_ids", "user_admin,"),
+        ("clerk_authorized_parties", "localhost:5173"),
+    ],
+)
+def test_clerk_configuration_fails_closed_when_incomplete_or_malformed(
+    field: str,
+    value: str | None,
+) -> None:
+    values: dict[str, object] = {
+        "database_url": "postgresql://localhost/humworld",
+        "clerk_secret_key": "sk_test_example",
+        "clerk_jwt_key": "-----BEGIN PUBLIC KEY-----\\nabc\\n-----END PUBLIC KEY-----",
+        "clerk_admin_user_ids": "user_admin",
+        "clerk_authorized_parties": "http://localhost:5173",
+        "_env_file": None,
+    }
+    values[field] = value
+
+    with pytest.raises(ClerkConfigurationError):
+        resolve_clerk_configuration(Settings(**values))
 
 
 def test_domains_match_mod_01() -> None:
