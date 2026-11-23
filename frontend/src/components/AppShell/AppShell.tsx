@@ -1,8 +1,13 @@
+import { useClerk, useUser } from '@clerk/react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Logo } from '../../features/landing/presentation/Logo';
 import './AppShell.css';
 
 export const AppShell = () => {
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? 'Cuenta administrativa';
+
   return (
     <div className="app">
       <aside className="nav">
@@ -47,6 +52,13 @@ export const AppShell = () => {
         </nav>
 
 
+        <div className="navsession">
+          <span>Sesión administrativa</span>
+          <strong title={email}>{email}</strong>
+          <button type="button" onClick={() => void signOut({ redirectUrl: '/' })}>
+            Cerrar sesión
+          </button>
+        </div>
       </aside>
 
       <main>
