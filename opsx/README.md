@@ -6,7 +6,7 @@ Incluye el entorno Docker Compose con PostgreSQL 16, backend y frontend, ademas 
 
 ## Levantar el entorno
 
-Desde la raíz del repositorio, con `.env` creado a partir de `.env.example` (ver `docs/operations/postgresql-credentials.md`):
+Desde la raíz del repositorio, con `.env` creado a partir de `.env.example` (ver `docs/operations/postgresql-credentials.md` y `docs/operations/clerk-authentication.md`):
 
 ```bash
 docker compose --env-file .env -f opsx/docker-compose.yml up --build
