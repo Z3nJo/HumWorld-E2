@@ -14,6 +14,10 @@ def normalize_database_url(database_url: str) -> str:
 class Settings(BaseSettings):
     database_url: str = Field(min_length=1)
     capture_scheduler_enabled: bool = True
+    clerk_secret_key: str | None = None
+    clerk_jwt_key: str | None = None
+    clerk_admin_user_ids: str | None = None
+    clerk_authorized_parties: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
