@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
@@ -18,6 +18,7 @@ from app.api import (
     sources_router,
 )
 from app.config import get_settings
+from app.auth import require_admin
 from app.database import get_session_factory
 from app.repositories import ConfigurationRepository
 from app.scheduler import CaptureScheduler, read_capture_periodicity
@@ -67,13 +68,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(configuration_router, prefix="/api/v1")
-app.include_router(channels_router, prefix="/api/v1")
+ADMIN_DEPENDENCIES = [Depends(require_admin)]
+
+app.include_router(
+    configuration_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES,
+)
+app.include_router(channels_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES)
 app.include_router(dashboard_router, prefix="/api/v1")
-app.include_router(dictionary_router, prefix="/api/v1")
-app.include_router(news_router, prefix="/api/v1")
-app.include_router(sentiment_router, prefix="/api/v1")
-app.include_router(sources_router, prefix="/api/v1")
+app.include_router(dictionary_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES)
+app.include_router(news_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES)
+app.include_router(sentiment_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES)
+app.include_router(sources_router, prefix="/api/v1", dependencies=ADMIN_DEPENDENCIES)
 
 
 def generated_openapi() -> dict[str, Any]:
@@ -86,10 +91,49 @@ def generated_openapi() -> dict[str, Any]:
         description=app.description,
         routes=app.routes,
     )
+    auth_response_components = {
+        "ClerkUnauthorized": {
+            "description": "Sesion ausente o invalida",
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                }
+            },
+        },
+        "ClerkForbidden": {
+            "description": "Cuenta autenticada no autorizada",
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                }
+            },
+        },
+        "ClerkUnavailable": {
+            "description": "Autenticacion administrativa no disponible",
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                }
+            },
+        },
+    }
+    schema.setdefault("components", {}).setdefault("responses", {}).update(
+        auth_response_components
+    )
     for path_item in schema.get("paths", {}).values():
         for operation in path_item.values():
             if isinstance(operation, dict):
                 operation.get("responses", {}).pop("422", None)
+                if operation.get("security"):
+                    responses = operation.setdefault("responses", {})
+                    for code, component_name in (
+                        ("401", "ClerkUnauthorized"),
+                        ("403", "ClerkForbidden"),
+                        ("503", "ClerkUnavailable"),
+                    ):
+                        responses[code] = {
+                            "$ref": f"#/components/responses/{component_name}"
+                        }
     component_schemas = schema.get("components", {}).get("schemas", {})
     component_schemas.pop("HTTPValidationError", None)
     component_schemas.pop("ValidationError", None)
