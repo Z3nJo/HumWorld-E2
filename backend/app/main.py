@@ -100,6 +100,14 @@ def generated_openapi() -> dict[str, Any]:
                 }
             },
         },
+        "ClerkForbidden": {
+            "description": "Cuenta autenticada no autorizada",
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                }
+            },
+        },
         "ClerkUnavailable": {
             "description": "Autenticacion administrativa no disponible",
             "content": {
@@ -120,6 +128,7 @@ def generated_openapi() -> dict[str, Any]:
                     responses = operation.setdefault("responses", {})
                     for code, component_name in (
                         ("401", "ClerkUnauthorized"),
+                        ("403", "ClerkForbidden"),
                         ("503", "ClerkUnavailable"),
                     ):
                         responses[code] = {

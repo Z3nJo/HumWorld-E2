@@ -4,7 +4,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.testclient import TestClient
 
@@ -35,6 +35,7 @@ def clerk_settings(**overrides: object) -> Settings:
         "database_url": "postgresql://localhost/humworld_test",
         "clerk_secret_key": "sk_test_example",
         "clerk_jwt_key": PUBLIC_KEY_PEM,
+        "clerk_admin_user_ids": "user_admin,user_second",
         "clerk_authorized_parties": "http://localhost:5173",
         "capture_scheduler_enabled": False,
         "_env_file": None,
@@ -102,7 +103,7 @@ def test_valid_admin_session_reaches_protected_operation() -> None:
     assert executed == ["user_admin"]
 
 
-def test_any_second_instance_user_reaches_protected_operation() -> None:
+def test_second_configured_admin_session_reaches_protected_operation() -> None:
     principal = require_admin(
         request_with_subject("user_second"),
         HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"),
@@ -113,15 +114,16 @@ def test_any_second_instance_user_reaches_protected_operation() -> None:
     assert principal.user_id == "user_second"
 
 
-def test_another_instance_user_does_not_require_application_allowlist() -> None:
-    principal = require_admin(
-        request_with_subject("user_without_manual_configuration"),
-        HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"),
-        clerk_settings(),
-        SubjectVerifier(),
-    )
+def test_user_outside_configured_admin_list_is_rejected() -> None:
+    with pytest.raises(HTTPException) as error:
+        require_admin(
+            request_with_subject("user_outside"),
+            HTTPAuthorizationCredentials(scheme="Bearer", credentials="test-token"),
+            clerk_settings(),
+            SubjectVerifier(),
+        )
 
-    assert principal.user_id == "user_without_manual_configuration"
+    assert error.value.status_code == 403
 
 
 def test_missing_token_returns_401_with_bearer_challenge() -> None:
@@ -160,7 +162,7 @@ def test_invalid_expired_wrong_origin_or_wrong_instance_token_returns_401(
     assert executed == []
 
 
-def test_valid_instance_user_reaches_operation_without_manual_configuration() -> None:
+def test_valid_non_admin_session_returns_403_before_operation() -> None:
     client, executed = make_client()
 
     response = client.get(
@@ -168,9 +170,11 @@ def test_valid_instance_user_reaches_operation_without_manual_configuration() ->
         headers=bearer(session_token(subject="user_someone_else")),
     )
 
-    assert response.status_code == 200
-    assert response.json() == {"user_id": "user_someone_else"}
-    assert executed == ["user_someone_else"]
+    assert response.status_code == 403
+    assert response.json() == {
+        "detail": "La cuenta autenticada no esta autorizada para administrar HumWorld"
+    }
+    assert executed == []
 
 
 def test_incomplete_configuration_returns_503_without_exposing_details() -> None:
