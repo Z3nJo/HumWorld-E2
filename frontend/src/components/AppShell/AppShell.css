@@ -122,7 +122,8 @@
   white-space: nowrap;
 }
 
-.navsession button {
+.navsession button,
+.navsession a {
   justify-self: start;
   border: 1px solid #555a65;
   border-radius: 5px;
@@ -130,9 +131,11 @@
   background: transparent;
   color: #e8e4da;
   font-size: 12px;
+  text-decoration: none;
 }
 
-.navsession button:hover {
+.navsession button:hover,
+.navsession a:hover {
   border-color: #e8e4da;
   background: #2a2e37;
 }

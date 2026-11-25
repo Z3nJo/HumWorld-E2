@@ -1,5 +1,9 @@
 # Evidencia E2E sanitizada — Clerk Development
 
+> Evidencia histórica del flujo inicial. Fue reemplazada por
+> `local-development-e2e-final-2026-11-25.md` después de publicar el dashboard
+> y adoptar la autorización automática para todos los usuarios de la instancia.
+
 - Fecha: 2026-11-18
 - Ambiente: Development local
 - Origen del frontend: `http://localhost:5173`

@@ -13,10 +13,10 @@ export function ClerkAuthLayout() {
           <span className="auth-status__eyebrow">Acceso administrativo</span>
           <h1>Autenticación no configurada</h1>
           <p>
-            Falta la clave pública de Clerk para este ambiente. El landing continúa
-            disponible mientras se completa la configuración.
+            Falta la clave pública de Clerk para este ambiente. El landing y el
+            dashboard continúan disponibles mientras se completa la configuración.
           </p>
-          <Link to="/">Volver al landing</Link>
+          <Link to="/dashboard">Volver al dashboard</Link>
         </section>
       </main>
     );

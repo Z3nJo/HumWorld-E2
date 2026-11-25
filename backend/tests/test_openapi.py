@@ -197,7 +197,7 @@ def test_openapi_documents_dashboard_operations_parameters_and_errors() -> None:
     }
 
 
-def test_openapi_exposes_only_the_three_expected_anonymous_api_operations() -> None:
+def test_openapi_exposes_only_the_six_expected_anonymous_api_operations() -> None:
     schema = app.openapi()
     anonymous_operations: set[tuple[str, str]] = set()
 
@@ -212,8 +212,11 @@ def test_openapi_exposes_only_the_three_expected_anonymous_api_operations() -> N
 
     assert anonymous_operations == {
         ("GET", "/api/v1/dashboards"),
+        ("GET", "/api/v1/dashboards/geografia"),
+        ("GET", "/api/v1/dashboards/evolucion"),
         ("GET", "/api/v1/dashboards/nube-palabras"),
         ("GET", "/api/v1/dashboards/noticias-influyentes"),
+        ("GET", "/api/v1/dashboards/noticias/{id_noticia}/terminos"),
     }
 
 
@@ -227,12 +230,17 @@ def test_openapi_documents_clerk_security_and_authentication_errors() -> None:
 
     protected = schema["paths"]["/api/v1/config"]["get"]
     assert protected["security"] == [{"ClerkBearer": []}]
-    assert protected["responses"].keys() >= {"401", "403", "503"}
+    assert protected["responses"].keys() >= {"401", "503"}
+    assert "403" not in protected["responses"]
+    assert "ClerkForbidden" not in schema["components"]["responses"]
 
     for path in (
         "/api/v1/dashboards",
+        "/api/v1/dashboards/geografia",
+        "/api/v1/dashboards/evolucion",
         "/api/v1/dashboards/nube-palabras",
         "/api/v1/dashboards/noticias-influyentes",
+        "/api/v1/dashboards/noticias/{id_noticia}/terminos",
     ):
         operation = schema["paths"][path]["get"]
         assert not operation.get("security")

@@ -31,8 +31,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
       security:
@@ -69,8 +67,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
       security:
@@ -138,8 +134,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/channels/{channel_id}:
@@ -184,8 +178,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     put:
@@ -235,8 +227,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     patch:
@@ -286,8 +276,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     delete:
@@ -327,8 +315,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/geografia:
@@ -337,8 +323,6 @@ paths:
       - dashboards
       summary: Humor y noticias por continente y pais para el mapa
       operationId: get_geography_api_v1_dashboards_geografia_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -373,20 +357,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/evolucion:
     get:
       tags:
       - dashboards
       summary: Evolucion diaria UTC; por defecto los ultimos 30 dias
       operationId: get_evolution_api_v1_dashboards_evolucion_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -444,12 +420,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/noticias-influyentes:
     get:
       tags:
@@ -515,8 +485,6 @@ paths:
       - dashboards
       summary: Desglose de terminos que componen el humor de una noticia
       operationId: get_news_breakdown_api_v1_dashboards_noticias__id_noticia__terminos_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: id_noticia
         in: path
@@ -543,12 +511,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
         '404':
           description: Noticia no encontrada o sin analizar
           content:
@@ -730,8 +692,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     post:
@@ -774,8 +734,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dictionary/{term_id}:
@@ -820,8 +778,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     put:
@@ -871,8 +827,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     patch:
@@ -922,8 +876,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     delete:
@@ -963,8 +915,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/news:
@@ -984,8 +934,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
       security:
@@ -1023,8 +971,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
       security:
@@ -1070,8 +1016,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
       security:
@@ -1117,8 +1061,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     get:
@@ -1192,8 +1134,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/sources/{source_id}:
@@ -1238,8 +1178,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     put:
@@ -1289,8 +1227,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     patch:
@@ -1340,8 +1276,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
     delete:
@@ -1381,8 +1315,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/ClerkUnauthorized'
-        '403':
-          $ref: '#/components/responses/ClerkForbidden'
         '503':
           $ref: '#/components/responses/ClerkUnavailable'
 components:
@@ -2347,12 +2279,6 @@ components:
   responses:
     ClerkUnauthorized:
       description: Sesion ausente o invalida
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    ClerkForbidden:
-      description: Cuenta autenticada no autorizada
       content:
         application/json:
           schema:
