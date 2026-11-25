@@ -1,9 +1,9 @@
 # Autenticación administrativa con Clerk
 
-HumWorld utiliza Clerk para autenticar las cuentas administrativas configuradas para
-cada ambiente. Production admite dos cuentas. El landing, Swagger y las tres
-consultas que alimentan el landing continúan públicos; el resto del frontend y de
-`/api/v1` requiere una de esas cuentas.
+HumWorld utiliza Clerk para autenticar las cuentas administrativas registradas en la
+instancia dedicada de cada ambiente. El landing, Swagger y las tres consultas que
+alimentan el landing continúan públicos; el resto del frontend y de `/api/v1`
+requiere una sesión válida de esa instancia.
 
 ## 1. Separar Development y Production
 
@@ -12,9 +12,10 @@ Crear dos instancias de la aplicación en Clerk:
 - **Development**: exclusivamente para `http://localhost:5173`.
 - **Production**: exclusivamente para el dominio HTTPS productivo.
 
-Las instancias tienen usuarios, claves y `user_id` independientes. Se puede usar el
-mismo correo en ambas, pero no se deben copiar claves `sk_live_` al entorno local ni
-reutilizar el `user_id` de un ambiente en el otro.
+Las instancias tienen usuarios y claves independientes. Se puede usar el mismo correo
+en ambas, pero no se deben copiar claves `sk_live_` al entorno local. HumWorld no
+replica los `user_id`: pertenecer a la instancia del ambiente concede acceso
+administrativo.
 
 ## 2. Configurar el método de acceso
 
@@ -26,14 +27,14 @@ En cada instancia, desde el panel de Clerk:
    muestre la versión del panel, y comprobar que no exista registro público.
 4. Deshabilitar Google y cualquier otro proveedor social.
 5. Deshabilitar MFA y TOTP.
-6. En **Users**, crear manualmente las cuentas administrativas necesarias. En
-   Production, crear las dos cuentas previstas.
-7. Abrir cada usuario y copiar su identificador inmutable `user_...`. Configurar esos
-   valores separados por comas en `CLERK_ADMIN_USER_IDS` para el mismo ambiente.
+6. En **Users**, crear manualmente las cuentas administrativas necesarias.
+7. Revisar periódicamente esa lista y eliminar o suspender de inmediato cualquier
+   cuenta que ya no deba administrar HumWorld.
 
-La interfaz de HumWorld no contiene ruta ni enlace de registro. El backend permite
-únicamente los identificadores enumerados en `CLERK_ADMIN_USER_IDS`; cualquier otro
-usuario recibirá `403` aunque consiga iniciar sesión en Clerk.
+La interfaz de HumWorld no contiene ruta ni enlace de registro. El backend acepta a
+cualquier usuario con una sesión válida de la instancia configurada, por lo que crear
+una cuenta en ella equivale a conceder acceso administrativo. No habilitar registro
+público en esta instancia.
 
 Clerk puede pedir por correo un código temporal al detectar un navegador nuevo
 (Device Trust), incluso con MFA/TOTP desactivados. HumWorld admite ese desafío
@@ -60,7 +61,6 @@ Copiar `.env.example` a `.env` y completar, además de PostgreSQL:
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_REEMPLAZAR
 CLERK_SECRET_KEY=sk_test_REEMPLAZAR
 CLERK_JWT_KEY=-----BEGIN PUBLIC KEY-----\nREEMPLAZAR\n-----END PUBLIC KEY-----
-CLERK_ADMIN_USER_IDS=user_REEMPLAZAR
 CLERK_AUTHORIZED_PARTIES=http://localhost:5173
 ```
 
@@ -87,7 +87,7 @@ Comprobar:
 ## 5. Probar la API y Swagger
 
 Swagger permanece en `http://localhost:3000/api/docs`. Las operaciones protegidas
-muestran un candado y los códigos `401`, `403` y `503`; las tres operaciones públicas
+muestran un candado y los códigos `401` y `503`; las tres operaciones públicas
 no exigen Bearer:
 
 - `GET /api/v1/dashboards`
@@ -102,17 +102,29 @@ await window.Clerk.session.getToken()
 ```
 
 Copiar únicamente el token temporal en **Authorize** de Swagger. No guardarlo en
-archivos, capturas, logs ni evidencia. Sin token, una operación protegida responde
-`401`; un token Clerk válido de otra cuenta responde `403`.
+archivos, capturas, logs ni evidencia. Sin token, con un token inválido o con una
+sesión de otra instancia, una operación protegida responde `401`. Cualquier usuario
+válido de la instancia configurada puede ejecutar la operación.
 
 ## 6. Configurar Production
 
-Repetir el procedimiento con la instancia Production y secretos del proveedor de
-despliegue. Usar el origen HTTPS exacto en `CLERK_AUTHORIZED_PARTIES`, la publishable
-key `pk_live_...`, la secret key `sk_live_...`, la JWT key y los dos `user_id`
-productivos en `CLERK_ADMIN_USER_IDS`, separados por comas. Antes de publicar, probar
-el inicio de sesión y el acceso protegido con ambas cuentas de Production; una cuenta
-de Development no es válida en ese ambiente.
+Repetir el procedimiento con la instancia Production y entregar al encargado de
+despliegue esta lista mediante el gestor de secretos del proveedor, nunca por el
+repositorio, capturas, logs ni correo sin cifrar:
+
+| Variable | Servicio | Formato Production | Origen en Clerk o despliegue |
+| --- | --- | --- | --- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Frontend | `pk_live_...` | **API Keys → Publishable key** de la instancia Production |
+| `CLERK_SECRET_KEY` | Backend | `sk_live_...` | **API Keys → Secret key** de la instancia Production |
+| `CLERK_JWT_KEY` | Backend | PEM completo; usar `\n` si el proveedor exige una línea | **API Keys → JWT public key** de la instancia Production |
+| `CLERK_AUTHORIZED_PARTIES` | Backend | Origen HTTPS exacto, sin ruta ni `/` final | Dominio público configurado por el proveedor de despliegue |
+
+El encargado cargará esos valores directamente en el proveedor. Antes de publicar,
+debe confirmar que el registro público continúa deshabilitado y probar el inicio de
+sesión y el acceso protegido con las cuentas previstas de Production; una cuenta de
+Development no es válida en ese ambiente. Agregar un usuario nuevo en Production no
+requiere modificar variables ni redesplegar HumWorld. La carga y la verificación
+productivas no requieren compartir acceso ni secretos con el repositorio.
 
 Si se rota la JWT key o la secret key, actualizar ambos servicios coordinadamente y
 verificar una operación protegida. Ante una configuración incompleta, las operaciones
