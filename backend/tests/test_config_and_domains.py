@@ -45,12 +45,11 @@ def test_missing_database_url_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> 
         Settings(_env_file=None)
 
 
-def test_clerk_configuration_parses_admin_ids_and_authorized_parties() -> None:
+def test_clerk_configuration_parses_authorized_parties() -> None:
     settings = Settings(
         database_url="postgresql://localhost/humworld",
         clerk_secret_key="sk_test_example",
         clerk_jwt_key="-----BEGIN PUBLIC KEY-----\\nabc\\n-----END PUBLIC KEY-----",
-        clerk_admin_user_ids="user_admin, user_second",
         clerk_authorized_parties="http://localhost:5173, https://humworld.example/",
         _env_file=None,
     )
@@ -61,7 +60,6 @@ def test_clerk_configuration_parses_admin_ids_and_authorized_parties() -> None:
         "http://localhost:5173",
         "https://humworld.example",
     )
-    assert configuration.admin_user_ids == ("user_admin", "user_second")
     assert "\n" in configuration.jwt_key
 
 
@@ -70,8 +68,6 @@ def test_clerk_configuration_parses_admin_ids_and_authorized_parties() -> None:
     [
         ("clerk_secret_key", None),
         ("clerk_jwt_key", "not-a-pem"),
-        ("clerk_admin_user_ids", "user_admin,not-a-clerk-id"),
-        ("clerk_admin_user_ids", "user_admin,"),
         ("clerk_authorized_parties", "localhost:5173"),
     ],
 )
@@ -83,7 +79,6 @@ def test_clerk_configuration_fails_closed_when_incomplete_or_malformed(
         "database_url": "postgresql://localhost/humworld",
         "clerk_secret_key": "sk_test_example",
         "clerk_jwt_key": "-----BEGIN PUBLIC KEY-----\\nabc\\n-----END PUBLIC KEY-----",
-        "clerk_admin_user_ids": "user_admin",
         "clerk_authorized_parties": "http://localhost:5173",
         "_env_file": None,
     }

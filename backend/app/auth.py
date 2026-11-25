@@ -17,7 +17,6 @@ class ClerkConfigurationError(ValueError):
 class ClerkAuthConfiguration:
     secret_key: str
     jwt_key: str
-    admin_user_ids: tuple[str, ...]
     authorized_parties: tuple[str, ...]
 
 
@@ -67,24 +66,9 @@ def _parse_authorized_parties(value: str | None) -> tuple[str, ...]:
     return tuple(parties)
 
 
-def _parse_admin_user_ids(value: str | None) -> tuple[str, ...]:
-    raw_value = _required(value, "CLERK_ADMIN_USER_IDS")
-    user_ids = [user_id.strip() for user_id in raw_value.split(",")]
-    if any(not user_id for user_id in user_ids):
-        raise ClerkConfigurationError(
-            "CLERK_ADMIN_USER_IDS debe contener identificadores no vacios separados por comas"
-        )
-    if any(not user_id.startswith("user_") for user_id in user_ids):
-        raise ClerkConfigurationError(
-            "CLERK_ADMIN_USER_IDS contiene un identificador Clerk invalido"
-        )
-    return tuple(dict.fromkeys(user_ids))
-
-
 def resolve_clerk_configuration(settings: Settings) -> ClerkAuthConfiguration:
     secret_key = _required(settings.clerk_secret_key, "CLERK_SECRET_KEY")
     jwt_key = _required(settings.clerk_jwt_key, "CLERK_JWT_KEY").replace("\\n", "\n")
-    admin_user_ids = _parse_admin_user_ids(settings.clerk_admin_user_ids)
 
     if not secret_key.startswith(("sk_test_", "sk_live_")):
         raise ClerkConfigurationError("CLERK_SECRET_KEY no tiene un formato Clerk valido")
@@ -93,7 +77,6 @@ def resolve_clerk_configuration(settings: Settings) -> ClerkAuthConfiguration:
     return ClerkAuthConfiguration(
         secret_key=secret_key,
         jwt_key=jwt_key,
-        admin_user_ids=admin_user_ids,
         authorized_parties=_parse_authorized_parties(settings.clerk_authorized_parties),
     )
 
@@ -177,10 +160,4 @@ def require_admin(
         raise _unauthorized()
     if not isinstance(subject, str) or not subject:
         raise _unauthorized()
-    if subject not in configuration.admin_user_ids:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="La cuenta autenticada no esta autorizada para administrar HumWorld",
-        )
-
     return AdminPrincipal(user_id=subject, issuer=issuer)

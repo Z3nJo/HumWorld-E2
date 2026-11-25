@@ -16,7 +16,6 @@ from app.api.schemas import (
     SentimentResponse,
 )
 from app.database import get_db
-from app.auth import require_admin
 from app.models.domains import Continent
 from app.repositories import ConfigurationRepository, DashboardRepository
 from app.services.dashboards import DashboardService
@@ -27,14 +26,6 @@ ERROR_RESPONSES = {
     400: {"model": ErrorResponse, "description": "Solicitud invalida"},
     500: {"model": ErrorResponse, "description": "Error interno"},
 }
-AUTH_ERROR_RESPONSES = {
-    401: {"model": ErrorResponse, "description": "Sesion ausente o invalida"},
-    403: {"model": ErrorResponse, "description": "Cuenta no autorizada"},
-    503: {"model": ErrorResponse, "description": "Autenticacion no disponible"},
-}
-PROTECTED_ERROR_RESPONSES = {**ERROR_RESPONSES, **AUTH_ERROR_RESPONSES}
-
-
 def get_dashboard_service(
     session: Annotated[Session, Depends(get_db)],
 ) -> DashboardService:
@@ -56,8 +47,7 @@ def _global_response(result) -> DashboardGlobalAggregateResponse | None:
 @dashboard_router.get(
     "/geografia", response_model=DashboardResponse,
     summary="Humor y noticias por continente y pais para el mapa",
-    responses=PROTECTED_ERROR_RESPONSES,
-    dependencies=[Depends(require_admin)],
+    responses=ERROR_RESPONSES,
 )
 def get_geography(
     service: Annotated[DashboardService, Depends(get_dashboard_service)],
@@ -81,8 +71,7 @@ def get_geography(
 @dashboard_router.get(
     "/evolucion", response_model=DashboardEvolutionResponse,
     summary="Evolucion diaria UTC; por defecto los ultimos 30 dias",
-    responses=PROTECTED_ERROR_RESPONSES,
-    dependencies=[Depends(require_admin)],
+    responses=ERROR_RESPONSES,
 )
 def get_evolution(
     service: Annotated[DashboardService, Depends(get_dashboard_service)],
@@ -116,10 +105,9 @@ def get_influential_news(
 @dashboard_router.get(
     "/noticias/{id_noticia}/terminos", response_model=SentimentResponse,
     summary="Desglose de terminos que componen el humor de una noticia",
-    responses={**PROTECTED_ERROR_RESPONSES, 404: {
+    responses={**ERROR_RESPONSES, 404: {
         "model": ErrorResponse, "description": "Noticia no encontrada o sin analizar",
     }},
-    dependencies=[Depends(require_admin)],
 )
 def get_news_breakdown(
     service: Annotated[DashboardService, Depends(get_dashboard_service)],
