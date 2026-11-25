@@ -323,8 +323,6 @@ paths:
       - dashboards
       summary: Humor y noticias por continente y pais para el mapa
       operationId: get_geography_api_v1_dashboards_geografia_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -359,18 +357,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/evolucion:
     get:
       tags:
       - dashboards
       summary: Evolucion diaria UTC; por defecto los ultimos 30 dias
       operationId: get_evolution_api_v1_dashboards_evolucion_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: fecha_desde
         in: query
@@ -428,10 +420,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
   /api/v1/dashboards/noticias-influyentes:
     get:
       tags:
@@ -497,8 +485,6 @@ paths:
       - dashboards
       summary: Desglose de terminos que componen el humor de una noticia
       operationId: get_news_breakdown_api_v1_dashboards_noticias__id_noticia__terminos_get
-      security:
-      - ClerkBearer: []
       parameters:
       - name: id_noticia
         in: path
@@ -525,10 +511,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/ClerkUnauthorized'
-        '503':
-          $ref: '#/components/responses/ClerkUnavailable'
         '404':
           description: Noticia no encontrada o sin analizar
           content:
