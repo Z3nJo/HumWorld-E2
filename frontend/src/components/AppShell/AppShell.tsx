@@ -1,13 +1,17 @@
-import { useClerk, useUser } from '@clerk/react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { Logo } from '../../features/landing/presentation/Logo';
 import './AppShell.css';
 
-export const AppShell = () => {
-  const { signOut } = useClerk();
-  const { user } = useUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? 'Cuenta administrativa';
+export type AppShellSession = {
+  email: string;
+  onSignOut: () => void;
+};
 
+type AppShellProps = {
+  session?: AppShellSession | null;
+};
+
+export const AppShell = ({ session = null }: AppShellProps) => {
   return (
     <div className="app">
       <aside className="nav">
@@ -29,43 +33,49 @@ export const AppShell = () => {
           </NavLink>
         </nav>
 
-        <nav className="navgrp">
-          <h6>Administración</h6>
-          <NavLink
-            to="/fuentes"
-            className={({ isActive }) => (isActive ? 'on' : '')}
-          >
-            Fuentes y canales<span>RSS</span>
-          </NavLink>
-          <NavLink
-            to="/dictionary"
-            className={({ isActive }) => (isActive ? 'on' : '')}
-          >
-            Diccionario<span>es · en</span>
-          </NavLink>
-          <NavLink
-            to="/parametros"
-            className={({ isActive }) => (isActive ? 'on' : '')}
-          >
-            Parámetros<span>/config</span>
-          </NavLink>
-        </nav>
+        {session ? (
+          <>
+            <nav className="navgrp">
+              <h6>Administración</h6>
+              <NavLink
+                to="/fuentes"
+                className={({ isActive }) => (isActive ? 'on' : '')}
+              >
+                Fuentes y canales<span>RSS</span>
+              </NavLink>
+              <NavLink
+                to="/dictionary"
+                className={({ isActive }) => (isActive ? 'on' : '')}
+              >
+                Diccionario<span>es · en</span>
+              </NavLink>
+              <NavLink
+                to="/parametros"
+                className={({ isActive }) => (isActive ? 'on' : '')}
+              >
+                Parámetros<span>/config</span>
+              </NavLink>
+            </nav>
 
-
-        <div className="navsession">
-          <span>Sesión administrativa</span>
-          <strong title={email}>{email}</strong>
-          <button type="button" onClick={() => void signOut({ redirectUrl: '/' })}>
-            Cerrar sesión
-          </button>
-        </div>
+            <div className="navsession">
+              <span>Sesión administrativa</span>
+              <strong title={session.email}>{session.email}</strong>
+              <button type="button" onClick={session.onSignOut}>
+                Cerrar sesión
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="navsession navsession--public">
+            <span>Administración</span>
+            <Link to="/sign-in" state={{ from: '/dashboard' }}>
+              Acceso administrativo
+            </Link>
+          </div>
+        )}
       </aside>
 
-      <main>
-
-
-        <Outlet />
-      </main>
+      <main><Outlet /></main>
     </div>
   );
 };

@@ -62,7 +62,7 @@ export function ProtectedRoute() {
           <span className="auth-status__eyebrow">Acceso denegado</span>
           <h1>Esta cuenta no administra HumWorld</h1>
           <p>La sesión es válida, pero no corresponde a la cuenta configurada.</p>
-          <button type="button" onClick={() => void signOut({ redirectUrl: '/' })}>
+          <button type="button" onClick={() => void signOut({ redirectUrl: '/dashboard' })}>
             Cerrar sesión
           </button>
         </section>

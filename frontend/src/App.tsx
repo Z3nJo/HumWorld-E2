@@ -5,6 +5,7 @@ import { DictionaryPage } from './pages/Dictionary/DictionaryPage';
 import { ParametersPage } from './pages/Parameters/ParametersPage';
 import { SourcesPage } from './pages/Sources/SourcesPage';
 import { LandingPage } from './features/landing/presentation/LandingPage';
+import { DashboardLayout } from './components/AppShell/DashboardLayout';
 
 const ClerkAuthLayout = lazy(() => import('./features/auth/presentation/ClerkAuthLayout').then(
   (module) => ({ default: module.ClerkAuthLayout }),
@@ -15,8 +16,8 @@ const ProtectedRoute = lazy(() => import('./features/auth/presentation/Protected
 const SignInPage = lazy(() => import('./features/auth/presentation/SignInPage').then(
   (module) => ({ default: module.SignInPage }),
 ));
-const AppShell = lazy(() => import('./components/AppShell/AppShell').then(
-  (module) => ({ default: module.AppShell }),
+const AdminAppShell = lazy(() => import('./components/AppShell/AdminAppShell').then(
+  (module) => ({ default: module.AdminAppShell }),
 ));
 
 function AuthChunk({ children }: { children: ReactNode }) {
@@ -25,6 +26,12 @@ function AuthChunk({ children }: { children: ReactNode }) {
 
 const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
+  {
+    element: <DashboardLayout />,
+    children: [
+      { path: 'dashboard', element: <DashboardPage /> },
+    ],
+  },
   {
     element: <AuthChunk><ClerkAuthLayout /></AuthChunk>,
     children: [
@@ -36,9 +43,8 @@ const router = createBrowserRouter([
         element: <AuthChunk><ProtectedRoute /></AuthChunk>,
         children: [
           {
-            element: <AuthChunk><AppShell /></AuthChunk>,
+            element: <AuthChunk><AdminAppShell /></AuthChunk>,
             children: [
-              { path: 'dashboard', element: <DashboardPage /> },
               { path: 'dictionary', element: <DictionaryPage /> },
               { path: 'fuentes', element: <SourcesPage /> },
               { path: 'parametros', element: <ParametersPage /> },
