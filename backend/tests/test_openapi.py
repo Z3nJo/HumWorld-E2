@@ -227,7 +227,9 @@ def test_openapi_documents_clerk_security_and_authentication_errors() -> None:
 
     protected = schema["paths"]["/api/v1/config"]["get"]
     assert protected["security"] == [{"ClerkBearer": []}]
-    assert protected["responses"].keys() >= {"401", "403", "503"}
+    assert protected["responses"].keys() >= {"401", "503"}
+    assert "403" not in protected["responses"]
+    assert "ClerkForbidden" not in schema["components"]["responses"]
 
     for path in (
         "/api/v1/dashboards",
