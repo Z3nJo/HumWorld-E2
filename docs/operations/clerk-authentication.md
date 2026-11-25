@@ -1,9 +1,10 @@
 # Autenticación administrativa con Clerk
 
 HumWorld utiliza Clerk para autenticar las cuentas administrativas registradas en la
-instancia dedicada de cada ambiente. El landing, Swagger y las tres consultas que
-alimentan el landing continúan públicos; el resto del frontend y de `/api/v1`
-requiere una sesión válida de esa instancia.
+instancia dedicada de cada ambiente. El landing, el dashboard, Swagger y
+las seis consultas analíticas continúan públicos; los módulos de fuentes,
+diccionario y parámetros, junto con las demás operaciones de `/api/v1`, requieren
+una sesión válida de esa instancia.
 
 ## 1. Separar Development y Production
 
@@ -80,19 +81,27 @@ docker compose --env-file .env -f opsx/docker-compose.yml up --build
 Comprobar:
 
 1. `http://localhost:5173/` carga sin iniciar sesión.
-2. `http://localhost:5173/dashboard` redirige a `/sign-in`.
-3. La cuenta administrativa inicia sesión y vuelve al dashboard.
-4. El shell muestra el correo y **Cerrar sesión** vuelve al landing.
+2. `http://localhost:5173/dashboard` carga el panel completo sin iniciar sesión y
+   muestra únicamente **Acceso administrativo**.
+3. El acceso administrativo inicia sesión y vuelve a `/dashboard`, donde el shell
+   revela Fuentes y canales, Diccionario, Parámetros y el correo de la cuenta.
+4. Abrir directamente `/fuentes`, `/dictionary` o `/parametros` conserva esa ruta
+   durante el inicio de sesión.
+5. **Cerrar sesión** permanece en `/dashboard` y devuelve el shell a su navegación
+   pública.
 
 ## 5. Probar la API y Swagger
 
 Swagger permanece en `http://localhost:3000/api/docs`. Las operaciones protegidas
-muestran un candado y los códigos `401` y `503`; las tres operaciones públicas
-no exigen Bearer:
+muestran un candado y los códigos `401` y `503`; las seis operaciones
+analíticas públicas no exigen Bearer:
 
 - `GET /api/v1/dashboards`
+- `GET /api/v1/dashboards/geografia`
+- `GET /api/v1/dashboards/evolucion`
 - `GET /api/v1/dashboards/nube-palabras`
 - `GET /api/v1/dashboards/noticias-influyentes`
+- `GET /api/v1/dashboards/noticias/{id_noticia}/terminos`
 
 Para una prueba local protegida, iniciar sesión en el frontend y obtener un token de
 sesión temporal desde la consola del navegador:
@@ -129,4 +138,4 @@ productivas no requieren compartir acceso ni secretos con el repositorio.
 Si se rota la JWT key o la secret key, actualizar ambos servicios coordinadamente y
 verificar una operación protegida. Ante una configuración incompleta, las operaciones
 protegidas fallan de forma cerrada con `503`, pero el landing y sus consultas públicas
-continúan disponibles.
+continúan disponibles junto con el dashboard y sus seis consultas analíticas.

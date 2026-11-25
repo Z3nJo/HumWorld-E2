@@ -27,7 +27,7 @@ Funcionalidades principales:
 | **Fuentes de datos** | Exclusivamente RSS. **No se utiliza web scraping** en ninguna parte del sistema. |
 | **Idiomas analizados** | Español e inglés únicamente. |
 | **Categorización** | Primer nivel de IPTC Media Topics. |
-| **Autenticación** | Clerk con una instancia restringida por ambiente; todo usuario registrado en ella es administrador. El landing y sus tres consultas de solo lectura son públicos; dashboard y administración requieren sesión. |
+| **Autenticación** | Clerk con una instancia restringida por ambiente; todo usuario registrado en ella es administrador. El landing, el dashboard y sus seis consultas analíticas son públicos; fuentes, diccionario, parámetros y las operaciones administrativas requieren sesión. |
 
 ## 3. Stack técnico
 

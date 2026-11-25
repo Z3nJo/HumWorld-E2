@@ -1,15 +1,18 @@
 ## Why
 
-HumWorld expone actualmente el dashboard y las funciones administrativas sin control de acceso, por lo que cualquier persona que conozca sus rutas puede utilizarlos. Se requiere restringir esas funciones a las identidades administrativas configuradas por ambiente —dos en producción—, sin alterar los datos públicos que consume el landing.
+HumWorld necesita permitir que cualquier persona consulte el humor del mundo desde el landing y el dashboard, pero actualmente comparte esa superficie con funciones capaces de modificar la configuración del sistema. Se requiere separar la experiencia pública de consulta de los módulos administrativos, restringiendo estos últimos a las identidades registradas en la instancia Clerk dedicada de cada ambiente, sin hacer depender el dashboard público de Clerk ni mantener una lista manual paralela.
 
 ## What Changes
 
 - Integrar Clerk como proveedor de identidad mediante correo electrónico y contraseña, sin proveedores sociales, registro público, MFA ni TOTP.
-- Permitir que cada ambiente configure una lista explícita de cuentas administrativas autorizadas; producción admitirá dos cuentas y desarrollo local podrá usar una o más, manteniendo identidades independientes entre ambientes.
-- Incorporar una pantalla pública de inicio de sesión con correo y contraseña simultáneos, recuperación de contraseña por correo, y un desafío condicional de código por correo cuando Clerk solicite confiar en un dispositivo nuevo; permitir cierre de sesión y retorno al dashboard después de autenticar.
-- Proteger las rutas de frontend `/dashboard`, `/fuentes`, `/dictionary` y `/parametros`, conservando `/` como landing público.
-- Mantener públicos `GET /api/v1/dashboards`, `GET /api/v1/dashboards/nube-palabras` y `GET /api/v1/dashboards/noticias-influyentes`, porque alimentan el landing y no contienen información sensible.
-- Exigir un token Clerk válido y que su sujeto coincida con uno de los administradores configurados para los demás endpoints de `/api/v1`; responder `401` ante credenciales ausentes o inválidas y `403` ante una identidad Clerk válida que no esté en la lista autorizada.
+- Autorizar como administradores a todos los usuarios con una sesión válida emitida por la instancia Clerk dedicada del ambiente, manteniendo el registro público deshabilitado y las identidades independientes entre Development y Production.
+- Incorporar una pantalla pública de inicio de sesión con correo y contraseña simultáneos, recuperación de contraseña por correo, y un desafío condicional de código por correo cuando Clerk solicite confiar en un dispositivo nuevo; después de autenticar desde el acceso administrativo, volver por defecto a `/dashboard`, y conservar cualquier ruta administrativa solicitada directamente.
+- Mantener públicas las rutas `/` y `/dashboard`; proteger `/fuentes`, `/dictionary` y `/parametros` como módulos administrativos.
+- Mostrar en el dashboard anónimo únicamente la navegación de análisis y una acción de acceso administrativo; cuando exista una sesión activa, conservar el mismo dashboard y revelar los módulos administrativos, la cuenta activa y el cierre de sesión sin cambiar de URL ni rediseñar la experiencia existente.
+- Permitir acceso anónimo a las seis consultas analíticas de `GET /api/v1/dashboards`: resumen, geografía, evolución, nube de palabras, noticias influyentes y desglose de términos por noticia.
+- Exigir un token Clerk válido, emitido por la instancia y el origen configurados, para las operaciones administrativas restantes de `/api/v1`; responder `401` ante credenciales ausentes, inválidas, expiradas o emitidas por otra instancia.
+- Mantener el dashboard y sus consultas disponibles aunque Clerk no esté configurado, todavía esté cargando o no permita establecer una sesión; la autenticación ampliará la navegación, pero no será requisito para consultar el humor del mundo.
+- Al cerrar sesión, permanecer en `/dashboard` y volver inmediatamente a su presentación pública.
 - Mantener Swagger y el esquema OpenAPI públicos, documentando autenticación Bearer y las respuestas de autorización en las operaciones protegidas.
 - Configurar Clerk mediante variables de entorno separadas para frontend y backend, sin persistir claves ni secretos en el repositorio.
 
@@ -17,18 +20,18 @@ HumWorld expone actualmente el dashboard y las funciones administrativas sin con
 
 ### New Capabilities
 
-- `admin-authentication`: Autenticación Clerk de cuentas administrativas explícitamente permitidas (dos en producción), recuperación y cierre de sesión, protección de rutas y endpoints, matriz de recursos públicos y respuestas `401`/`403`.
+- `admin-authentication`: Autenticación Clerk de los usuarios registrados en la instancia dedicada de cada ambiente, recuperación y cierre de sesión, presentación pública o administrativa del dashboard, protección de módulos de gestión, matriz de recursos públicos y rechazo de credenciales inválidas o externas.
 
 ### Modified Capabilities
 
-- `frontend/app-shell`: Cambia el acceso a la raíz para conservar el landing público e incorpora el límite autenticado del shell administrativo.
-- `dashboard-aggregation`: Define cuáles consultas del dashboard permanecen públicas y cuáles requieren la sesión administrativa, y publica esa seguridad en OpenAPI.
+- `frontend/app-shell`: Conserva la identidad visual del shell y adapta su navegación según exista o no una sesión, sin bloquear el dashboard público.
+- `dashboard-aggregation`: Declara públicas todas las consultas analíticas del dashboard y publica esa ausencia de autenticación obligatoria en OpenAPI.
 
 ## Impact
 
-- Frontend React/Vite: proveedor Clerk, rutas públicas y protegidas, pantalla de inicio de sesión, cliente HTTP con token Bearer y controles de sesión en el shell.
-- Backend FastAPI: validación de JWT de Clerk, comprobación del usuario administrativo, dependencias de autorización y clasificación explícita de routers públicos/protegidos.
-- Contrato API: esquema de seguridad Bearer y respuestas `401`/`403` para operaciones protegidas, sin cambiar las rutas ni los datos usados por el landing.
-- Configuración y despliegue: nuevas variables `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_KEY`, `CLERK_ADMIN_USER_IDS` (lista separada por comas) y `CLERK_AUTHORIZED_PARTIES`, con valores distintos para desarrollo y producción.
-- Validación operativa del cambio: probar en localhost las dos cuentas Development autorizadas y preparar la lista de variables para entregar al encargado de Production. La configuración y las pruebas del ambiente productivo quedan a cargo de ese encargado.
-- Dependencias y pruebas: SDKs oficiales de Clerk y cobertura automatizada de acceso público, administrador válido, token inválido o expirado, usuario no autorizado, redirección y cierre de sesión.
+- Frontend React/Vite: proveedor Clerk no bloqueante para `/dashboard`, rutas públicas y protegidas, pantalla de inicio de sesión, navegación del shell adaptada a la sesión, cliente HTTP con token Bearer y controles de sesión administrativos.
+- Backend FastAPI: validación de JWT de Clerk, aceptación de cualquier sujeto válido de la instancia configurada, dependencias de autorización y clasificación explícita de consultas analíticas públicas frente a routers administrativos protegidos.
+- Contrato API: las seis consultas del dashboard permanecen sin esquema de seguridad; las operaciones administrativas declaran Bearer y respuestas `401`/`503`, sin cambiar rutas ni formas de respuesta.
+- Configuración y despliegue: variables `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWT_KEY` y `CLERK_AUTHORIZED_PARTIES`, con valores distintos para desarrollo y producción y sin una lista de usuarios en `.env`.
+- Validación operativa del cambio: probar en localhost dos cuentas registradas en Development sin configurarlas individualmente y preparar las variables de instancia para el encargado de Production. La configuración y las pruebas del ambiente productivo quedan a cargo de ese encargado.
+- Dependencias y pruebas: SDKs oficiales de Clerk y cobertura automatizada del dashboard anónimo, presentación administrativa tras autenticar, continuidad pública ante fallas de Clerk, múltiples usuarios válidos de la instancia, token inválido, expirado o externo, retorno a la ruta solicitada y cierre de sesión hacia el dashboard público.
