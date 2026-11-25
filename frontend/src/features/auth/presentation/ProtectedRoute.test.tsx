@@ -38,11 +38,11 @@ function ProtectedRequest() {
 function renderProtected(child = <div>Contenido administrativo</div>) {
   return render(
     <StrictMode>
-      <MemoryRouter initialEntries={['/dashboard?periodo=hoy']}>
+      <MemoryRouter initialEntries={['/parametros?seccion=humor']}>
         <Routes>
           <Route path="/sign-in" element={<SignInProbe />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={child} />
+            <Route path="/parametros" element={child} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -64,18 +64,24 @@ function NavigationShell() {
   );
 }
 
-function RequestingScreen({ name }: { name: string }) {
+function RequestingScreen({
+  name,
+  path = '/api/v1/config',
+}: {
+  name: string;
+  path?: string;
+}) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void http.get<{ ok: boolean }>('/api/v1/config').then(() => {
+    void http.get<{ ok: boolean }>(path).then(() => {
       if (active) setReady(true);
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [path]);
 
   return <div>{name} {ready ? 'lista' : 'cargando'}</div>;
 }
@@ -83,12 +89,15 @@ function RequestingScreen({ name }: { name: string }) {
 function renderProtectedNavigation() {
   return render(
     <StrictMode>
-      <MemoryRouter initialEntries={['/dashboard']}>
+      <MemoryRouter initialEntries={['/fuentes']}>
         <Routes>
           <Route path="/sign-in" element={<SignInProbe />} />
+          <Route
+            path="/dashboard"
+            element={<RequestingScreen name="Dashboard" path="/api/v1/dashboards" />}
+          />
           <Route element={<ProtectedRoute />}>
             <Route element={<NavigationShell />}>
-              <Route path="/dashboard" element={<RequestingScreen name="Dashboard" />} />
               <Route path="/fuentes" element={<RequestingScreen name="Fuentes" />} />
               <Route path="/dictionary" element={<RequestingScreen name="Diccionario" />} />
               <Route path="/parametros" element={<RequestingScreen name="Parámetros" />} />
@@ -113,7 +122,7 @@ describe('ProtectedRoute', () => {
   it('redirects an anonymous visit and preserves its requested URL', () => {
     renderProtected();
 
-    expect(screen.getByText('Inicio de sesión desde /dashboard?periodo=hoy')).toBeInTheDocument();
+    expect(screen.getByText('Inicio de sesión desde /parametros?seccion=humor')).toBeInTheDocument();
   });
 
   it('renders the administrative content after preparing the token boundary', async () => {
@@ -131,18 +140,25 @@ describe('ProtectedRoute', () => {
     const user = userEvent.setup();
     renderProtectedNavigation();
 
-    expect(await screen.findByText('Dashboard lista')).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Fuentes' }));
     expect(await screen.findByText('Fuentes lista')).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Diccionario' }));
     expect(await screen.findByText('Diccionario lista')).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Parámetros' }));
     expect(await screen.findByText('Parámetros lista')).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: 'Dashboard' }));
+    expect(await screen.findByText('Dashboard lista')).toBeInTheDocument();
 
     expect(clerk.signOut).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalled();
-    for (const [, init] of fetchMock.mock.calls) {
+    const administrativeCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/v1/config'));
+    const dashboardCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/v1/dashboards'));
+    expect(administrativeCalls.length).toBeGreaterThan(0);
+    expect(dashboardCalls.length).toBeGreaterThan(0);
+    for (const [, init] of administrativeCalls) {
       expect((init?.headers as Headers).get('Authorization')).toBe('Bearer session-token');
+    }
+    for (const [, init] of dashboardCalls) {
+      expect((init?.headers as Headers).get('Authorization')).toBeNull();
     }
   });
 
@@ -171,6 +187,6 @@ describe('ProtectedRoute', () => {
     await user.click(await screen.findByRole('button', { name: 'Consultar protegido' }));
 
     await waitFor(() => expect(clerk.signOut).toHaveBeenCalledOnce());
-    expect(await screen.findByText('Inicio de sesión desde /dashboard?periodo=hoy')).toBeInTheDocument();
+    expect(await screen.findByText('Inicio de sesión desde /parametros?seccion=humor')).toBeInTheDocument();
   });
 });

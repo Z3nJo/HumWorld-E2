@@ -94,7 +94,7 @@ function renderSignIn(from: string = '/dashboard') {
     <MemoryRouter initialEntries={[{ pathname: '/sign-in', state: { from } }]}>
       <Routes>
         <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/dashboard" element={<div>Dashboard protegido</div>} />
+        <Route path="/dashboard" element={<div>Dashboard público con sesión</div>} />
         <Route path="/fuentes" element={<div>Fuentes protegidas</div>} />
       </Routes>
     </MemoryRouter>,
@@ -202,7 +202,7 @@ describe('SignInPage', () => {
 
     expect(clerk.submitPassword).toHaveBeenCalledWith({ password: 'nueva-clave' });
     expect(clerk.finalize).toHaveBeenCalledOnce();
-    expect(await screen.findByText('Dashboard protegido')).toBeInTheDocument();
+    expect(await screen.findByText('Dashboard público con sesión')).toBeInTheDocument();
   });
 
   it('returns an authenticated session to the original protected route', () => {

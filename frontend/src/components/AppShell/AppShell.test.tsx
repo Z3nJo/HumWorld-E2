@@ -3,51 +3,38 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 
-const signOut = vi.hoisted(() => vi.fn());
-
-vi.mock('@clerk/react', () => ({
-  useClerk: () => ({ signOut }),
-  useUser: () => ({
-    user: { primaryEmailAddress: { emailAddress: 'admin@humworld.cl' } },
-  }),
-}));
-
-beforeEach(() => signOut.mockReset());
-
 describe('AppShell', () => {
-  it('renders the HumWorld branding and navigation links', () => {
-    render(
-      <MemoryRouter initialEntries={['/dictionary']}>
-        <AppShell />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByText('HumWorld')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Diccionario/i })).toHaveAttribute(
-      'href',
-      '/dictionary',
-    );
-    expect(screen.getByRole('link', { name: /Parámetros/i })).toHaveAttribute(
-      'href',
-      '/parametros',
-    );
-    expect(screen.getByRole('link', { name: /Fuentes y canales/i })).toHaveAttribute(
-      'href',
-      '/fuentes',
-    );
-  });
-
-  it('shows the active account and signs out toward the landing', async () => {
-    const user = userEvent.setup();
+  it('renders the public navigation without administrative modules', () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <AppShell />
       </MemoryRouter>,
     );
 
+    expect(screen.getByText('HumWorld')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Dashboard de humor/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Acceso administrativo' })).toHaveAttribute('href', '/sign-in');
+    expect(screen.queryByRole('link', { name: /Diccionario/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Parámetros/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Fuentes y canales/i })).not.toBeInTheDocument();
+  });
+
+  it('shows administrative links and delegates sign-out for an active session', async () => {
+    const onSignOut = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <AppShell session={{ email: 'admin@humworld.cl', onSignOut }} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /Diccionario/i })).toHaveAttribute('href', '/dictionary');
+    expect(screen.getByRole('link', { name: /Parámetros/i })).toHaveAttribute('href', '/parametros');
+    expect(screen.getByRole('link', { name: /Fuentes y canales/i })).toHaveAttribute('href', '/fuentes');
+    expect(screen.queryByRole('link', { name: 'Acceso administrativo' })).not.toBeInTheDocument();
     expect(screen.getByText('admin@humworld.cl')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
 
-    expect(signOut).toHaveBeenCalledWith({ redirectUrl: '/' });
+    expect(onSignOut).toHaveBeenCalledOnce();
   });
 });
