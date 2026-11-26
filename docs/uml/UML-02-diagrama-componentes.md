@@ -3,119 +3,64 @@
 | Campo | Valor |
 |---|---|
 | **Identificador** | `UML-02` |
-| **Épica / Sprint** | Transversal — Sprint 3 (`DOC-S3`); rehecho en notación UML en el Sprint 4 (`DOC-04`) |
 | **Responsable** | Matías Santos (Arquitectura y Documentación) |
-| **Depende de** | `ADR-000` (tres capas), `ADR-001` (cálculo del humor), `ADR-003` (stack), `ADR-004` (frontend), `MOD-01` (modelo E/R) |
-| **Estado** | Publicado — refleja `main` en `5e166a8` (3 de noviembre de 2026) |
-| **Fecha** | 2026-11-04 |
-| **Fuente** | Especificación HumWorld 260714, secc. 4.7 (punto 3); `backend/app/`, `frontend/src/`, `opsx/docker-compose.yml` |
-
----
+| **Estado** | Actualizado según la implementación del repositorio |
+| **Fecha de revisión** | 2026-11-26 |
+| **Referencias** | `ADR-000`, `ADR-001`, `ADR-002`, `ADR-003`, `ADR-004`, `MOD-01` |
+| **Fuente** | `frontend/src/`, `backend/app/`, `opsx/docker-compose.yml` |
 
 ## 1. Alcance
 
-Diagrama de componentes UML 2 de HumWorld: componentes, puertos, interfaces provistas (círculo) e interfaces requeridas (dependencia `«use»`), tal como están en el código. Los nombres de los componentes son módulos o clases reales.
+Vista lógica de los componentes principales de HumWorld, agrupados por responsabilidad. Las agrupaciones corresponden al código actual; no representan microservicios ni unidades de despliegue independientes. El frontend consume una API y el backend reúne los servicios de aplicación, el planificador y el acceso a datos.
 
-No incluye el detalle de entidades y atributos, que está en [`MOD-01`](MOD-01-modelo-er-inicial.md), ni el flujo de usuario, que está en [`UML-01`](UML-01-casos-de-uso.md).
-
----
+Se omiten archivos de arranque, layouts, hooks, protocolos Python, funciones, migraciones y tareas de carga inicial. El modelo de datos está en [MOD-01](MOD-01-modelo-er-inicial.md); los flujos de usuario, en [UML-01](UML-01-casos-de-uso.md). Puertos, variables de entorno y contenedores se documentan en [opsx](../../opsx/README.md).
 
 ## 2. Diagrama
 
-![Diagrama de componentes UML de HumWorld](UML-02-diagrama-componentes.svg)
+![Componentes principales de HumWorld](UML-02-diagrama-componentes.svg)
 
-Fuente PlantUML: [`UML-02-diagrama-componentes.puml`](UML-02-diagrama-componentes.puml). Para regenerar el SVG tras modificarla:
+Fuente editable: [PlantUML](UML-02-diagrama-componentes.puml). Regenerar el SVG con:
 
 ```bash
-plantuml -tsvg docs/uml/UML-02-diagrama-componentes.puml
+plantuml -charset UTF-8 -tsvg docs/uml/UML-02-diagrama-componentes.puml
 ```
 
-Notación:
+Los rectángulos con icono UML representan componentes; los contenedores agrupan sus partes. Las flechas discontinuas indican dependencia, desde el consumidor hacia el componente utilizado. Se muestran las dependencias principales; la flecha de Servicios de aplicación a Persistencia resume el acceso a datos de sus servicios.
 
-| Elemento | Significado |
-|---|---|
-| Rectángulo con el icono de componente | Componente. Los anidados son sus partes internas. |
-| Cuadrado en el borde | Puerto. `frontend` recibe las rutas del navegador y sale por HTTP; `backend` expone HTTP en `:3000`. |
-| Círculo unido con línea continua | Interfaz provista por el componente al que está unida. |
-| Flecha discontinua `«use»` | Interfaz requerida: el componente de origen depende de ella. |
-| Flecha continua | Dependencia directa o delegación (quién llama a quién). |
+## 3. Responsabilidades y correspondencia con el código
 
----
+| Componente | Responsabilidad | Implementación principal |
+|---|---|---|
+| Consulta pública | Landing y dashboard; mapa, evolución, nube de palabras, noticias influyentes y desglose de términos. | `frontend/src/features/landing`, `features/dashboard`, `pages/Dashboard` |
+| Administración | Gestión de fuentes, canales, diccionario y parámetros; captura y purgado manuales. Integra la sesión Clerk y envía el token a la API. | `frontend/src/features/auth`, `features/sources`, `features/dictionary`, `features/config`, `pages/` |
+| API REST | Publica los casos de uso, valida las solicitudes y serializa las respuestas. | `backend/app/api/`, `main.py` |
+| Control de acceso | Valida los tokens de sesión para las operaciones administrativas. | `backend/app/auth.py` |
+| Consultas y agregación | Consulta los agregados, la evolución, los términos influyentes, el ranking y el desglose de noticias. | `services/dashboards.py` |
+| Gestión de fuentes, canales y diccionario | Aplica las reglas de administración de estos recursos. | `services/sources.py`, `channels.py`, `dictionary.py` |
+| Configuración | Gestiona periodicidad y caducidad; resuelve los parámetros de sentimiento. El cambio de periodicidad reprograma las tareas. | `services/configuration.py`, `sentiment_configuration.py` |
+| Captura RSS | Descarga y lee feeds; coordina el análisis y la atribución geográfica, y persiste los resultados. | `services/capture.py`, incluido `HttpxFeedparserClient` |
+| Análisis de sentimiento | Reconoce términos y calcula el humor; incluye el análisis puntual y el motor utilizado durante la captura. | `services/sentiment_analysis.py`, `sentiment_engine.py` |
+| Atribución geográfica | Reconoce países mediante un catálogo local de aliases. | `services/geographic_attribution.py` |
+| Purgado de noticias | Elimina noticias según la caducidad configurada, mediante ejecución manual o programada. | `services/purging.py`, incluidos sus servicios de aplicación y dominio |
+| Planificador de tareas | Ejecuta periódicamente captura y purgado. | `scheduler.py` (`CaptureScheduler`, APScheduler) |
+| Persistencia | Agrupa repositorios, modelos ORM, motor y sesiones de base de datos. | `repositories/`, `models/`, `database.py` |
+| PostgreSQL | Almacena noticias, términos, fuentes, configuración y atribuciones geográficas. | Modelos y migraciones de `backend/` |
+| Clerk | Proveedor externo de identidad y sesiones administrativas. | Integración en `features/auth` y verificador en `app/auth.py` |
+| Cartografía · CDN | Proporciona la geometría del mapa del dashboard desde jsDelivr. La landing utiliza cartografía empaquetada localmente. | `DashboardMap.tsx`, `WorldMap.tsx` |
+| Feeds RSS | Proporcionan las noticias de los medios configurados. | Cliente RSS de `services/capture.py` |
 
-## 3. Componentes
+## 4. Fronteras de acceso y dependencias
 
-### 3.1 Frontend (`frontend/src`)
+- **Consulta pública:** `/` y `/dashboard`, las seis consultas de `/api/v1/dashboards`, Swagger y OpenAPI. La landing consulta datos reales y conserva ejemplos si no obtiene datos utilizables.
+- **Administración:** routers de fuentes, canales, diccionario, configuración, noticias y análisis puntual de sentimiento. La API exige un token Bearer válido, aunque se evite el guard del navegador.
+- **Sesión:** Clerk administra las cuentas. El backend valida el token con la clave pública configurada; el diagrama no implica una llamada remota a Clerk por cada petición. La consulta pública funciona sin una sesión; el dashboard puede enriquecer opcionalmente su navegación con la sesión existente. HumWorld no mantiene una tabla propia de usuarios ni una lista paralela de administradores. Véase [autenticación con Clerk](../operations/clerk-authentication.md).
+- **Procesamiento:** la captura reutiliza el motor de sentimiento y el reconocedor geográfico; no llama al endpoint de análisis puntual. El desglose de noticias pertenece a Consultas y agregación y utiliza resultados persistidos.
+- **Planificación:** captura y purgado comparten la periodicidad configurada. El scheduler vive dentro del backend; el despliegue actual requiere una sola instancia de Uvicorn para evitar tareas duplicadas. Véase [backend](../../backend/README.md).
 
-| Componente | Responsabilidad |
-|---|---|
-| `App.tsx` | Rutas: `/` (landing) y, dentro de `AppShell`, `/dashboard`, `/dictionary`, `/fuentes` y `/parametros`. Cualquier otra ruta redirige a `/dictionary`. |
-| `components/AppShell` | Marco común con la navegación lateral. Las pantallas de `pages/` (código anterior a `ADR-004`) montan las funcionalidades. |
-| `features/<funcionalidad>/` | Código según `ADR-004` (Aceptado): `domain`, `application` (hooks como `useDashboard`, `useSources`, `useConfig`), `infrastructure` (clientes `dashboardApi`, `dictionaryApi`, `sourcesApi`, `configApi`) y `presentation`. |
-| `features/landing` | Landing pública con mapa de `react-simple-maps`. No consume la API (datos de ejemplo). |
-| `features/dashboard` | `DashboardMap` (d3, d3-geo, topojson-client), `DashboardTimeline` y `DashboardSummary` (d3), y `DashboardWordCloud` (React sin bibliotecas de gráficos). |
-| `shared/api/httpClient.ts` | Único cliente HTTP. Antepone `VITE_API_URL` (vacío por defecto) a las rutas `/api/v1/...`. |
-| Proxy de Vite (`vite.config.ts`) | En desarrollo reenvía `/api` a `VITE_API_TARGET` (por defecto `http://localhost:3000`; en Compose, `http://backend:3000`). |
+## 5. Relación con las decisiones de arquitectura
 
-### 3.2 Backend (`backend/app`)
+La vista conserva las tres capas de `ADR-000`: presentación, lógica de negocio y datos. Las responsabilidades de sentimiento y consultas corresponden a `ADR-001` y `ADR-002`; la organización interna del frontend se detalla en `ADR-004`.
 
-Las capas y sus reglas R-1 a R-6 son normativas (`ADR-000`): `api` → `services` → `repositories` → `models`, en un solo sentido y sin saltos.
-
-| Componente | Responsabilidad |
-|---|---|
-| `main.py` | Raíz de composición. Crea la aplicación FastAPI, monta los siete routers bajo `/api/v1`, traduce las excepciones de dominio a `400`/`404` y los errores de validación a `400`, y publica `/api/docs` y `/api/openapi.json`. Su `lifespan` siembra la configuración y el léxico de sentimiento y arranca el scheduler, solo si `CAPTURE_SCHEDULER_ENABLED` es verdadero. |
-| `app/api/*` | Routers sin reglas de negocio (`channels`, `configuration`, `dashboards`, `dictionary`, `news`, `sentiment`, `sources`); validan entrada con `schemas.py`, instancian el servicio con su repositorio y delegan. |
-| `DictionaryService`, `SourceService`, `ChannelService`, `ConfigurationService` | Reglas de gestión del diccionario, fuentes, canales y parámetros. `ConfigurationService` reprograma el scheduler mediante `CaptureScheduleProtocol` tras `PUT /config`. |
-| `DashboardService` | Valida el filtro y arma los agregados por continente, país y global, la evolución, la nube de palabras y las noticias influyentes (`ADR-002`). |
-| `SentimentAnalysisService` | Análisis puntual de un texto (`POST /sentiment`), sin persistencia. |
-| `NewsCaptureService` | Lee los feeds a través de `FeedClientProtocol` (implementado por `HttpxFeedparserClient`), inserta las noticias, calcula el humor y la atribución geográfica en la misma transacción por fuente, y procesa las pendientes (`process_pending_news()`). |
-| `GeographicAttributionService` | Reconoce países mencionados en el texto con un reconocedor trie local sobre el catálogo sembrado. No consulta servicios externos. |
-| `NewsPurgeService` | Borra las noticias más antiguas que `noticias_caducidad_dias`; lo usan el trabajo `news-purging` y `DELETE /news` (vía `NewsPurgeApplicationService`). |
-| `sentiment_engine.py` | Motor de cálculo del humor (`ADR-001`): reconoce términos activos del idioma de la noticia y normaliza la puntuación a `[-1, 1]` con la fórmula configurada. No accede a la base de datos y se prueba sin ella. |
-| `app/repositories/*` | Únicas clases que consultan PostgreSQL. Implementan los protocolos de repositorio que declaran los servicios. `DashboardRepository` ejecuta las consultas agregadas sobre `NOTICIA_PAIS/PAIS`. |
-| `app/models/*` | Modelos SQLAlchemy de las tablas `canal`, `fuente_rss`, `noticia`, `termino`, `noticia_termino`, `configuracion`, `pais`, `pais_alias` y `noticia_pais`. |
-| `scheduler.py` | `CaptureScheduler` sobre `BackgroundScheduler` de APScheduler (UTC). Dos trabajos con intervalo `captura_periodicidad_minutos`: `rss-news-capture` y `news-purging`. Exige un único proceso de uvicorn. |
-| `app/seeds/` | `geography.py` (catálogo de países; se ejecuta al arrancar el contenedor), `sentiment.py` (parámetros y léxico; desde `lifespan`) y `sources.py` (seis canales; se ejecuta a mano). |
-| `scripts/` (fuera del diagrama) | Herramientas offline: `generate_geographic_catalog.py` (REST Countries + GeoNames + overlay curado), `backfill_geography.py` (atribución por lotes de noticias existentes) y `benchmark_geographic_matcher.py`. |
-
-### 3.3 Infraestructura
-
-| Componente | Detalle |
-|---|---|
-| PostgreSQL 16 | Imagen `postgres:16-alpine`, puerto `5432`, volumen `postgres_data`. Único gestor admitido (`ADR-003`), también en pruebas. |
-| Contenedor `backend` | `python:3.12-slim`; al arrancar ejecuta `alembic upgrade head`, `python -m app.seeds.geography` y uvicorn en el puerto `3000`. |
-| Contenedor `frontend` | `node:22-alpine`; servidor de desarrollo de Vite en el puerto `5173`. |
-| Feeds RSS externos | Fuente de las noticias. Solo lectura por RSS; sin *scraping*. |
-
----
-
-## 4. Interfaces
-
-| Interfaz | Proveedor | Consumidor | Operaciones |
-|---|---|---|---|
-| `/api/v1/dashboards` | `api/dashboards.py` | `features/dashboard` | `GET ""`, `GET /geografia`, `GET /evolucion`, `GET /nube-palabras`, `GET /noticias-influyentes` |
-| `/api/v1/dictionary` | `api/dictionary.py` | `features/dictionary` | `GET`, `POST`; `GET`, `PUT`, `PATCH`, `DELETE /{term_id}` |
-| `/api/v1/sources` | `api/sources.py` | `features/sources` | `GET`, `POST`; `GET`, `PUT`, `PATCH`, `DELETE /{source_id}`; `POST /capture` |
-| `/api/v1/channels` | `api/channels.py` | `features/sources` | `GET`; `GET`, `PUT`, `PATCH`, `DELETE /{channel_id}` |
-| `/api/v1/config` | `api/configuration.py` | `features/config` | `GET`, `PUT` |
-| `/api/v1/news` | `api/news.py` | `features/config` | `DELETE` (purgado manual) |
-| `/api/v1/sentiment` | `api/sentiment.py` | Ninguno en el frontend (Swagger o clientes externos) | `POST` |
-| `/api/docs`, `/api/openapi.json` | `main.py` | Desarrolladores | Documentación OpenAPI; copia en [`docs/openapi/openapi.yaml`](../openapi/openapi.yaml) |
-| `CaptureScheduleProtocol` | `CaptureScheduler` | `ConfigurationService` | `reschedule(minutos)` tras `PUT /config` |
-| `FeedClientProtocol` | `HttpxFeedparserClient` | `NewsCaptureService` | Descarga y parseo de un feed |
-| `calculate_sentiment(...)` | `sentiment_engine.py` | `NewsCaptureService`, `SentimentAnalysisService` | Cálculo en memoria, sin base de datos |
-| Protocolos de repositorio (`*RepositoryProtocol`) | `app/repositories` | Servicios | Persistencia y consultas |
-| SQL sobre `DATABASE_URL` | PostgreSQL 16 | `app/models` y repositorios (SQLAlchemy + psycopg) | Lectura y escritura de las nueve tablas |
-| RSS sobre HTTP | Medios externos | `HttpxFeedparserClient` | Lectura de feeds (httpx + feedparser) |
-
----
-
-## 5. Encaje con los ADR
-
-- **ADR-000.** Los servicios dependen de protocolos de repositorio, no de las clases concretas; los repositorios los implementan. `main.py`, los routers y el scheduler actúan como raíz de composición: instancian servicios y repositorios, pero no contienen reglas de negocio.
-- **ADR-001.** El motor de sentimiento es un componente de la capa de servicios que solo provee `calculate_sentiment(...)` y no depende de la base de datos.
-- **ADR-002.** El orden y el límite de las noticias influyentes se ejecutan en `DashboardRepository`; el frontend no reordena.
-- **ADR-004.** Convive con el código por tipo de `pages/`. Las funcionalidades (`dashboard`, `dictionary`, `sources`, `config`, `landing`) siguen la estructura por funcionalidad.
-
----
+La separación de persistencia resume la estructura principal, sin afirmar un aislamiento absoluto en todos los archivos: algunos servicios usan tipos ORM o de repositorios, y `warn_if_scale_differs_from_dictionary()` contiene una consulta SQLAlchemy de diagnóstico durante el arranque. Esa excepción de implementación respecto de `ADR-000` R-3 queda fuera de las dependencias principales del dibujo.
 
 *Documento UML-02 — Proyecto HumWorld, Universidad Andrés Bello, curso Uso de IA en Ingeniería de Software 2026-27.*
